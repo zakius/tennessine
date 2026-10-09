@@ -24,7 +24,8 @@ git config --global user.name tennessine-build
 git config --global user.email build@localhost
 # A previous run left the tree patched: back to the Chromium tag. Ignored files (gclient
 # dependencies, out/) stay, so the sync and the compile resume from where they were.
-if [ "$MODE" != resume ] && [ "$MODE" != x64 ] && [ -d chromium/src/.git ]; then
+if [ "$MODE" != resume ] && [ "$MODE" != x64 ] && [ -d chromium/src/.git ] &&
+   git -C chromium/src rev-parse -q --verify "chromium_$(grep -m1 -o "[0-9]\+\(\.[0-9]\+\)\{3\}" vanadium/args.gn)" >/dev/null; then
   git -C chromium/src am --abort 2>/dev/null || true
   git -C chromium/src reset -q --hard "chromium_$(grep -m1 -o "[0-9]\+\(\.[0-9]\+\)\{3\}" vanadium/args.gn)"
   git -C chromium/src clean -qfd
