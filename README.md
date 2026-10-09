@@ -11,10 +11,9 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 |---|---|
 | `vanadium/` | Submodule at a Vanadium tag. Its tag sets the Chromium version. Its patches apply as they are, renamed to tennessine, minus `patches/vanadium-drops.txt`. |
 | `titanium/` | Submodule at the Titanium tag that `patches/titanium/` matches. Titanium edits with `sed` in `patch.sh`; ours are those edits as patches, so a change fails loudly. |
-| `oganesson/` | Submodule: [desktop oganesson](https://github.com/zakius/oganesson-focused). The uBlock Origin patches and version come from it. |
+| `oganesson/` | Submodule: [desktop oganesson](https://github.com/zakius/oganesson-focused). The uBlock Origin patches and version, and Firefox Sync (C++, strings, translations, Rust library) come from it; only `src/chrome/browser/firefox_sync/android/` is ours. |
 | `patches/series` | Everything applied after Vanadium, in order. Paths from the repo root. |
 | `src/` | New files copied over the tree. |
-| `rust/` | The Firefox Sync library. |
 
 ## Updating to a new Chromium
 
@@ -24,7 +23,7 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 4. For each failure, `STOP=1 ./check.sh`, then in `work/chromium/src`: `../../../tools/refresh.sh ../../../<patch>`. Read every hunk it reports with fuzz: fuzz can land a hunk inside the wrong `#if` or mid-expression. Fix those in the tree and take the fix with `tools/refresh.sh <patch> <file>`.
 5. `./local-build.sh`, install, commit.
 
-To take desktop fixes (uBlock Origin): `git -C oganesson pull`.
+To take desktop fixes (uBlock Origin, Firefox Sync): `git -C oganesson pull`, then `./check.sh`.
 
 ## Building
 

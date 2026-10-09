@@ -9,7 +9,7 @@ tennessine is Vanadium plus one patch series, `patches/series`. What matters mos
 | [Vanadium](https://github.com/GrapheneOS/Vanadium) | The `vanadium` submodule; `apply.sh` applies its patches renamed to tennessine, minus `patches/vanadium-drops.txt` (with reasons). tennessine follows Vanadium's releases, which follow Chromium stable. |
 | [Titanium](https://github.com/jqssun/android-titanium-browser) | The `titanium` submodule, at the version `patches/titanium/*.patch` match: its `patch.sh` edits, one patch per group. The two that edit gclient dependencies, and the app icon, are in `post-sync.sh`. |
 | [Helium](https://github.com/imputnet/helium) | The uBlock Origin patches, from the `oganesson` submodule (desktop oganesson), as they are. |
-| oganesson | Firefox Sync (`src/`, `rust/`), ported to Android, and the keyword helpers it needs. |
+| [oganesson](https://github.com/zakius/oganesson-focused) | The `oganesson` submodule: Firefox Sync's C++ (with its Android branches), strings, Polish translations and Rust library, shared with desktop. Ours is `src/chrome/browser/firefox_sync/android/`. |
 | [Cromite](https://github.com/uazo/cromite) | `patches/cromite/`: the list-mode tab switcher (adapted: always on, without Cromite's flag framework, without tab thumbnails). |
 
 ## Vanadium
@@ -56,7 +56,7 @@ Update cost for features outside the list above: Cromite's full URL in the addre
 ## Our own
 
 - `tennessine/jit-allowed-by-default`: see Vanadium above.
-- Firefox Sync as in oganesson: passwords, bookmarks, history, open tabs, addresses and payment methods, and a custom server address. Settings → Firefox Sync, at the top like Fenix's account row (`firefox-sync-android`). The Rust library is built for arm64 by `tools/build-sync-lib.sh` and packaged with the APK (`firefox-sync-native-lib`).
+- Firefox Sync, the same code as desktop oganesson: passwords, bookmarks, history, open tabs, addresses and payment methods, and a custom server address. Settings → Firefox Sync, at the top like Fenix's account row (`firefox-sync-android`). The Rust library is built for arm64 by `tools/build-sync-lib.sh` and packaged with the APK (`firefox-sync-native-lib`).
 - Page zoom follows Android's font size (`page-zoom-follows-font-size`): the zoom is Settings → Accessibility → Default zoom times Android's font scale, for the whole page, so a smaller Android font makes pages smaller as a smaller Android display size already does (Chromium's `AdjustForOSLevel`, shipped off). Tried first: text-only zoom, as Fennec's "Use system font size" (`git log` 2026-10-05); compared side by side on the maintainer's phone, whole-page zoom looked better. Pages capped at a max-width (purepc.pl's tiles, `max-width: 497px`) leave side gaps below 100%; a uBlock Origin `:style()` filter fixes that per site. Pages with a `text-scale` meta tag also scale their own text by the font scale, so it counts twice there. Changes apply on reload.
 - The new tab page keeps the address bar where the user put it (`ntp-keeps-toolbar-position`, #1).
 - Swiping the toolbar between tabs no longer leaves the toolbar stuck on screen while the page scrolls (`toolbar-swipe-offset-tags`, a Chromium bug with viz-driven browser controls).
