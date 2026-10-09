@@ -11,7 +11,7 @@ BUILD=$ROOT/work/build
 mkdir -p "$BUILD/tennessine" "$ROOT/work/keys"
 rsync -a --delete --exclude=/work --exclude=/oganesson/work --exclude=/chromium --exclude=/keys --exclude=/depot_tools "$ROOT/" "$BUILD/tennessine/"
 exec podman run --rm -i --pids-limit=-1 -v "$BUILD:/build" -v "$ROOT/work/keys:/keys" -w /build/tennessine \
-  -e LOCAL_BUILD=1 -e MODE="${1:-}" docker.io/library/ubuntu:24.04 bash -c '
+  -e LOCAL_BUILD=1 -e MODE="${1:-}" -e JOBS="${JOBS:-28}" docker.io/library/ubuntu:24.04 bash -c '
 set -e
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq && apt-get install -y -qq sudo git curl bzip2 xz-utils unzip zstd lsb-release file python3 openjdk-21-jdk-headless >/dev/null
@@ -52,7 +52,7 @@ if [ "$MODE" = x64 ]; then
   cmp -s $OUT/args.gn.new $OUT/args.gn || { mv $OUT/args.gn.new $OUT/args.gn; gn gen $OUT; }
 fi
 mkdir -p out/tmp out/release && rm -f out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk*
-autoninja -C $OUT chrome_public_apk
+autoninja ${JOBS:+-j $JOBS} -C $OUT chrome_public_apk
 mv $(find $OUT/apks -name "Chrome*.apk") out/tmp/$VERSION-$ABI.apk
 export PATH=$PWD/third_party/jdk/current/bin/:$PATH ANDROID_HOME=$PWD/third_party/android_sdk/public
 sign_apk out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk
