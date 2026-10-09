@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds rust/oganesson_sync (Firefox Sync over application-services) for arm64 Android into
+# Builds oganesson/rust/oganesson_sync (Firefox Sync over application-services, shared with desktop) for arm64 Android into
 # OUT/liboganesson_sync.so (build.sh: tennessine/sync_lib in the Chromium tree), which
 # patches/tennessine/firefox-sync-native-lib.patch packages with the APK. Runs where build.sh runs (Ubuntu with sudo, or the local build container).
 #
@@ -13,7 +13,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 out=$(mkdir -p "$1" && realpath "$1")
 cache=$(mkdir -p "$2" && realpath "$2")
-crate=$ROOT/rust/oganesson_sync
+crate=$ROOT/oganesson/rust/oganesson_sync
 api=34  # Vanadium's minSdk
 case ${3:-arm64} in
   arm64) arch=arm64 abi=arm64-v8a triple=aarch64-linux-android ;;

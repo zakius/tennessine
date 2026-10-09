@@ -50,7 +50,6 @@ patches/tennessine/ublock-assets-update.patch
 patches/tennessine/extensions-menu-component-only.patch
 
 # Firefox Sync from oganesson (src/chrome/browser/firefox_sync, rust/), ported to Android.
-patches/oganesson/keyword-bookmarks.patch
 patches/oganesson/firefox-sync.patch
 patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch

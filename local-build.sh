@@ -9,7 +9,7 @@ set -e
 ROOT=$(cd "$(dirname "$0")" && pwd)
 BUILD=$ROOT/work/build
 mkdir -p "$BUILD/tennessine" "$ROOT/work/keys"
-rsync -a --delete --exclude=/work --exclude=/oganesson/work --exclude=/chromium --exclude=/keys --exclude=/depot_tools "$ROOT/" "$BUILD/tennessine/"
+rsync -a --delete --exclude=/work --exclude=/oganesson/work --exclude=/oganesson/rust/oganesson_sync/target --exclude=/chromium --exclude=/keys --exclude=/depot_tools "$ROOT/" "$BUILD/tennessine/"
 exec podman run --rm -i --pids-limit=-1 -v "$BUILD:/build" -v "$ROOT/work/keys:/keys" -w /build/tennessine \
   -e LOCAL_BUILD=1 -e MODE="${1:-}" -e JOBS="${JOBS:-28}" docker.io/library/ubuntu:24.04 bash -c '
 set -e
@@ -41,9 +41,9 @@ cp -r src/. chromium/src/
 cd chromium/src
 OUT=out/Default ABI=arm64-v8a LIB=tennessine/sync_lib CPU=arm64
 [ "$MODE" = x64 ] && OUT=out/x64 ABI=x86_64 LIB=tennessine/sync_lib/x64 CPU=x64
-# The sync library again when it is missing or rust/ changed since.
+# The sync library again when it is missing or oganesson/rust/ changed since.
 if [ ! -f $LIB/liboganesson_sync.so ] ||
-   [ -n "$(find $SCRIPT_DIR/rust -path "*/target" -prune -o -newer $LIB/liboganesson_sync.so -print -quit)" ]; then
+   [ -n "$(find $SCRIPT_DIR/oganesson/rust -path "*/target" -prune -o -newer $LIB/liboganesson_sync.so -print -quit)" ]; then
   $SCRIPT_DIR/tools/build-sync-lib.sh $LIB /build/sync-cache $CPU
 fi
 if [ "$MODE" = x64 ]; then
