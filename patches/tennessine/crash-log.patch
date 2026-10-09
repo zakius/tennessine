@@ -1,0 +1,48 @@
+# Settings > Last crash (src/chrome/browser/crash_log): the stack trace of the last uncaught Java
+# exception, to share without adb. The handler is installed in ChromeApplicationImpl.onCreate.
+--- a/chrome/android/java/res/xml/main_preferences.xml
++++ b/chrome/android/java/res/xml/main_preferences.xml
+@@ -153,5 +153,10 @@
+         android:key="about_chrome"
+         android:order="31"
+         android:title="@string/prefs_about_chrome"/>
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
++        android:fragment="org.chromium.chrome.browser.crash_log.CrashLogSettings"
++        android:key="crash_log"
++        android:order="32"
++        android:title="@string/crash_log_title"/>
+ 
+ </PreferenceScreen>
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeApplicationImpl.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeApplicationImpl.java
+@@ -52,6 +52,8 @@
+         super.onCreate();
+ 
+         ChromeApplicationImplHooks.onCreate();
++        // tennessine: keep the last crash for Settings > Last crash.
++        org.chromium.chrome.browser.crash_log.CrashLog.install();
+         // This Impl is only instantiated in the browser process; SplitChromeApplication uses the
+         // base Impl for all other processes so that the chrome split is never loaded there.
+         assert SplitCompatApplication.isBrowserProcess();
+--- a/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
++++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
+@@ -7,6 +7,7 @@
+ # Three lines of code for minimizing conflicts in rebasing changes
+ chrome_java_ext_full_path_deps = [
+   "//chrome/browser/firefox_sync/android:java",
++  "//chrome/browser/crash_log/android:java",
+   "//chrome/browser/toolbar_items/android:java",
+   "//tennessine/android_config/parser:config_app_parser_java",
+   "//tennessine/android_config/proto:config_proto_java",
+--- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
++++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
+@@ -3,6 +3,9 @@
+  Use of this source code is governed by a GPLv2 only-style license that can be
+  found in the LICENSE file. -->
+ <grit-part>
++  <message name="IDS_CRASH_LOG_TITLE" desc="Title of the setting and screen that show the stack trace of the browser's last crash">
++    Last crash
++  </message>
+   <message name="IDS_TOOLBAR_ITEMS_TITLE" desc="Title of the setting and screen that order and hide the toolbar items">
+     Toolbar layout
+   </message>

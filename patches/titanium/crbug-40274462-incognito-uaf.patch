@@ -1,0 +1,45 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/profiles/profile_destroyer.cc b/chrome/browser/profiles/profile_destroyer.cc
+index d08378d6..3cd1dbf0 100644
+--- a/chrome/browser/profiles/profile_destroyer.cc
++++ b/chrome/browser/profiles/profile_destroyer.cc
+@@ -23,6 +23,7 @@
+ #include "chrome/browser/browser_features.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "content/public/browser/render_process_host.h"
++#include "content/public/browser/web_contents.h"
+ 
+ namespace {
+ 
+@@ -212,6 +213,7 @@ void ProfileDestroyer::DestroyOTRProfileWhenAppropriateWithTimeout(
+                 proto->set_is_off_the_record(profile->IsOffTheRecord());
+               });
+ 
++if (content::WebContents::HasLiveWebContentsForBrowserContext(profile)) { return; }
+   profile->MaybeSendDestroyedNotification();
+ 
+   HostSet profile_hosts;
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index c6d3b300..308d3e43 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -1333,6 +1333,7 @@ Visibility FrameVisibilityToVisibility(
+ 
+ }  // namespace
+ 
++ bool WebContents::HasLiveWebContentsForBrowserContext(BrowserContext* browser_context) { for (WebContentsImpl* web_contents : WebContentsImpl::GetAllWebContents()) { if (web_contents->GetBrowserContext() == browser_context) { return true; } } return false; }
+ WebContentsImpl::WebContentsImpl(BrowserContext* browser_context)
+     : ColorProviderSourceObserver(DefaultColorProviderSource::GetInstance()),
+       delegate_(nullptr),
+diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
+index 9b351343..d13759ce 100644
+--- a/content/public/browser/web_contents.h
++++ b/content/public/browser/web_contents.h
+@@ -446,6 +446,7 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
+   //   `rfh->GetPage().IsPrimary()` to check for primary. Fenced frames are
+   //   one case where a RenderFrameHost can be active but not primary.
+   CONTENT_EXPORT static WebContents* FromRenderFrameHost(RenderFrameHost* rfh);
++CONTENT_EXPORT static bool HasLiveWebContentsForBrowserContext(BrowserContext* browser_context);
+ 
+   // Returns the WebContents associated with the |frame_tree_node_id|. This may
+   // return nullptr if the RenderFrameHost is shutting down.

@@ -1,0 +1,23 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
+index a3deb0f9..b81b009a 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
+@@ -1263,7 +1263,7 @@ public class ChromeTabbedActivity extends ChromeActivity implements PreAttachInt
+         // TODO(crbug.com/444024982): Preserve default pane via PaneListBuilder.
+         var builder = mHubProvider.getPaneListBuilder();
+         if (!IncognitoUtils.shouldOpenIncognitoAsWindow()
+-                || mSupportedProfileType == SupportedProfileType.REGULAR) {
++                || mSupportedProfileType == SupportedProfileType.REGULAR || mSupportedProfileType == SupportedProfileType.MIXED) {
+             builder.registerPane(
+                     PaneId.TAB_SWITCHER,
+                     LazyOneshotSupplier.fromSupplier(() -> createTabSwitcherPane(false)));
+@@ -1271,7 +1271,7 @@ public class ChromeTabbedActivity extends ChromeActivity implements PreAttachInt
+                     PaneId.TAB_GROUPS, LazyOneshotSupplier.fromSupplier(this::createTabGroupsPane));
+         }
+         if (!IncognitoUtils.shouldOpenIncognitoAsWindow()
+-                || mSupportedProfileType == SupportedProfileType.OFF_THE_RECORD) {
++                || mSupportedProfileType == SupportedProfileType.OFF_THE_RECORD || mSupportedProfileType == SupportedProfileType.MIXED) {
+             builder.registerPane(
+                     PaneId.INCOGNITO_TAB_SWITCHER,
+                     LazyOneshotSupplier.fromSupplier(() -> createTabSwitcherPane(true)));

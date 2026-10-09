@@ -1,0 +1,35 @@
+--- a/chrome/browser/profiles/BUILD.gn
++++ b/chrome/browser/profiles/BUILD.gn
+@@ -1070,6 +1070,10 @@ source_set("profiles_extra_parts_impl")
+   if (enable_offline_pages) {
+     deps += [ "//chrome/browser/offline_pages" ]
+   }
++
++  if (is_android) {
++    deps += [ "//chrome/browser/firefox_sync" ]
++  }
+ }
+ 
+ source_set("profile_downloader") {
+--- a/chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc
++++ b/chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc
+@@ -104,6 +104,9 @@
+ #include "chrome/browser/feedback/feedback_uploader_factory_chrome.h"
+ #include "chrome/browser/file_system_access/file_system_access_permission_context_factory.h"
+ #include "chrome/browser/finds/finds_service_factory.h"
++#if BUILDFLAG(IS_ANDROID)
++#include "chrome/browser/firefox_sync/firefox_sync_service_factory.h"
++#endif
+ #include "chrome/browser/first_party_sets/first_party_sets_policy_service_factory.h"
+ #include "chrome/browser/font_pref_change_notifier_factory.h"
+ #include "chrome/browser/glic/browser_ui/glic_actor_task_icon_manager_factory.h"
+@@ -1066,6 +1069,9 @@ void ChromeBrowserMainExtraPartsProfiles
+   FileSystemAccessPermissionContextFactory::GetInstance();
+   FindBarStateFactory::GetInstance();
+   finds::FindsServiceFactory::GetInstance();
++#if BUILDFLAG(IS_ANDROID)
++  firefox_sync::FirefoxSyncServiceFactory::GetInstance();
++#endif
+   first_party_sets::FirstPartySetsPolicyServiceFactory::GetInstance();
+ #if !BUILDFLAG(IS_CHROMEOS) && !BUILDFLAG(IS_ANDROID)
+   FirstRunServiceFactory::GetInstance();

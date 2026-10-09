@@ -1,0 +1,201 @@
+# With the controls at the bottom (Settings > Address bar > Bottom), the UI runs upward from the
+# bar, the most-used item nearest it (#7):
+# - the app menu is reversed, its icon row at the bottom;
+# - typing in the omnibox keeps it at the bottom, above the keyboard, and the suggestions sit on
+#   it, the top suggestion nearest;
+# - the tab switcher's toolbar sits below the tab list, its buttons nearest the edge.
+--- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
++++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
+@@ -36,6 +36,7 @@
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.build.annotations.RequiresNonNull;
+ import org.chromium.chrome.browser.browser_controls.BrowserControlsStateProvider;
++import org.chromium.chrome.browser.browser_controls.BrowserControlsStateProvider.ControlsPosition;
+ import org.chromium.chrome.browser.lifecycle.ActivityLifecycleDispatcher;
+ import org.chromium.chrome.browser.lifecycle.ConfigurationChangedObserver;
+ import org.chromium.chrome.browser.lifecycle.StartStopWithNativeObserver;
+@@ -337,6 +338,13 @@
+         assert !(isByPermanentButton && startDragging);
+ 
+         mModelList = mDelegate.getMenuItems();
++        // tennessine: with the controls at the bottom, the menu runs upward from the bar, the
++        // icon row nearest it. AppMenu stacks the list from the bottom.
++        if (mBrowserControlsStateProvider.getControlsPosition() == ControlsPosition.BOTTOM) {
++            List<ListItem> items = new ArrayList<>();
++            for (ListItem item : mModelList) items.add(0, item);
++            mModelList.set(items);
++        }
+         mModelList.addObserver(mListObserver);
+         ContextThemeWrapper wrapper =
+                 new ContextThemeWrapper(mContext, R.style.AppMenuThemeOverlay);
+--- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
++++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenu.java
+@@ -565,6 +565,9 @@
+ 
+         mListView.setItemsCanFocus(true);
+         mListView.setOnKeyListener(this);
++        // tennessine: AppMenuHandlerImpl reverses the items for bottom controls; open at the
++        // end nearest the bar.
++        mListView.setStackFromBottom(controlsPosition == ControlsPosition.BOTTOM);
+ 
+         mVisibilityDelegate.onMenuVisibilityChanged(true);
+ 
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
+@@ -664,9 +664,9 @@
+             boolean doesUserPreferTopToolbar,
+             @ControlsPosition int currentPosition) {
+         @ControlsPosition int newControlsPosition;
+-        // tennessine: the new tab page is a page, so it keeps the user's position.
++        // tennessine: the new tab page is a page, so it keeps the user's position. Typing in the
++        // omnibox keeps it too: suggestions open upward from a bottom bar (#7).
+         if (tabSwitcherShowing
+-                || isOmniboxFocused
+                 || isFindInPageShowing
+                 || doesUserPreferTopToolbar) {
+             newControlsPosition = ControlsPosition.TOP;
+--- a/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/suggestions/OmniboxSuggestionsDropdownEmbedder.java
++++ b/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/suggestions/OmniboxSuggestionsDropdownEmbedder.java
+@@ -145,4 +145,12 @@
+ 
+     /** The vertical translation that should be used during focus animations. */
+     float getVerticalTranslationForAnimation();
++
++    /**
++     * tennessine: whether the omnibox sits below the dropdown (controls at the bottom), so the
++     * list runs upward with the top suggestion nearest it.
++     */
++    default boolean isBottomAnchored() {
++        return false;
++    }
+ }
+--- a/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/OmniboxSuggestionsDropdownEmbedderImpl.java
++++ b/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/OmniboxSuggestionsDropdownEmbedderImpl.java
+@@ -253,6 +253,11 @@
+         }
+     }
+ 
++    @Override
++    public boolean isBottomAnchored() {
++        return mControlsPositionSupplier.get() == ControlsPosition.BOTTOM;
++    }
++
+     /**
+      * Recalculates the desired alignment of the omnibox and sends the updated alignment data to any
+      * observers. Currently will send an update message unconditionally. This method is called
+--- a/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/suggestions/OmniboxSuggestionsContainer.java
++++ b/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/suggestions/OmniboxSuggestionsContainer.java
+@@ -8,6 +8,7 @@
+ import android.content.Context;
+ import android.content.res.Configuration;
+ import android.util.AttributeSet;
++import android.view.Gravity;
+ import android.view.KeyEvent;
+ import android.view.MotionEvent;
+ import android.view.View;
+@@ -246,6 +247,14 @@
+                 omniboxAlignment.isOnlyHorizontalDifference(mOmniboxAlignment);
+         boolean isWidthDifference = omniboxAlignment.doesWidthDiffer(mOmniboxAlignment);
+         mOmniboxAlignment = omniboxAlignment;
++        // tennessine: under a bottom omnibox, the top suggestion sits nearest it (#7).
++        boolean reverse = mEmbedder != null && mEmbedder.isBottomAnchored();
++        if (mDropdown.getLayoutScrollListener().getReverseLayout() != reverse) {
++            mDropdown.getLayoutScrollListener().setReverseLayout(reverse);
++            LayoutParams params = (LayoutParams) mDropdown.getLayoutParams();
++            params.gravity = reverse ? Gravity.BOTTOM : Gravity.NO_GRAVITY;
++            mDropdown.setLayoutParams(params);
++        }
+         mDropdown.setPaddingRelative(
+                 mDropdown.getPaddingStart(),
+                 mDropdown.getBaseTopPadding() + mOmniboxAlignment.paddingTop,
+--- a/chrome/browser/hub/internal/android/java/src/org/chromium/chrome/browser/hub/HubCoordinator.java
++++ b/chrome/browser/hub/internal/android/java/src/org/chromium/chrome/browser/hub/HubCoordinator.java
+@@ -13,7 +13,12 @@
+ import android.view.LayoutInflater;
+ import android.view.View;
+ import android.view.ViewGroup;
++import android.view.ViewGroup.MarginLayoutParams;
+ import android.widget.FrameLayout;
++import android.widget.LinearLayout;
++
++import androidx.core.view.ViewCompat;
++import androidx.core.view.WindowInsetsCompat;
+ 
+ import org.chromium.base.Callback;
+ import org.chromium.base.DeviceInfo;
+@@ -35,6 +40,7 @@
+ import org.chromium.chrome.browser.profiles.ProfileProvider;
+ import org.chromium.chrome.browser.tab.Tab;
+ import org.chromium.chrome.browser.toolbar.menu_button.MenuButtonCoordinator;
++import org.chromium.chrome.browser.toolbar.settings.AddressBarPreference;
+ import org.chromium.chrome.browser.ui.edge_to_edge.EdgeToEdgeController;
+ import org.chromium.chrome.browser.ui.searchactivityutils.SearchActivityClient;
+ import org.chromium.chrome.browser.user_education.UserEducationHelper;
+@@ -42,6 +48,7 @@
+ import org.chromium.components.feature_engagement.Tracker;
+ import org.chromium.ui.edge_to_edge.EdgeToEdgePadAdjuster;
+ 
++import java.util.ArrayList;
+ import java.util.List;
+ 
+ /** Root coordinator of the Hub. */
+@@ -126,6 +133,10 @@
+         int layoutId = DeviceInfo.isXr() ? R.layout.hub_xr_layout : R.layout.hub_layout;
+         mMainHubParent = (ViewGroup) LayoutInflater.from(context).inflate(layoutId, null);
+         mContainerView.addView(mMainHubParent);
++        // tennessine: with the address bar at the bottom, so is the tab switcher's toolbar (#7).
++        if (!DeviceInfo.isXr() && !AddressBarPreference.isToolbarConfiguredToShowOnTop()) {
++            moveToolbarToBottom(mMainHubParent, mContainerView);
++        }
+ 
+         ProfileProvider profileProvider = profileProviderSupplier.get();
+         assert profileProvider != null;
+@@ -477,6 +488,48 @@
+         return (Callback<T>) callback;
+     }
+ 
++    /**
++     * Moves the toolbar below the pane, its rows reversed so the buttons are nearest the edge, and
++     * keeps it above the navigation bar. In the pane's column the pane gets the remaining height in
++     * the same layout pass, so the tab list opens scrolled to the current tab.
++     */
++    private static void moveToolbarToBottom(ViewGroup hub, View attachedView) {
++        ViewGroup toolbar = hub.findViewById(R.id.hub_toolbar);
++        List<View> rows = new ArrayList<>();
++        for (int i = toolbar.getChildCount() - 1; i >= 0; i--) rows.add(toolbar.getChildAt(i));
++        toolbar.removeAllViews();
++        for (View row : rows) toolbar.addView(row);
++
++        View toolbarRoot = (View) toolbar.getParent();
++        ((ViewGroup) toolbarRoot.getParent()).removeView(toolbarRoot);
++        LinearLayout column = hub.findViewById(R.id.hub_pane_host_container);
++        MarginLayoutParams columnParams = (MarginLayoutParams) column.getLayoutParams();
++        columnParams.topMargin = 0;
++        column.setLayoutParams(columnParams);
++        column.addView(
++                toolbarRoot,
++                new LinearLayout.LayoutParams(
++                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
++
++        View searchBackground = hub.findViewById(R.id.search_box_background);
++        FrameLayout.LayoutParams backgroundParams =
++                (FrameLayout.LayoutParams) searchBackground.getLayoutParams();
++        backgroundParams.topMargin = 0;
++        searchBackground.setLayoutParams(backgroundParams);
++
++        setBottomInset(toolbarRoot, ViewCompat.getRootWindowInsets(attachedView));
++        toolbarRoot.addOnLayoutChangeListener(
++                (view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
++                        setBottomInset(view, ViewCompat.getRootWindowInsets(view)));
++    }
++
++    private static void setBottomInset(View view, @Nullable WindowInsetsCompat insets) {
++        if (insets == null) return;
++        int bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
++        if (view.getPaddingBottom() == bottom) return;
++        view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(), bottom);
++    }
++
+     @Nullable HubBottomToolbarCoordinator getHubBottomToolbarCoordinatorForTesting() {
+         return mHubBottomToolbarCoordinator;
+     }

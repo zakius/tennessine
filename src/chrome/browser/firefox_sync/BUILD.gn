@@ -1,0 +1,50 @@
+# Copyright 2026 The oganesson Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Firefox Sync. The protocol runs in liboganesson_sync.so, built by
+# tools/build-sync-lib.sh from rust/oganesson_sync and packaged with the APK's
+# native libraries (tennessine/firefox-sync-native-lib.patch).
+source_set("firefox_sync") {
+  sources = [
+    "android/firefox_sync_bridge.cc",
+    "autofill_adapter.cc",
+    "autofill_adapter.h",
+    "bookmarks_adapter.cc",
+    "bookmarks_adapter.h",
+    "firefox_sync_service.cc",
+    "firefox_sync_service.h",
+    "firefox_sync_service_factory.cc",
+    "firefox_sync_service_factory.h",
+    "history_adapter.cc",
+    "history_adapter.h",
+    "passwords_adapter.cc",
+    "passwords_adapter.h",
+    "sync_adapter.h",
+    "tabs_adapter.cc",
+    "tabs_adapter.h",
+  ]
+  public_deps = [ "//chrome/browser:browser_public_dependencies" ]
+  deps = [
+    "//base",
+    "//chrome/browser/firefox_sync/android:jni_headers",
+    "//chrome/browser/autofill",
+    "//chrome/browser/bookmarks",
+    "//chrome/browser/history",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui/android/tab_model",
+    "//components/autofill/core/browser",
+    "//components/bookmarks/browser",
+    "//components/history/core/browser",
+    "//components/keyed_service/core",
+    "//components/os_crypt/async/browser",
+    "//components/password_manager/core/browser",
+    "//components/pref_registry",
+    "//components/prefs",
+    "//content/public/browser",
+    "//crypto",
+    "//net",
+    "//services/network/public/cpp",
+    "//ui/base",
+  ]
+}

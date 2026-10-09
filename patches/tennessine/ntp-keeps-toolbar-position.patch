@@ -1,0 +1,39 @@
+# The address bar stays where the user put it on the new tab page too (issue #1). Chromium
+# moves it to the top there; the tab switcher, find in page and typing still move it. The
+# toolbar keeps its address bar there too, as on tablets, and the page's own search box is gone.
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
+@@ -664,8 +664,8 @@
+             boolean doesUserPreferTopToolbar,
+             @ControlsPosition int currentPosition) {
+         @ControlsPosition int newControlsPosition;
+-        if (ntpShowing
+-                || tabSwitcherShowing
++        // tennessine: the new tab page is a page, so it keeps the user's position.
++        if (tabSwitcherShowing
+                 || isOmniboxFocused
+                 || isFindInPageShowing
+                 || doesUserPreferTopToolbar) {
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPage.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPage.java
+@@ -856,7 +856,8 @@ public class NewTabPage
+      *     NTP.
+      */
+     public static boolean isInSingleUrlBarMode(boolean isLff) {
+-        return !isLff;
++        // tennessine: the toolbar keeps its address bar on the new tab page, as on tablets.
++        return false;
+     }
+ 
+     /**
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPageCoordinator.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPageCoordinator.java
+@@ -416,6 +416,8 @@ public class NewTabPageCoordinator implements ModuleDelegateHost {
+                         mProfile,
+                         mBackPressManager);
+         mModel.set(NewTabPageLayoutProperties.SEARCH_BOX_VIEW, mNtpSearchBox.getView());
++        // tennessine: the toolbar's address bar is the search box (NewTabPage#isInSingleUrlBarMode).
++        mNtpSearchBox.getView().setVisibility(View.GONE);
+ 
+         updateSearchBoxTwoSideMargin();
+         initializeLogoCoordinator();

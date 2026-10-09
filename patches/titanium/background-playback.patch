@@ -1,0 +1,21 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/content/public/renderer/render_frame_media_playback_options.cc b/content/public/renderer/render_frame_media_playback_options.cc
+index 5074b48e..ecae9b4d 100644
+--- a/content/public/renderer/render_frame_media_playback_options.cc
++++ b/content/public/renderer/render_frame_media_playback_options.cc
+@@ -8,13 +8,13 @@
+ #include "build/build_config.h"
+ #include "content/public/common/content_features.h"
+ 
+-#if BUILDFLAG(IS_ANDROID)
++#if 0
+ #include "base/android/device_info.h"
+ #endif
+ 
+ namespace content {
+ bool IsBackgroundMediaSuspendEnabled() {
+-#if BUILDFLAG(IS_ANDROID)
++#if 0
+   // For Android devices, do not suspend background media for devices with large
+   // displays. Exception is for Webview.
+ 

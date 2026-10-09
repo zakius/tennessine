@@ -1,0 +1,50 @@
+# After swiping the toolbar between tabs, the toolbar sometimes stayed on screen while the page
+# scrolled under it (with viz moving the browser controls, i.e. on real phones). During the
+# swipe there's no current tab for a moment, and BrowserControlsManager sent the offset tags of a
+# tab shown then to no page, so the page never carried the toolbar. The tags now go to the tab
+# they belong to, and a hidden tab dropping its tags no longer clears the visible tab's.
+--- a/chrome/android/java/src/org/chromium/chrome/browser/fullscreen/BrowserControlsManager.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/fullscreen/BrowserControlsManager.java
+@@ -128,6 +128,8 @@ public class BrowserControlsManager implements ActivityStateListener, BrowserCon
+ 
+     private boolean mForceRelayoutOnVisibilityChange;
+ 
++    // tennessine: the tab mOffsetTagDefinitions belong to.
++    private @Nullable Tab mOffsetTagsOwner;
+     private BrowserControlsOffsetTagDefinitions mOffsetTagDefinitions =
+             new BrowserControlsOffsetTagDefinitions();
+ 
+@@ -311,6 +313,18 @@ public class BrowserControlsManager implements ActivityStateListener, BrowserCon
+                             BrowserControlsOffsetTagsInfo oldOffsetTagsInfo,
+                             BrowserControlsOffsetTagsInfo offsetTagsInfo,
+                             @BrowserControlsState int constraints) {
++                        // tennessine: this observes every tab. A hidden tab dropping its tags
++                        // only unregisters them from its own page; the toolbar keeps the
++                        // visible tab's tags.
++                        if (tab.isHidden() && !offsetTagsInfo.hasTags()) {
++                            WebContents hiddenContents = tab.getWebContents();
++                            if (hiddenContents != null) {
++                                hiddenContents.updateOffsetTagDefinitions(
++                                        new BrowserControlsOffsetTagDefinitions());
++                            }
++                            return;
++                        }
++                        mOffsetTagsOwner = tab;
+                         int hairlineHeight = getTopControlsHairlineHeight();
+                         offsetTagsInfo.mTopControlsAdditionalHeight = hairlineHeight;
+                         offsetTagsInfo.mContentConstraints =
+@@ -1466,8 +1480,12 @@ public class BrowserControlsManager implements ActivityStateListener, BrowserCon
+     private void updateOffsetTagDefinitions(BrowserControlsOffsetTagDefinitions newDefinitions) {
+         mOffsetTagDefinitions = newDefinitions;
+ 
+-        Tab tab = getTab();
+-        WebContents webContents = tab != null ? tab.getWebContents() : null;
++        // tennessine: to the tab the tags belong to. During a toolbar swipe there's no current
++        // tab for a moment; a tab shown then had its tags sent to no page, and viz never moved
++        // the toolbar while that page scrolled.
++        Tab tab = mOffsetTagsOwner;
++        WebContents webContents =
++                tab != null && !tab.isDestroyed() ? tab.getWebContents() : null;
+         if (webContents != null) {
+             webContents.updateOffsetTagDefinitions(mOffsetTagDefinitions);
+         }

@@ -1,0 +1,42 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/extensions/browser/unpacked_installer.cc b/extensions/browser/unpacked_installer.cc
+index c3626959..ebebbca1 100644
+--- a/extensions/browser/unpacked_installer.cc
++++ b/extensions/browser/unpacked_installer.cc
+@@ -325,8 +325,8 @@ bool UnpackedInstaller::LoadExtension(mojom::ManifestLocation location,
+       file_util::LoadExtension(extension_path_, location, flags, error);
+ 
+   return extension_ &&
+-         extension_l10n_util::ValidateExtensionLocales(
+-             extension_path_, *extension_->manifest()->value(), error) &&
++         (extension_path_.IsVirtualDocumentPath() || extension_l10n_util::ValidateExtensionLocales(
++             extension_path_, *extension_->manifest()->value(), error)) &&
+          IndexAndPersistRulesIfNeeded(error);
+ }
+ 
+diff --git a/extensions/common/extension_l10n_util.cc b/extensions/common/extension_l10n_util.cc
+index b9b0547c..6ce1453b 100644
+--- a/extensions/common/extension_l10n_util.cc
++++ b/extensions/common/extension_l10n_util.cc
+@@ -473,7 +473,7 @@ std::set<LanguageTag> GetValidLocales(const base::FilePath& locale_path,
+       locale_path, false, base::FileEnumerator::DIRECTORIES);
+   base::FilePath locale_folder;
+   std::set<LanguageTag> valid_locales;
+-  while (!(locale_folder = locales.Next()).empty()) {
++  while (!(locale_folder = locales.Next()).empty()) {if (locale_folder.IsContentUri()) { locale_folder = locale_path.Append(locales.GetInfo().GetName()); }
+     std::string locale_name = locale_folder.BaseName().MaybeAsASCII();
+     if (locale_name.empty()) {
+       NOTREACHED();  // Not ASCII.
+diff --git a/extensions/common/manifest_handlers/default_locale_handler.cc b/extensions/common/manifest_handlers/default_locale_handler.cc
+index f4783943..3d39b187 100644
+--- a/extensions/common/manifest_handlers/default_locale_handler.cc
++++ b/extensions/common/manifest_handlers/default_locale_handler.cc
+@@ -94,7 +94,7 @@ bool DefaultLocaleHandler::Validate(
+       extension_l10n_util::GzippedMessagesPermission::kAllowForTrustedSource;
+ 
+   base::FilePath locale_path;
+-  while (!(locale_path = locales.Next()).empty()) {
++  while (!(locale_path = locales.Next()).empty()) {if (locale_path.IsContentUri()) { locale_path = path.Append(locales.GetInfo().GetName()); }
+     if (extension_l10n_util::ShouldSkipValidation(path, locale_path,
+                                                   all_locales))
+       continue;

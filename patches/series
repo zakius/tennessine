@@ -1,0 +1,65 @@
+# Applied after Vanadium's patches (apply.sh). Paths from the repo root.
+
+# Titanium: its patch.sh, one patch per group. Ported by hand; titanium/ is the version they match.
+patches/titanium/manifest-tweaks.patch
+patches/titanium/dex-base-module-only.patch
+patches/titanium/restore-language-and-optimizer-settings.patch
+patches/titanium/intent-scheme-guard.patch
+patches/titanium/ntp-no-educational-tips.patch
+patches/titanium/unexpire-flags.patch
+patches/titanium/omnibox-site-search.patch
+patches/titanium/feature-overrides.patch
+patches/titanium/accessibility.patch
+patches/titanium/devtools-menu.patch
+patches/titanium/devtools-incognito.patch
+patches/titanium/background-playback.patch
+patches/titanium/ext-page-viewport.patch
+patches/titanium/ext-mv2.patch
+patches/titanium/ext-off-store-install.patch
+patches/titanium/ext-toolbar.patch
+patches/titanium/ext-popup.patch
+patches/titanium/ext-popup-fullscreen.patch
+patches/titanium/ext-pin.patch
+patches/titanium/ext-incognito.patch
+patches/titanium/ext-process-priority.patch
+patches/titanium/ext-settings-override.patch
+patches/titanium/ext-dialog.patch
+patches/titanium/ext-locale.patch
+patches/titanium/ext-ntp-override.patch
+patches/titanium/ext-app-api.patch
+patches/titanium/omnibox-phone-behaviour.patch
+patches/titanium/crbug-406136787-load-unpacked.patch
+patches/titanium/crbug-445475304-incognito-back.patch
+patches/titanium/crbug-431004500-incognito-uaf.patch
+patches/titanium/crbug-40274462-incognito-uaf.patch
+patches/titanium/crbug-444024982-api-31.patch
+
+# uBlock Origin: Helium's built-in uBO, shared with desktop oganesson.
+oganesson/patches/ungoogled-chromium/extensions-manifestv2.patch
+oganesson/patches/helium/core/add-component-l10n-support.patch
+oganesson/patches/helium/core/add-component-managed-schema-support.patch
+oganesson/patches/helium/core/prioritize-platform-policy-loading.patch
+oganesson/patches/helium/core/ublock-setup-sources.patch
+oganesson/patches/helium/core/ublock-install-as-component.patch
+oganesson/patches/helium/core/ublock-reconfigure-defaults.patch
+oganesson/patches/helium/core/ublock-dns-uncloaking.patch
+oganesson/patches/helium/ui/ublock-show-in-settings.patch
+patches/tennessine/ublock-assets-update.patch
+patches/tennessine/extensions-menu-component-only.patch
+
+# Firefox Sync from oganesson (src/chrome/browser/firefox_sync, rust/), ported to Android.
+patches/oganesson/keyword-bookmarks.patch
+patches/oganesson/firefox-sync.patch
+patches/tennessine/firefox-sync-native-lib.patch
+patches/tennessine/firefox-sync-android.patch
+
+# Ours and Cromite's.
+patches/tennessine/jit-allowed-by-default.patch
+patches/tennessine/ntp-keeps-toolbar-position.patch
+patches/tennessine/page-zoom-follows-font-size.patch
+patches/cromite/list-mode-tab-switcher.patch
+patches/tennessine/toolbar-items.patch
+patches/tennessine/toolbar-hide-on-scroll.patch
+patches/tennessine/toolbar-swipe-offset-tags.patch
+patches/tennessine/crash-log.patch
+patches/tennessine/bottom-first-ui.patch

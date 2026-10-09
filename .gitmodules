@@ -1,0 +1,9 @@
+[submodule "vanadium"]
+	path = vanadium
+	url = https://github.com/GrapheneOS/Vanadium.git
+[submodule "titanium"]
+	path = titanium
+	url = https://github.com/jqssun/android-titanium-browser.git
+[submodule "oganesson"]
+	path = oganesson
+	url = git@github.com:zakius/oganesson-focused.git

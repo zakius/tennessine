@@ -1,0 +1,73 @@
+# Patch decisions
+
+tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, Helium's built-in uBlock Origin, other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, and Firefox Sync. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
+
+## Sources
+
+| Source | How it's taken |
+|---|---|
+| [Vanadium](https://github.com/GrapheneOS/Vanadium) | The `vanadium` submodule; `apply.sh` applies its patches renamed to tennessine, minus `patches/vanadium-drops.txt` (with reasons). tennessine follows Vanadium's releases, which follow Chromium stable. |
+| [Titanium](https://github.com/jqssun/android-titanium-browser) | The `titanium` submodule, at the version `patches/titanium/*.patch` match: its `patch.sh` edits, one patch per group. The two that edit gclient dependencies, and the app icon, are in `post-sync.sh`. |
+| [Helium](https://github.com/imputnet/helium) | The uBlock Origin patches, from the `oganesson` submodule (desktop oganesson), as they are. |
+| oganesson | Firefox Sync (`src/`, `rust/`), ported to Android, and the keyword helpers it needs. |
+| [Cromite](https://github.com/uazo/cromite) | `patches/cromite/`: the list-mode tab switcher (adapted: always on, without Cromite's flag framework, without tab thumbnails). |
+
+## Vanadium
+
+Kept: its hardening (compiler flags, memory tagging, W^X, strict site and origin isolation), partitioning, attack-surface cuts (sensors, WebGPU, payments), DuckDuckGo as default search with seven engines, the local password store (Firefox Sync passwords build on it), bookmark import and export, the barcode detector without Play services, the WebRTC settings screen, and the off-by-default toggles for opening external links and custom tabs in incognito.
+
+Changed:
+
+- JavaScript JIT runs by default (`tennessine/jit-allowed-by-default`). Vanadium blocks it; the per-site setting stays.
+- HTTPS-Only is off (0119 dropped). It shows an error page when a site redirects `domain.tld` to `www.domain.tld` before HTTPS. Chromium's default upgrades to HTTPS silently and falls back to HTTP.
+
+Dropped:
+
+- The always-on subresource filter (0201-0203): uBlock Origin does the blocking.
+- GrapheneOS connectivity checks (0207-0211): outside GrapheneOS they send DNS and DoH probes to GrapheneOS's servers. Chromium's own Secure DNS setting stays.
+- Titanium's drops: Trichrome targets, GrapheneOS language and PDF integration, the config app's component server, and a few UI patches.
+
+Kept for now:
+
+- 0154, a toggle to close tabs on exit. Later privacy-settings patches build on it.
+- The GrapheneOS config-app framework and the WebView patches. They do nothing in this build (no config app, no WebView target), and later patches hook into them.
+
+## Titanium
+
+Kept: the extension support for phones (toolbar button, popups, pinning, MV2, Opera and Edge add-on installs, incognito, unpacked extensions from phone storage, the extensions page layout), DevTools on the phone, its fixes for Chromium bugs, accessibility fixes, un-expired flags, omnibox site search, the omnibox kept in phone behavior, and its feature overrides minus loading all tabs at startup.
+
+Dropped:
+
+- The bundled Titanium Extension, downloaded unpinned at build time. It installs from its repo like any extension.
+- Incognito as a separate window, from the desktop Android layout: private tabs stay in the tab switcher.
+- (`kLoadAllTabsAtStartup` was dropped at first, then restored: extensions crash on restored tabs without it.)
+- The software GL fallback for devices without GLES 3.
+
+## Dropped on 2026-10-09
+
+Update cost for features outside the list above: Cromite's full URL in the address bar, Delete browsing data on exit, and the View source and Bookmark all tabs menu items.
+
+## Not taken
+
+- Anti-fingerprinting patches (Cromite, Helium noise): they break sites, and the simplest reliable choice is none.
+- Cromite's adblockers (eyeo, Bromite): uBlock Origin.
+- Cromite's always-incognito mode.
+
+## Our own
+
+- `tennessine/jit-allowed-by-default`: see Vanadium above.
+- Firefox Sync as in oganesson: passwords, bookmarks, history, open tabs, addresses and payment methods, and a custom server address. Settings → Firefox Sync, at the top like Fenix's account row (`firefox-sync-android`). The Rust library is built for arm64 by `tools/build-sync-lib.sh` and packaged with the APK (`firefox-sync-native-lib`).
+- Page zoom follows Android's font size (`page-zoom-follows-font-size`): the zoom is Settings → Accessibility → Default zoom times Android's font scale, for the whole page, so a smaller Android font makes pages smaller as a smaller Android display size already does (Chromium's `AdjustForOSLevel`, shipped off). Tried first: text-only zoom, as Fennec's "Use system font size" (`git log` 2026-10-05); compared side by side on the maintainer's phone, whole-page zoom looked better. Pages capped at a max-width (purepc.pl's tiles, `max-width: 497px`) leave side gaps below 100%; a uBlock Origin `:style()` filter fixes that per site. Pages with a `text-scale` meta tag also scale their own text by the font scale, so it counts twice there. Changes apply on reload.
+- The new tab page keeps the address bar where the user put it (`ntp-keeps-toolbar-position`, #1).
+- Swiping the toolbar between tabs no longer leaves the toolbar stuck on screen while the page scrolls (`toolbar-swipe-offset-tags`, a Chromium bug with viz-driven browser controls).
+- Bottom-first UI with the address bar at the bottom (`bottom-first-ui`, #7): the app menu is reversed with its Back/Forward/Refresh row nearest the bar; typing in the address bar keeps it at the bottom above the keyboard, with suggestions on it, the best match nearest; the tab switcher's toolbar (new tab, tab count, grid toggle, search) sits below the tab list. Chromium moves the bar to the top while typing; its suggestion list already handled a bottom bar. With the bar at the top nothing changes.
+- The toolbar hides on scroll only when Settings → Toolbar layout → Hide toolbar on scroll is on; off by default. When on, it hides as soon as a page commits, without Chromium's extra 3-second lock (`toolbar-hide-on-scroll`).
+
+## Planned
+
+- Issues: what's left of the new tab page toolbar (#1); a customizable toolbar (#5; Chromium's own experiment is chrome://flags/#android-bottom-bar).
+- Helium bangs, when oganesson has its own bang list source.
+
+## Builds
+
+arm64 only, built locally (`local-build.sh`), published to this repo's GitHub Releases and updated on the phone with Obtainium.

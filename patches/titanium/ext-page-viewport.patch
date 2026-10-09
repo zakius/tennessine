@@ -1,0 +1,61 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/resources/extensions/extensions.html b/chrome/browser/resources/extensions/extensions.html
+index ac398cfc..f82494e0 100644
+--- a/chrome/browser/resources/extensions/extensions.html
++++ b/chrome/browser/resources/extensions/extensions.html
+@@ -4,6 +4,7 @@
+ <head>
+   <meta charset="utf8">
+   <meta name="color-scheme" content="light dark">
++<meta name="viewport" content="width=device-width">
+   <title>$i18n{title}</title>
+   <base href="chrome://extensions">
+   <link rel="stylesheet" href="chrome://resources/css/md_colors.css">
+diff --git a/chrome/browser/resources/extensions/item_list.css b/chrome/browser/resources/extensions/item_list.css
+index 05cc88e7..5bf72f67 100644
+--- a/chrome/browser/resources/extensions/item_list.css
++++ b/chrome/browser/resources/extensions/item_list.css
+@@ -10,7 +10,7 @@
+ 
+ .items-container,
+ #content-wrapper {
+-  --extensions-card-width: 400px;
++  --extensions-card-width: 96%;
+ }
+ 
+ #container {
+@@ -20,7 +20,7 @@
+ 
+ #content-wrapper {
+   min-width: var(--extensions-card-width);
+-  padding: 24px 60px 64px;
++  padding: 24px 0 64px;
+ }
+ 
+ #content-wrapper:has(extensions-review-panel),
+diff --git a/chrome/browser/resources/extensions/shared_vars.css b/chrome/browser/resources/extensions/shared_vars.css
+index 2c4ab401..713074f2 100644
+--- a/chrome/browser/resources/extensions/shared_vars.css
++++ b/chrome/browser/resources/extensions/shared_vars.css
+@@ -18,7 +18,7 @@ html {
+   --extensions-card-height: 160px;
+   --separator-gap: 9px;
+   --sidebar-width: 256px;
+-  --cr-toolbar-field-width: 680px;
++  --cr-toolbar-field-width: 96%;
+   --paper-grey-300: #e0e0e0;
+   --panel-icon-color: var(--google-grey-700);
+ }
+diff --git a/chrome/browser/resources/extensions/toggle_row.css b/chrome/browser/resources/extensions/toggle_row.css
+index bc5311b8..d59786d4 100644
+--- a/chrome/browser/resources/extensions/toggle_row.css
++++ b/chrome/browser/resources/extensions/toggle_row.css
+@@ -11,7 +11,7 @@
+ :host {
+   align-items: center;
+   display: flex;
+-  touch-action: none;
++  touch-action: pan-y;
+ }
+ 
+ input {

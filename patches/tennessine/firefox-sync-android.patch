@@ -1,0 +1,38 @@
+# Firefox Sync on Android: the settings screen joins chrome_java, its title string, and its
+# entry at the top of Settings, where Fenix shows the account.
+--- a/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
++++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
+@@ -6,6 +6,7 @@
+ # Three lines of code for minimizing conflicts in rebasing changes
+ # Three lines of code for minimizing conflicts in rebasing changes
+ chrome_java_ext_full_path_deps = [
++  "//chrome/browser/firefox_sync/android:java",
+   "//tennessine/android_config/parser:config_app_parser_java",
+   "//tennessine/android_config/proto:config_proto_java",
+   "//tennessine/chromium_src/base/settings/android:base_settings_java",
+--- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
++++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
+@@ -3,6 +3,9 @@
+  Use of this source code is governed by a GPLv2 only-style license that can be
+  found in the LICENSE file. -->
+ <grit-part>
++  <message name="IDS_FIREFOX_SYNC_TITLE" desc="Title of the Firefox Sync settings screen and its entry in Settings">
++    Firefox Sync
++  </message>
+   <message name="IDS_CLOSE_TABS_ON_EXIT_TITLE" desc="Title of closing tabs on exit menu item">
+     Close tabs on exit
+   </message>
+--- a/chrome/android/java/res/xml/main_preferences.xml
++++ b/chrome/android/java/res/xml/main_preferences.xml
+@@ -19,6 +19,11 @@
+         android:key="sign_in"
+         android:order="2"/>
+     <org.chromium.components.browser_ui.settings.ChromeBasePreference
++        android:fragment="org.chromium.chrome.browser.firefox_sync.FirefoxSyncSettings"
++        android:key="firefox_sync"
++        android:order="3"
++        android:title="@string/firefox_sync_title"/>
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
+         android:key="google_services"
+         android:order="4"
+         android:layout="@layout/account_management_account_row"

@@ -1,0 +1,14 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/ui/android/extensions/java/src/org/chromium/chrome/browser/ui/extensions/ExtensionInstallDialogBridge.java b/chrome/browser/ui/android/extensions/java/src/org/chromium/chrome/browser/ui/extensions/ExtensionInstallDialogBridge.java
+index b9b70552..3a414715 100644
+--- a/chrome/browser/ui/android/extensions/java/src/org/chromium/chrome/browser/ui/extensions/ExtensionInstallDialogBridge.java
++++ b/chrome/browser/ui/android/extensions/java/src/org/chromium/chrome/browser/ui/extensions/ExtensionInstallDialogBridge.java
+@@ -61,7 +61,7 @@ public class ExtensionInstallDialogBridge implements ModalDialogProperties.Contr
+         this.mPropertyModelBuilder =
+                 new PropertyModel.Builder(ModalDialogProperties.ALL_KEYS)
+                         .with(ModalDialogProperties.CONTROLLER, this)
+-                        .with(ModalDialogProperties.FILTER_TOUCH_FOR_SECURITY, true)
++                        .with(ModalDialogProperties.FILTER_TOUCH_FOR_SECURITY, false)
+                         .with(
+                                 ModalDialogProperties.BUTTON_TAP_PROTECTION_PERIOD_MS,
+                                 UiUtils.PROMPT_INPUT_PROTECTION_SHORT_DELAY_MS);

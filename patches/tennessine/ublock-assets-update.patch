@@ -1,0 +1,12 @@
+# Replaces helium/core/ublock-helium-services: no Helium servers, so filter lists
+# update from uBlock's own URLs (taken from oganesson's no-helium-services).
+--- a/third_party/ublock/assets/assets.json
++++ b/third_party/ublock/assets/assets.json
+@@ -3,6 +3,7 @@
+ 		"content": "internal",
+ 		"updateAfter": 13,
+ 		"contentURL": [
++			"https://raw.githubusercontent.com/imputnet/uBlock/refs/heads/main/assets/assets.json",
+ 			"assets/assets.json"
+ 		]
+ 	},

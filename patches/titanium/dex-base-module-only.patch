@@ -1,0 +1,14 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/build/config/android/rules.gni b/build/config/android/rules.gni
+index 64634bfe..a5841466 100644
+--- a/build/config/android/rules.gni
++++ b/build/config/android/rules.gni
+@@ -2745,7 +2745,7 @@ if (!is_robolectric && enable_java_templates) {
+ 
+     import("//tennessine/chromium_src/build/config/android/rules_ext.gni")
+     _srcjar_deps += android_apk_or_module_srcjar_deps_common
+-    if (!_omit_dex) {
++    if (_is_base_module && !_omit_dex) {
+       _srcjar_deps += android_apk_or_module_srcjar_deps_with_dex
+     }
+ 

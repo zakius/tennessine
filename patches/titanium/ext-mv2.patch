@@ -1,0 +1,40 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/common/extensions/api/api_sources.gni b/chrome/common/extensions/api/api_sources.gni
+index f9c79f21..03d1f153 100644
+--- a/chrome/common/extensions/api/api_sources.gni
++++ b/chrome/common/extensions/api/api_sources.gni
+@@ -60,6 +60,8 @@ if (enable_guest_view) {
+ # Schemas that should be used only to generate the JSON strings and function
+ # registration. These do not generate the strong C++ types.
+ uncompiled_sources_ = [
++  "browser_action.json",
++  "page_action.json",
+   "action.json",
+   "browsing_data.json",
+   "commands.json",
+diff --git a/extensions/browser/api/webstore_private/webstore_private_api.cc b/extensions/browser/api/webstore_private/webstore_private_api.cc
+index ad5ac45b..e99a8b38 100644
+--- a/extensions/browser/api/webstore_private/webstore_private_api.cc
++++ b/extensions/browser/api/webstore_private/webstore_private_api.cc
+@@ -1620,7 +1620,7 @@ ExtensionFunction::ResponseAction
+ WebstorePrivateGetMV2DeprecationStatusFunction::Run() {
+   return RespondNow(ArgumentList(
+       api::webstore_private::GetMV2DeprecationStatus::Results::Create(
+-          api::webstore_private::MV2DeprecationStatus::kHardDisable)));
++          api::webstore_private::MV2DeprecationStatus::kNone)));
+ }
+ 
+ #if !BUILDFLAG(IS_ANDROID)
+diff --git a/extensions/browser/manifest_v2_handler.cc b/extensions/browser/manifest_v2_handler.cc
+index d3d1b760..0ca8959e 100644
+--- a/extensions/browser/manifest_v2_handler.cc
++++ b/extensions/browser/manifest_v2_handler.cc
+@@ -32,7 +32,7 @@ namespace extensions {
+ namespace {
+ 
+ // Whether to override the MV2 deprecation for testing purposes.
+-bool g_allow_mv2_for_testing = false;
++bool g_allow_mv2_for_testing = true;
+ 
+ // Returns the suffix to use for histograms related to the manifest location
+ // grouping.

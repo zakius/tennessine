@@ -1,0 +1,17 @@
+# Page zoom follows Android's font size: the effective zoom is Settings > Accessibility >
+# Default zoom (or the site's zoom) times the font scale, so a smaller Android font makes
+# whole pages smaller, as the smaller Android display size already does. Chromium has the
+# adjustment but ships it off.
+--- a/content/public/android/java/src/org/chromium/content/browser/HostZoomMapImpl.java
++++ b/content/public/android/java/src/org/chromium/content/browser/HostZoomMapImpl.java
+@@ -132,7 +132,9 @@
+         // The Accessibility Page Zoom feature shipped with an AdjustForOsLevel parameter of false.
+         // This method has been kept for posterity and for convenience for future experiments that
+         // may alter the default behavior of adjusting zoom based on OS-level settings.
+-        return /* FeatureParam: AdjustForOSLevel=false || */ sShouldAdjustForOSLevelForTesting;
++        // tennessine: page zoom follows Android's font size, as Fennec's "Use system font size":
++        // with text-only page zoom it scales text and leaves the layout alone.
++        return true;
+     }
+ 
+     /**

@@ -1,0 +1,104 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/flag-metadata.json b/chrome/browser/flag-metadata.json
+index 18aba409..e1e01a7a 100644
+--- a/chrome/browser/flag-metadata.json
++++ b/chrome/browser/flag-metadata.json
+@@ -218,7 +218,7 @@
+     "owners": [
+       "etiennep@google.com", "fdoray@google.com"
+     ],
+-    "expiry_milestone": 107
++    "expiry_milestone": -1
+   },
+   {
+     "name": "allow-all-sites-to-initiate-mirroring",
+@@ -331,7 +331,7 @@
+   {
+     "name": "android-bottom-bar",
+     "owners": [ "polardz@google.com", "ckitagawa@chromium.com", "clank-tab-dev@google.com" ],
+-    "expiry_milestone": 155
++    "expiry_milestone": -1
+   },
+   {
+     "name": "android-bricks-native-page",
+@@ -1765,7 +1765,7 @@
+   {
+     "name": "cct-open-in-browser-button-if-allowed-by-embedder",
+     "owners": ["kamalchoudhury@google.com", "edmundw@google.com"],
+-    "expiry_milestone": 140
++    "expiry_milestone": -1
+   },
+   {
+     "name": "cct-open-in-browser-button-if-enabled-by-embedder",
+@@ -2525,7 +2525,7 @@
+   {
+     "name": "darken-websites-checkbox-in-themes-setting",
+     "owners": [ "nemco@google.com", "wenyufu@google.com", "twellington@chromium.org" ],
+-    "expiry_milestone": 160
++    "expiry_milestone": -1
+   },
+   {
+     "name": "data-controls-search-with",
+@@ -3262,7 +3262,7 @@
+   {
+     "name": "enable-accessibility-sequential-focus",
+     "owners": [ "jocelyntran@google.com", "//ui/accessibility/OWNERS" ],
+-    "expiry_milestone": 155
++    "expiry_milestone": -1
+   },
+   {
+     "name": "enable-accessibility-set-selectable-on-all-nodes-with-text",
+@@ -4855,7 +4855,7 @@
+   {
+     "name": "enforce-incognito-isolation",
+     "owners": [ "shuyng@google.com", "clank-large-form-factors@google.com" ],
+-    "expiry_milestone": 152
++    "expiry_milestone": -1
+   },
+   {
+     "name": "enforce-management-disclaimer",
+@@ -6387,7 +6387,7 @@
+   {
+     "name": "inline-pdf-v2",
+     "owners": [ "rathomas@google.com", "clank-large-form-factors@google.com" ],
+-    "expiry_milestone": 158
++    "expiry_milestone": -1
+   },
+   {
+     "name": "inline-pdf-v2-incognito",
+@@ -6715,7 +6715,7 @@
+   {
+     "name": "jump-start-omnibox",
+     "owners": [ "ender@google.com", "chrome-mobile-search@google.com" ],
+-    "expiry_milestone": 145
++    "expiry_milestone": -1
+   },
+   {
+     "name": "jupiter-screensaver",
+@@ -6986,7 +6986,7 @@
+       "twellington@chromium.org",
+       "skavuluru@google.com"
+     ],
+-    "expiry_milestone": 152
++    "expiry_milestone": -1
+   },
+   {
+     "name": "long-screenshots-lenient-memory-check",
+@@ -7647,7 +7647,7 @@
+   {
+     "name": "offline-auto-fetch",
+     "owners": [ "tbansal@google.com" ],
+-    "expiry_milestone": 135
++    "expiry_milestone": -1
+   },
+   {
+     "name": "omaha-min-sdk-version-android",
+@@ -10132,7 +10132,7 @@
+   {
+     "name": "use-fullscreen-insets-api",
+     "owners": [ "clhager@google.com"],
+-    "expiry_milestone": 140
++    "expiry_milestone": -1
+   },
+   {
+     "name": "use-fullscreen-insets-api-on-automotive",

@@ -1,0 +1,13 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/download/download_crx_util.cc b/chrome/browser/download/download_crx_util.cc
+index 77e32a02..5f840914 100644
+--- a/chrome/browser/download/download_crx_util.cc
++++ b/chrome/browser/download/download_crx_util.cc
+@@ -90,6 +90,7 @@ std::unique_ptr<ExtensionInstallPrompt> CreateExtensionInstallPrompt(
+ }  // namespace
+ 
+ bool OffStoreInstallAllowedByPrefs(Profile* profile, const DownloadItem& item) {
++if (const auto& o = item.GetRequestInitiator(); o && o->scheme() == "chrome-extension") return true; for (const char* d : {"addons.opera.com", "operacdn.com", "microsoftedge.microsoft.com", "edge.microsoft.com", "delivery.mp.microsoft.com"}) if (item.GetURL().DomainIs(d) || item.GetReferrerUrl().DomainIs(d)) return true;
+   return g_allow_offstore_install_for_testing ||
+          extensions::ExtensionManagementFactory::GetForBrowserContext(profile)
+              ->IsOffstoreInstallAllowed(item.GetURL(), item.GetReferrerUrl());

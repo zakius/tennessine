@@ -1,0 +1,134 @@
+# From oganesson (keyword-bookmarks), its platform-neutral half: the keyword helpers Firefox
+# Sync's bookmarks adapter uses, and keyword bookmarks in the omnibox. The desktop bookmark
+# dialog hunks are left out.
+--- a/components/bookmarks/browser/BUILD.gn
++++ b/components/bookmarks/browser/BUILD.gn
+@@ -47,6 +47,7 @@ static_library("browser") {
+     "bookmark_node_data.cc",
+     "bookmark_storage.cc",
+     "bookmark_utils.cc",
++    "bookmark_utils_keyword.cc",
+     "bookmark_uuids.cc",
+     "model_loader.cc",
+     "scoped_group_bookmark_actions.cc",
+--- a/components/bookmarks/browser/bookmark_utils.h
++++ b/components/bookmarks/browser/bookmark_utils.h
+@@ -9,6 +9,7 @@
+ #include <stdint.h>
+ 
+ #include <string>
++#include <utility>
+ #include <vector>
+ 
+ #include "base/location.h"
+@@ -217,6 +218,28 @@ const BookmarkNode* GetParentForNewNodes(BookmarkModel* model,
+ bool PruneFoldersForDisplay(const BookmarkModel* model,
+                             const BookmarkNode* node);
+ 
++// Firefox-style keyword bookmarks. A URL bookmark's keyword is kept in its
++// meta info. Keywords are lowercase, have no whitespace, and name one URL.
++inline constexpr char kKeywordMetaInfoKey[] = "oganesson.keyword";
++
++// The keyword of `node`, or "".
++std::u16string GetBookmarkKeyword(const BookmarkNode* node);
++
++// Sets the keyword of `node` and of every bookmark of its URL (normalized as
++// above), and removes it from other URLs. An empty keyword removes theirs.
++void SetBookmarkKeyword(BookmarkModel* model,
++                        const BookmarkNode* node,
++                        const std::u16string& keyword);
++
++// For omnibox text "keyword terms", the bookmark with that keyword and its
++// URL with "%s" replaced by the escaped terms ("%S" by the terms as typed).
++// Text that is the keyword alone replaces them with nothing. Terms after the
++// keyword of a bookmark without "%s" or "%S" don't match, so they stay a
++// search. Returns {nullptr, GURL()} without a match.
++std::pair<const BookmarkNode*, GURL> ResolveBookmarkKeyword(
++    const BookmarkModel* model,
++    const std::u16string& text);
++
+ }  // namespace bookmarks
+ 
+ #endif  // COMPONENTS_BOOKMARKS_BROWSER_BOOKMARK_UTILS_H_
+--- a/components/omnibox/browser/bookmark_provider.cc
++++ b/components/omnibox/browser/bookmark_provider.cc
+@@ -12,9 +12,12 @@
+ 
+ #include "base/feature_list.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/strings/escape.h"
+ #include "base/trace_event/trace_event.h"
+ #include "components/bookmarks/browser/bookmark_model.h"
++#include "components/bookmarks/browser/bookmark_utils.h"
+ #include "components/omnibox/browser/autocomplete_match.h"
++#include "components/omnibox/browser/autocomplete_match_classification.h"
+ #include "components/omnibox/browser/autocomplete_provider_client.h"
+ #include "components/omnibox/browser/autocomplete_result.h"
+ #include "components/omnibox/browser/keyword_provider.h"
+@@ -26,6 +29,7 @@
+ #include "components/omnibox/browser/titled_url_match_utils.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/query_parser/query_parser.h"
++#include "components/url_formatter/url_formatter.h"
+ #include "third_party/metrics_proto/omnibox_event.pb.h"
+ #include "third_party/metrics_proto/omnibox_focus_type.pb.h"
+ #include "third_party/metrics_proto/omnibox_input_type.pb.h"
+@@ -67,6 +71,10 @@ void BookmarkProvider::DoAutocomplete(const AutocompleteInput& input) {
+     return;
+   }
+ 
++  if (!input.in_keyword_mode()) {
++    AddKeywordBookmarkMatch(input);
++  }
++
+   // Retrieve enough bookmarks so that we have a reasonable probability of
+   // suggesting the one that the user desires.
+   const size_t kMaxBookmarkMatches = 50;
+@@ -149,6 +157,35 @@ void BookmarkProvider::DoAutocomplete(const AutocompleteInput& input) {
+   }
+ }
+ 
++void BookmarkProvider::AddKeywordBookmarkMatch(const AutocompleteInput& input) {
++  const auto [node, url] =
++      bookmarks::ResolveBookmarkKeyword(bookmark_model_, input.text());
++  if (!node) {
++    return;
++  }
++  // Above what-you-typed and search suggestions, as a keyword takes over the
++  // omnibox text in Firefox.
++  AutocompleteMatch match(this, 1500, /*deletable=*/false,
++                          AutocompleteMatchType::BOOKMARK_TITLE);
++  match.destination_url = url;
++  match.allowed_to_be_default_match = true;
++  const std::u16string formatted = url_formatter::FormatUrl(
++      url, AutocompleteMatch::GetFormatTypes(/*preserve_scheme=*/false,
++                                             /*preserve_subdomain=*/true),
++      base::UnescapeRule::SPACES, nullptr, nullptr, nullptr);
++  match.fill_into_edit = AutocompleteInput::FormattedStringWithEquivalentMeaning(
++      url, formatted, client_->GetSchemeClassifier(), nullptr);
++  match.contents = formatted;
++  match.contents_class = ClassifyTermMatches(
++      {}, match.contents.length(), ACMatchClassification::NONE,
++      ACMatchClassification::URL);
++  match.description = node->GetTitle();
++  match.description_class = ClassifyTermMatches(
++      {}, match.description.length(), ACMatchClassification::NONE,
++      ACMatchClassification::NONE);
++  matches_.push_back(std::move(match));
++}
++
+ query_parser::MatchingAlgorithm BookmarkProvider::GetMatchingAlgorithm(
+     AutocompleteInput input) {
+   if (omnibox::IsAndroidHubOrTabSearch(input.current_page_classification())) {
+--- a/components/omnibox/browser/bookmark_provider.h
++++ b/components/omnibox/browser/bookmark_provider.h
+@@ -52,6 +52,9 @@ class BookmarkProvider : public AutocompleteProvider {
+   // |matches_|.
+   void DoAutocomplete(const AutocompleteInput& input);
+ 
++  // Adds the match of a Firefox-style keyword bookmark ("keyword terms").
++  void AddKeywordBookmarkMatch(const AutocompleteInput& input);
++
+   // Allow short input word prefix matching only if the input is longer than 3
+   // chars.
+   query_parser::MatchingAlgorithm GetMatchingAlgorithm(AutocompleteInput input);

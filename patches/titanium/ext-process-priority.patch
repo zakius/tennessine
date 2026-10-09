@@ -1,0 +1,32 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/content/public/android/java/src/org/chromium/content/browser/ChildProcessLauncherHelperImpl.java b/content/public/android/java/src/org/chromium/content/browser/ChildProcessLauncherHelperImpl.java
+index f41197cf..845a1d64 100644
+--- a/content/public/android/java/src/org/chromium/content/browser/ChildProcessLauncherHelperImpl.java
++++ b/content/public/android/java/src/org/chromium/content/browser/ChildProcessLauncherHelperImpl.java
+@@ -349,7 +349,7 @@ public final class ChildProcessLauncherHelperImpl {
+     // This is the current computed importance from all the inputs from setPriority.
+     // The initial value is calculated from whether the process is sandboxed and is a spare
+     // renderer.
+-    private @ChildProcessImportance int mEffectiveImportance;
++    private @ChildProcessImportance int mEffectiveImportance;private final boolean mIsExtensionProcess;
+     private boolean mVisible;
+ 
+     private boolean mDroppedStrongBingingDueToBackgrounding;
+@@ -807,7 +807,7 @@ public final class ChildProcessLauncherHelperImpl {
+             mEffectiveImportance = ChildProcessImportance.IMPORTANT;
+         }
+ 
+-        if (!ApplicationStatus.isInitialized()) return;
++mIsExtensionProcess = Arrays.asList(commandLine).contains("--extension-process"); if (mIsExtensionProcess) mEffectiveImportance = ChildProcessImportance.IMPORTANT;        if (!ApplicationStatus.isInitialized()) return;
+         if (sWindowFocusListener == null
+                 && ContentFeatureList.sStrictHighRankProcessLRU.isEnabled()) {
+             PostTask.postTask(
+@@ -934,7 +934,7 @@ public final class ChildProcessLauncherHelperImpl {
+             boolean boostForPendingViews,
+             boolean boostForLoading,
+             boolean isSpareRenderer,
+-            @ChildProcessImportance int importance) {
++            @ChildProcessImportance int importance) {if (mIsExtensionProcess) importance = ChildProcessImportance.IMPORTANT;
+         assert LauncherThread.runningOnLauncherThread();
+         assert mLauncher.getPid() == pid
+                 : "The provided pid ("

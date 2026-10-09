@@ -1,0 +1,14 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/magic_stack/android/java/src/org/chromium/chrome/browser/magic_stack/HomeModulesConfigManager.java b/chrome/browser/magic_stack/android/java/src/org/chromium/chrome/browser/magic_stack/HomeModulesConfigManager.java
+index 0d80babf..524713c1 100644
+--- a/chrome/browser/magic_stack/android/java/src/org/chromium/chrome/browser/magic_stack/HomeModulesConfigManager.java
++++ b/chrome/browser/magic_stack/android/java/src/org/chromium/chrome/browser/magic_stack/HomeModulesConfigManager.java
+@@ -86,7 +86,7 @@ public class HomeModulesConfigManager {
+      * @param moduleType {@link ModuleType} needed to be notified to the listeners.
+      */
+     public boolean getPrefModuleTypeEnabled(@ModuleType int moduleType) {
+-        return mSharedPreferencesManager.readBoolean(getSettingsPreferenceKey(moduleType), true);
++        return mSharedPreferencesManager.readBoolean(getSettingsPreferenceKey(moduleType), !HomeModulesUtils.belongsToEducationalTipModule(moduleType));
+     }
+ 
+     /**

@@ -1,0 +1,13 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/extensions/api/tabs/tabs_api.cc b/chrome/browser/extensions/api/tabs/tabs_api.cc
+index d225b392..1a8572ff 100644
+--- a/chrome/browser/extensions/api/tabs/tabs_api.cc
++++ b/chrome/browser/extensions/api/tabs/tabs_api.cc
+@@ -1858,6 +1858,7 @@ base::ListValue TabsQueryFunction::BuildTabList(
+     }
+ 
+     TabListInterface* tab_list = TabListInterface::From(browser);
++if (!tab_list) { continue; }
+     for (int i = 0; i < tab_list->GetTabCount(); ++i) {
+       if (tab_index > -1 && i != tab_index) {
+         continue;

@@ -1,0 +1,31 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java b/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
+index 4c333860..af315640 100644
+--- a/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
++++ b/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
+@@ -71,8 +71,6 @@ final class PrivacySettingsExt {
+                 prefFragment, PrivacySettings.PREF_SYNC_AND_SERVICES_LINK);
+         SettingsExtUtils.safelyRemovePreference(
+                 prefFragment, PrivacySettings.PREF_PRIVACY_GUIDE);
+-        SettingsExtUtils.safelyRemovePreference(
+-                prefFragment, PrivacySettings.PREF_JAVASCRIPT_OPTIMIZER);
+         SettingsExtUtils.safelyRemovePreference(
+                 prefFragment, PrivacySettings.PREF_PASSWORD_LEAK_DETECTION);
+     }
+diff --git a/tennessine/chromium_src/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettingsExt.java b/tennessine/chromium_src/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettingsExt.java
+index 1781b1f6..9827d75a 100644
+--- a/tennessine/chromium_src/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettingsExt.java
++++ b/tennessine/chromium_src/chrome/browser/language/android/java/src/org/chromium/chrome/browser/language/settings/LanguageSettingsExt.java
+@@ -21,12 +21,6 @@ final class LanguageSettingsExt {
+ 
+     static void removePreferences(PreferenceFragmentCompat prefFragment, Profile profile) {
+         ThreadUtils.checkUiThread();
+-        SettingsExtUtils.safelyRemovePreference(prefFragment, LanguageSettings.TRANSLATE_SWITCH_KEY);
+-        SettingsExtUtils.safelyRemovePreference(prefFragment, "translation_settings_section");
+-        SettingsExtUtils.safelyRemovePreference(prefFragment, LanguageSettings.TRANSLATION_ADVANCED_SECTION);
+-        SettingsExtUtils.safelyRemovePreference(prefFragment, LanguageSettings.TARGET_LANGUAGE_KEY);
+-        SettingsExtUtils.safelyRemovePreference(prefFragment, LanguageSettings.ALWAYS_LANGUAGES_KEY);
+-        SettingsExtUtils.safelyRemovePreference(prefFragment, LanguageSettings.NEVER_LANGUAGES_KEY);
+     }
+ 
+     public static void onContentLanguagesPreferenceDataUpdated() {

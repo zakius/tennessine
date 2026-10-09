@@ -1,0 +1,13 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/base/android/java/src/org/chromium/base/VirtualDocumentPath.java b/base/android/java/src/org/chromium/base/VirtualDocumentPath.java
+index 7a440c98..504295de 100644
+--- a/base/android/java/src/org/chromium/base/VirtualDocumentPath.java
++++ b/base/android/java/src/org/chromium/base/VirtualDocumentPath.java
+@@ -165,6 +165,7 @@ class VirtualDocumentPath {
+         Uri tree = DocumentsContract.buildTreeDocumentUri(mAuthority, treeId);
+         String documentId = DocumentsContract.getTreeDocumentId(tree);
+         assert treeId.equals(documentId);
++ if ("com.android.externalstorage.documents".equals(mAuthority)) { String fastId = mRelativePath.isEmpty() ? treeId : (treeId.endsWith(":") ? treeId + mRelativePath : treeId + "/" + mRelativePath); Uri fast = DocumentsContract.buildDocumentUriUsingTree(tree, fastId); return contentUriExists(fast) ? fast : null; }
+ 
+         // TODO(crbug.com/406136787): create a fast path for com.android.externalstorage.documents,
+         // which is known to use the relative paths directly as document IDs.

@@ -1,0 +1,25 @@
+# Vanadium patches left out of patches/series. One per line: glob<TAB>reason.
+# tools/update_vanadium.sh writes them into the series as comments.
+*trichrome-apk-build-targets.patch	Trichrome is GrapheneOS's system build; tennessine is a standalone APK (Titanium)
+*trichrome-browser-apk-targets.patch	Trichrome is GrapheneOS's system build (Titanium)
+*detailed-language*.patch	GrapheneOS language settings (Titanium)
+*supported-language*.patch	GrapheneOS language settings (Titanium)
+*javascript-optimizer-site-setting.patch	keeps upstream's JavaScript optimizer setting (Titanium)
+*javascript-optimizer-settings-UI.patch	keeps upstream's JavaScript optimizer setting (Titanium)
+*component-updates.patch	vanadium.app component server; Chromium's own is used (Titanium)
+*pdf*.patch	GrapheneOS PDF viewer integration (Titanium)
+*PDF*.patch	GrapheneOS PDF viewer integration (Titanium)
+*for-content-public*.patch	(Titanium)
+*toolbar-button*.patch	(Titanium)
+*configs-from-config-app*.patch	GrapheneOS config app (Titanium)
+*new-tab-card*.patch	(Titanium)
+*predictive-back*.patch	(Titanium)
+0119-Make-HTTPS-only-mode-the-default.patch	HTTPS-Only breaks misconfigured redirect chains; Chromium's silent HTTPS upgrade with HTTP fallback instead
+0201-don-t-show-subresource-filter-UI-for-site.patch	built-in content filter: uBO does the blocking
+0202-enable-subresource-filter-on-all-sites.patch	built-in content filter: uBO does the blocking
+0203-Use-the-old-naming-convention-of-Ads-in-ads-site-set.patch	built-in content filter: uBO does the blocking
+0207-net-layer-for-fetching-OS-connectivity-check-setting.patch	GrapheneOS connectivity checks; Chromium's own Secure DNS
+0208-Respect-connectivity-check-setting-on-DNS-over-HTTPS.patch	GrapheneOS connectivity checks
+0209-Respect-connectivity-check-setting-on-dns_probe_runn.patch	GrapheneOS connectivity checks
+0210-Respect-connectivity-check-setting-on-browser-connec.patch	GrapheneOS connectivity checks
+0211-Respect-connectivity-check-setting-on-when-to-run-go.patch	GrapheneOS connectivity checks

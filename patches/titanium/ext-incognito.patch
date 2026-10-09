@@ -1,0 +1,14 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/extensions/browser/process_manager.cc b/extensions/browser/process_manager.cc
+index d097a456..c02da31e 100644
+--- a/extensions/browser/process_manager.cc
++++ b/extensions/browser/process_manager.cc
+@@ -212,7 +212,7 @@ ProcessManager::ProcessManager(BrowserContext* context,
+ 
+   // Only the original profile needs to listen for ready to create background
+   // pages for all spanning extensions.
+-  if (!context->IsOffTheRecord()) {
++  if (true) {
+     ExtensionSystem::Get(context)->ready().Post(
+         FROM_HERE,
+         base::BindOnce(&ProcessManager::MaybeCreateStartupBackgroundHosts,

@@ -1,0 +1,27 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabStateBrowserControlsVisibilityDelegate.java b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabStateBrowserControlsVisibilityDelegate.java
+index aca2c0f6..9f3077b4 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabStateBrowserControlsVisibilityDelegate.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabStateBrowserControlsVisibilityDelegate.java
+@@ -297,7 +297,7 @@ public class TabStateBrowserControlsVisibilityDelegate extends BrowserControlsVi
+         }
+         // TODO(tedchoc): AccessibilityUtil and DeviceClassManager checks do not belong in Tab
+         //                logic.  They should be moved to application level checks.
+-        if (ChromeAccessibilityUtil.get().isAccessibilityEnabled()) {
++        if (org.chromium.ui.accessibility.AccessibilityState.isComplexUserInteractionServiceEnabled() || org.chromium.ui.accessibility.AccessibilityState.isTouchExplorationEnabled()) {
+             enableHidingBrowserControls = false;
+             flags |= (1 << (int) LockReason.A11Y_ENABLED);
+         }
+diff --git a/chrome/browser/ui/messages/android/java/src/org/chromium/chrome/browser/ui/messages/snackbar/SnackbarManager.java b/chrome/browser/ui/messages/android/java/src/org/chromium/chrome/browser/ui/messages/snackbar/SnackbarManager.java
+index 52a9f1e3..51880be3 100644
+--- a/chrome/browser/ui/messages/android/java/src/org/chromium/chrome/browser/ui/messages/snackbar/SnackbarManager.java
++++ b/chrome/browser/ui/messages/android/java/src/org/chromium/chrome/browser/ui/messages/snackbar/SnackbarManager.java
+@@ -578,7 +578,7 @@ public class SnackbarManager
+         // If a11y is on, set a longer minimum duration; otherwise, use the recommended timeout
+         // duration.
+         int minDuration =
+-                AccessibilityState.isPerformGesturesEnabled()
++                (AccessibilityState.isComplexUserInteractionServiceEnabled() || AccessibilityState.isTouchExplorationEnabled())
+                         ? sAccessibilitySnackbarDurationMs
+                         : durationMs;
+ 

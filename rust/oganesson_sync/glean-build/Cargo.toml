@@ -1,0 +1,6 @@
+[package]
+name = "glean-build"
+version = "20.1.0"
+edition = "2021"
+license = "MPL-2.0"
+publish = false

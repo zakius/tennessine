@@ -1,0 +1,13 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/common/extensions/api/_api_features.json b/chrome/common/extensions/api/_api_features.json
+index e056870c..1142ee44 100644
+--- a/chrome/common/extensions/api/_api_features.json
++++ b/chrome/common/extensions/api/_api_features.json
+@@ -100,6 +100,7 @@
+     "dependencies": ["permission:glicPrivate.invoke"]
+   },
+   "app": {
++    "platforms": ["chromeos", "linux", "mac", "win"],
+     "blocklist": [
+       "2FC374607C2DF285634B67C64A2E356C607091C3",  // Quickoffice
+       "3727DD3E564B6055387425027AD74C58784ACC15",  // Quickoffice internal

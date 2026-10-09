@@ -1,0 +1,19 @@
+# Packages Firefox Sync's library (tools/build-sync-lib.sh) with the APK's native libraries.
+--- a/chrome/android/chrome_public_apk_tmpl.gni
++++ b/chrome/android/chrome_public_apk_tmpl.gni
+@@ -380,7 +380,15 @@
+       deps += [ "//chrome/android:product_version_resources" ]
+     }
+ 
+     loadable_modules = []
++    # Firefox Sync's library, built by tennessine's tools/build-sync-lib.sh
++    # before the compile: arm64, and x64 for the emulator. It sits in the source
++    # tree: GN rejects files in the output folder that no target generates.
++    if (target_cpu == "arm64") {
++      loadable_modules += [ "//tennessine/sync_lib/liboganesson_sync.so" ]
++    } else if (target_cpu == "x64") {
++      loadable_modules += [ "//tennessine/sync_lib/x64/liboganesson_sync.so" ]
++    }
+     if (android_64bit_target_cpu) {
+       secondary_abi_loadable_modules = []
+     }

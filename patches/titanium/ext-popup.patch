@@ -1,0 +1,42 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListCoordinator.java b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListCoordinator.java
+index d9da4869..76e98f16 100644
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListCoordinator.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListCoordinator.java
+@@ -225,6 +225,7 @@ public class ExtensionActionListCoordinator implements Destroyable {
+     }
+ 
+     public class RecyclerViewDelegate {
++public View getContainerView() { return mContainer; }
+         /**
+          * Retrieves the view representing the button for a specific extension action.
+          *
+diff --git a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListMediator.java b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListMediator.java
+index 2740f9c9..a8612230 100644
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListMediator.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionActionListMediator.java
+@@ -707,7 +707,7 @@ class ExtensionActionListMediator implements Destroyable {
+ 
+         ListMenuButton buttonView =
+                 (ListMenuButton) mRecyclerViewDelegate.getButtonViewForId(actionId);
+-        if (buttonView == null) {
++        if (false) {
+             contents.destroy();
+             mActionState = new ActionState.Idle();
+             undoPopout();
+@@ -725,13 +725,13 @@ class ExtensionActionListMediator implements Destroyable {
+         // the "pressed" look while loading the action popup too. For context menu {@link
+         // ListMenuButton} already handles this, but not for popup where we show the window
+         // ourselves.
+-        buttonView.setIsPressed(true);
++        if (buttonView != null) buttonView.setIsPressed(true);
+ 
+         ExtensionActionPopup popup =
+                 new ExtensionActionPopup(
+                         activity,
+                         mWindowAndroid,
+-                        buttonView,
++                       buttonView != null ? buttonView : mRecyclerViewDelegate.getContainerView(),
+                         actionId,
+                         contents,
+                         mContextMenuPopulatorFactory,

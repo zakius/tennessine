@@ -1,0 +1,39 @@
+# Copyright 2026 The tennessine Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Settings → Firefox Sync. Joins chrome_java through Vanadium's
+# chrome_java_ext_deps.gni (tennessine/firefox-sync-android.patch); the JNI
+# side, firefox_sync_bridge.cc, is in //chrome/browser/firefox_sync.
+
+import("//build/config/android/rules.gni")
+import("//third_party/jni_zero/jni_zero.gni")
+
+_sources = [
+  "java/src/org/chromium/chrome/browser/firefox_sync/FirefoxSyncBridge.java",
+  "java/src/org/chromium/chrome/browser/firefox_sync/FirefoxSyncSettings.java",
+]
+
+generate_jni("jni_headers") {
+  sources = [
+    "java/src/org/chromium/chrome/browser/firefox_sync/FirefoxSyncBridge.java",
+  ]
+}
+
+android_library("java") {
+  srcjar_deps = [ ":jni_headers" ]
+  sources = _sources
+  deps = [
+    "//base:base_java",
+    "//base:supplier_java",
+    "//build/android:build_java",
+    "//chrome/browser/profiles/android:java",
+    "//chrome/browser/settings:java",
+    "//chrome/browser/ui/android/strings:ui_strings_grd",
+    "//components/browser_ui/settings/android:java",
+    "//third_party/androidx:androidx_appcompat_appcompat_java",
+    "//third_party/androidx:androidx_preference_preference_java",
+    "//third_party/jni_zero:jni_zero_java",
+  ]
+  resources_package = "org.chromium.chrome"
+}

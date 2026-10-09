@@ -1,0 +1,14 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/back_press/android/java/src/org/chromium/chrome/browser/back_press/MinimizeAppAndCloseTabBackPressHandler.java b/chrome/browser/back_press/android/java/src/org/chromium/chrome/browser/back_press/MinimizeAppAndCloseTabBackPressHandler.java
+index 2db787ec..41f47924 100644
+--- a/chrome/browser/back_press/android/java/src/org/chromium/chrome/browser/back_press/MinimizeAppAndCloseTabBackPressHandler.java
++++ b/chrome/browser/back_press/android/java/src/org/chromium/chrome/browser/back_press/MinimizeAppAndCloseTabBackPressHandler.java
+@@ -251,7 +251,7 @@ public class MinimizeAppAndCloseTabBackPressHandler
+         mActivityTabSupplier.removeObserver(mOnTabChanged);
+     }
+ 
+-    private void onTabChanged(@Nullable Tab tab) {
++    private void onTabChanged(@Nullable Tab tab) { if (tab != null && tab.isIncognitoBranded()) { mSystemBackPressSupplier.set(true); return; }
+         if (supportCloseTabUponMinimization()) {
+             Pair<Boolean, Boolean> backPressAction = determineBackPressAction(tab);
+             boolean minimizeApp = backPressAction.first;

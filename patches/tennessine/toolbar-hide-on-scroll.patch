@@ -1,0 +1,42 @@
+# Settings > Toolbar layout > Hide toolbar on scroll (src/chrome/browser/toolbar_items), off by
+# default: while off, the toolbar stays on every page. While on, hiding works as soon as a
+# navigation commits; Chromium kept the toolbar locked 3 s more, so it seemed not to hide on
+# pages like purepc.pl, and a transient show (tab switch, return to the app) held it 3 s.
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabStateBrowserControlsVisibilityDelegate.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabStateBrowserControlsVisibilityDelegate.java
+@@ -48,7 +48,9 @@
+     protected static final int MSG_ID_ENABLE_FULLSCREEN_AFTER_LOAD = 1;
+ 
+     /** The maximum amount of time to wait for a page to load before entering fullscreen. */
+-    private static final long MAX_FULLSCREEN_LOAD_DELAY_MS = 3000;
++    // tennessine: no extra 3 s lock after each navigation; hiding works once it commits, as in
++    // Fenix.
++    private static final long MAX_FULLSCREEN_LOAD_DELAY_MS = 0;
+ 
+     // These values are persisted to logs. Entries should not be renumbered and
+     // numeric values should never be reused.
+@@ -301,6 +303,11 @@
+             enableHidingBrowserControls = false;
+             flags |= (1 << (int) LockReason.A11Y_ENABLED);
+         }
++        // tennessine: Settings > Toolbar layout > Hide toolbar on scroll, off by default.
++        if (!org.chromium.base.ContextUtils.getAppSharedPreferences()
++                .getBoolean("tennessine.toolbar.hide_on_scroll", false)) {
++            enableHidingBrowserControls = false;
++        }
+         if (!DeviceClassManager.enableFullscreen()) {
+             enableHidingBrowserControls = false;
+             flags |= (1 << (int) LockReason.FULLSCREEN_DISABLED);
+--- a/chrome/browser/browser_controls/android/java/src/org/chromium/chrome/browser/browser_controls/BrowserStateBrowserControlsVisibilityDelegate.java
++++ b/chrome/browser/browser_controls/android/java/src/org/chromium/chrome/browser/browser_controls/BrowserStateBrowserControlsVisibilityDelegate.java
+@@ -28,7 +28,9 @@ import org.chromium.ui.util.TokenHolder;
+ public class BrowserStateBrowserControlsVisibilityDelegate extends BrowserControlsVisibilityDelegate
+         implements Destroyable {
+     /** Minimum duration (in milliseconds) that the controls are shown when requested. */
+-    @VisibleForTesting public static final long MINIMUM_SHOW_DURATION_MS = 3000;
++    // tennessine: a transient show (tab switch, return to the app) only reveals the toolbar; the
++    // next scroll can hide it again, as in Fenix.
++    @VisibleForTesting public static final long MINIMUM_SHOW_DURATION_MS = 0;
+ 
+     private static boolean sDisableOverridesForTesting;
+ 

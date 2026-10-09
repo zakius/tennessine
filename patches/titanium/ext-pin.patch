@@ -1,0 +1,21 @@
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+diff --git a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
+index 770a58b5..000265df 100644
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
+@@ -191,6 +191,7 @@ public class ExtensionsToolbarCoordinatorImpl
+         mPrefChangeRegistrar = PrefServiceUtil.createFor(profile);
+         mPrefChangeRegistrar.addObserver(
+                 Pref.PIN_EXTENSIONS_MENU_BUTTON, this::updateMenuButtonPinState);
++if (!mPrefService.getBoolean(Pref.PIN_EXTENSIONS_MENU_BUTTON)) { mContainer.findViewById(R.id.extensions_menu_button).setVisibility(View.GONE); }
+         context.registerComponentCallbacks(this);
+         mWasWindowCompact =
+                 context.getResources().getConfiguration().screenWidthDp
+@@ -504,6 +505,7 @@ public class ExtensionsToolbarCoordinatorImpl
+             // Trigger layout and wait for the toolbar to provide us with width allocation.
+             ViewUtils.requestLayout(
+                     mContainer, "ExtensionsToolbarCoordinatorImpl.requestLayoutWithViewUtils()");
++if (!isMenuButtonPinned()) { mContainer.findViewById(R.id.extensions_menu_button).setVisibility(View.GONE); }
+         }
+     }
+ 
