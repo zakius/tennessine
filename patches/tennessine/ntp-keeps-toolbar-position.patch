@@ -3,7 +3,7 @@
 # toolbar keeps its address bar there too, as on tablets, and the page's own search box is gone.
 --- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
 +++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
-@@ -664,8 +664,8 @@
+@@ -675,8 +675,8 @@
              boolean doesUserPreferTopToolbar,
              @ControlsPosition int currentPosition) {
          @ControlsPosition int newControlsPosition;
@@ -13,10 +13,10 @@
 +        if (tabSwitcherShowing
                  || isOmniboxFocused
                  || isFindInPageShowing
-                 || doesUserPreferTopToolbar) {
+                 || (isPictureInPictureShowing
 --- a/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPage.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPage.java
-@@ -856,7 +856,8 @@ public class NewTabPage
+@@ -856,7 +856,8 @@
       *     NTP.
       */
      public static boolean isInSingleUrlBarMode(boolean isLff) {
@@ -28,7 +28,7 @@
      /**
 --- a/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPageCoordinator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/ntp/NewTabPageCoordinator.java
-@@ -416,6 +416,8 @@ public class NewTabPageCoordinator implements ModuleDelegateHost {
+@@ -417,6 +417,8 @@
                          mProfile,
                          mBackPressManager);
          mModel.set(NewTabPageLayoutProperties.SEARCH_BOX_VIEW, mNtpSearchBox.getView());

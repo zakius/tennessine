@@ -35,8 +35,12 @@ dropped() {
 fail=0
 apply() {  # NAME < patch
   if err=$(git apply --whitespace=nowarn 2>&1); then echo "ok    $1"
-  else echo "FAIL  $1"; echo "$err" | sed 's/^/      /'; fail=1; [ -n "$STOP" ] && exit 1; fi
+  else echo "FAIL  $1"; echo "$err" | sed 's/^/      /'; fail=1; if [ -n "$STOP" ]; then exit 1; fi; fi
 }
+# A drop that matches nothing: Vanadium renamed or removed the patch.
+cut -f1 "$ROOT/patches/vanadium-drops.txt" | grep -v '^#' | while read -r glob; do
+  compgen -G "$ROOT/vanadium/patches/$glob" >/dev/null || echo "WARN  no Vanadium patch matches drop $glob"
+done
 for p in "$ROOT"/vanadium/patches/*.patch; do
   dropped "$(basename "$p")" && continue
   apply "vanadium/${p##*/}" < <(sed 's/VANADIUM/TENNESSINE/g; s/Vanadium/Tennessine/g; s/vanadium/tennessine/g' "$p")

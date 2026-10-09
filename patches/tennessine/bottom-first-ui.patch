@@ -42,7 +42,7 @@
  
 --- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
 +++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/ToolbarPositionController.java
-@@ -664,9 +664,9 @@
+@@ -675,9 +675,9 @@
              boolean doesUserPreferTopToolbar,
              @ControlsPosition int currentPosition) {
          @ControlsPosition int newControlsPosition;
@@ -52,8 +52,8 @@
          if (tabSwitcherShowing
 -                || isOmniboxFocused
                  || isFindInPageShowing
-                 || doesUserPreferTopToolbar) {
-             newControlsPosition = ControlsPosition.TOP;
+                 || (isPictureInPictureShowing
+                         && ChromeFeatureList.sPictureInPictureMovesToolbarAndroid.isEnabled())
 --- a/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/suggestions/OmniboxSuggestionsDropdownEmbedder.java
 +++ b/chrome/browser/ui/android/omnibox/java/src/org/chromium/chrome/browser/omnibox/suggestions/OmniboxSuggestionsDropdownEmbedder.java
 @@ -145,4 +145,12 @@
@@ -150,7 +150,7 @@
  
          ProfileProvider profileProvider = profileProviderSupplier.get();
          assert profileProvider != null;
-@@ -477,6 +488,48 @@
+@@ -480,6 +491,48 @@
          return (Callback<T>) callback;
      }
  

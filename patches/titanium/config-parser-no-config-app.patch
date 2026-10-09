@@ -1,0 +1,12 @@
+# From Titanium's patch.sh (v155.0.8059.39): no package counts as GrapheneOS's config app.
+--- a/tennessine/android_config/parser/java/src/app/tennessine/config/TennessineConfParser.java
++++ b/tennessine/android_config/parser/java/src/app/tennessine/config/TennessineConfParser.java
+@@ -308,7 +308,7 @@
+                 ConfigInfo.CONFIG_APK_SHA256_CERTDIGEST);
+     }
+ 
+-    private static boolean verifyPackage(Context ctx, String pkgName, byte[] sha256CertDigestBytes) {
++    private static boolean verifyPackage(Context ctx, String pkgName, byte[] sha256CertDigestBytes) { if (true) return false;
+         return ctx.getPackageManager().hasSigningCertificate(
+                 pkgName, sha256CertDigestBytes, PackageManager.CERT_INPUT_SHA256);
+     }

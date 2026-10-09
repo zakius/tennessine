@@ -2,7 +2,7 @@
 # without its flag and settings toggle, and without tab thumbnails.
 --- a/chrome/android/features/tab_ui/BUILD.gn
 +++ b/chrome/android/features/tab_ui/BUILD.gn
-@@ -51,6 +51,8 @@
+@@ -53,6 +53,8 @@
      "java/res/drawable/pinned_tab_strip_item_background.xml",
      "java/res/drawable/price_card_background.xml",
      "java/res/drawable/price_card_scrim.xml",
@@ -11,7 +11,7 @@
      "java/res/drawable/tab_grid_card_background.xml",
      "java/res/drawable/tab_grid_card_highlight.xml",
      "java/res/drawable/tab_grid_dialog_background.xml",
-@@ -123,6 +125,8 @@
+@@ -126,6 +128,8 @@
      "java/res/layout/tab_group_visual_data_dialog.xml",
      "java/res/layout/tab_group_visual_data_text_input_layout.xml",
      "java/res/layout/tab_hover_card_holder.xml",
@@ -90,10 +90,10 @@
      <dimen name="tab_list_selected_margin">7dp</dimen>
      <dimen name="tab_grid_price_card_radius">4dp</dimen>
 +    <dimen name="tab_list_card_radius">4dp</dimen>
-     <dimen name="tab_list_mini_card_radius">4dp</dimen>
-     <dimen name="tab_list_mini_card_frame_size">1dp</dimen>
      <dimen name="tab_grid_close_button_size">18dp</dimen>
-@@ -42,6 +44,8 @@
+     <dimen name="tab_grid_dialog_min_margin">16dp</dimen>
+     <dimen name="tab_grid_dialog_max_margin">85dp</dimen>
+@@ -30,6 +32,8 @@
      <dimen name="swipe_to_dismiss_threshold">144dp</dimen>
      <dimen name="long_press_cancel_threshold">20dp</dimen>
      <dimen name="selection_tab_grid_toggle_button_inset">14dp</dimen>
@@ -102,7 +102,7 @@
  
      <!-- Dimens for incognito reauth promo message icon -->
      <dimen name="incognito_reauth_promo_message_icon_width">52dp</dimen>
-@@ -113,6 +117,7 @@
+@@ -100,6 +104,7 @@
      <dimen name="tab_card_label_icon_inset">3dp</dimen>
      <dimen name="tab_card_label_icon_radius">8dp</dimen>
      <dimen name="tab_card_label_height">24dp</dimen>
@@ -110,8 +110,8 @@
      <dimen name="tab_card_label_elev">6dp</dimen>
  
      <!-- Dimens for TabGroupSync features -->
---- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/pinned_tabs_strip/PinnedTabStripCoordinator.java
-+++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/pinned_tabs_strip/PinnedTabStripCoordinator.java
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/pinned_tabs/PinnedTabStripCoordinator.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/pinned_tabs/PinnedTabStripCoordinator.java
 @@ -32,6 +32,7 @@
  import org.chromium.chrome.browser.tasks.tab_management.TabListModel;
  import org.chromium.chrome.browser.tasks.tab_management.TabListRecyclerView;
@@ -155,7 +155,7 @@
  }
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridDialogCoordinator.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridDialogCoordinator.java
-@@ -237,7 +237,9 @@
+@@ -234,7 +234,9 @@
              // take in a mode parameter instead.
              mTabListCoordinator =
                      new TabListCoordinator(
@@ -166,27 +166,6 @@
                              activity,
                              mBrowserControlsStateProvider,
                              mModalDialogManager,
-@@ -354,6 +356,11 @@
-                     : "SnackbarManager should have been created or the activity was already"
-                             + " finishing.";
- 
-+            @TabListMode
-+            int mode =
-+                    TabUiFeatureUtilities.shouldUseListMode()
-+                            ? TabListMode.LIST
-+                            : TabListMode.GRID;
-             ViewGroup container = mDialogView.findViewById(R.id.dialog_container_view);
-             mTabListEditorCoordinator =
-                     new TabListEditorCoordinator(
-@@ -364,7 +371,7 @@
-                             mCurrentTabModelSupplier,
-                             mTabContentManager,
-                             mTabListCoordinator::setRecyclerViewPosition,
--                            TabListMode.GRID,
-+                            mode,
-                             /* displayGroups= */ false,
-                             mSnackbarManager,
-                             mBottomSheetController,
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridDialogMediator.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridDialogMediator.java
 @@ -55,6 +55,7 @@
@@ -197,7 +176,7 @@
  import org.chromium.chrome.browser.tabmodel.TabClosingSource;
  import org.chromium.chrome.browser.tabmodel.TabClosureParamsUtils;
  import org.chromium.chrome.browser.tabmodel.TabCreatorUtil;
-@@ -889,6 +890,13 @@
+@@ -897,6 +898,13 @@
                  TabGridDialogProperties.DIALOG_UNGROUP_BAR_HOVERED_TEXT_COLOR,
                  ungroupBarHoveredTextColor);
          mModel.set(TabGridDialogProperties.IS_INCOGNITO, isIncognito);
@@ -280,7 +259,7 @@
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListConfig.java
 @@ -13,6 +13,7 @@
  import org.chromium.chrome.browser.tasks.tab_management.TabProperties.UiType;
- import org.chromium.chrome.browser.tasks.tab_management.vertical_tabs.VerticalTabHoverCardController.TabHoverCardListener;
+ import org.chromium.chrome.browser.tasks.tab_management.vertical_tabs.VerticalTabHoverController.TabHoverListener;
  import org.chromium.chrome.browser.tasks.tab_management.vertical_tabs.VerticalTabListProperties.RailCollapseState;
 +import org.chromium.chrome.browser.tab_ui.TabListMode;
  
@@ -295,7 +274,7 @@
      /**
       * The base card UI type for tabs in the list (e.g. {@link UiType#TAB} or {@link UiType#STRIP}).
       */
-@@ -75,6 +78,7 @@
+@@ -69,6 +72,7 @@
  
      private TabListConfig(Builder builder) {
          layoutType = builder.mLayoutType;
@@ -303,7 +282,7 @@
          tabUiType = builder.mTabUiType;
          supportsMessageCards = builder.mSupportsMessageCards;
          supportsModifierMultiSelect = builder.mSupportsModifierMultiSelect;
-@@ -91,6 +95,7 @@
+@@ -84,6 +88,7 @@
      /** Builder to construct {@link TabListConfig}. */
      public static class Builder {
          private final @TabListLayoutType int mLayoutType;
@@ -311,7 +290,7 @@
          private @UiType int mTabUiType;
          private boolean mSupportsMessageCards;
          private boolean mSupportsModifierMultiSelect;
-@@ -107,8 +112,9 @@
+@@ -99,8 +104,9 @@
          /**
           * @param layoutType The {@link TabListLayoutType} for the tab list.
           */
@@ -374,7 +353,7 @@
  }
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListCoordinator.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListCoordinator.java
-@@ -231,6 +231,8 @@
+@@ -230,6 +230,8 @@
                          assumeNonNull(model);
                          if (mMode == TabListMode.GRID) {
                              TabGridViewBinder.onViewRecycled(model, viewHolder.itemView);
@@ -383,7 +362,7 @@
                          } else if (mMode == TabListMode.BOTTOM_STRIP) {
                              TabStripViewBinder.onViewRecycled(model, viewHolder.itemView);
                          }
-@@ -302,6 +304,21 @@
+@@ -301,6 +303,21 @@
                                      LayoutInflater.from(activity)
                                              .inflate(R.layout.tab_strip_item, parentView, false),
                      TabStripViewBinder::bind);
@@ -405,16 +384,16 @@
          } else {
              throw new IllegalArgumentException(
                      "Attempting to create a tab list UI with invalid mode");
-@@ -333,7 +350,7 @@
-                         || componentId == TabComponentId.TAB_GRID_DIALOG_FROM_STRIP
-                         || componentId == TabComponentId.TAB_GRID_DIALOG_IN_SWITCHER;
+@@ -326,7 +343,7 @@
+         @UiType int tabUiType = mMode == TabListMode.BOTTOM_STRIP ? UiType.STRIP : UiType.TAB;
+         boolean isGridMode = mMode == TabListMode.GRID;
          TabListConfig tabListConfig =
 -                new TabListConfig.Builder(layoutType)
 +                new TabListConfig.Builder(layoutType, mMode)
                          .setTabUiType(tabUiType)
                          .setSupportsMessageCards(isGridMode)
                          .setSupportsShrinkCloseAnimation(isGridMode)
-@@ -381,7 +398,7 @@
+@@ -373,7 +390,7 @@
                  parentView.addView(mRecyclerView);
              }
  
@@ -423,7 +402,7 @@
              boolean hasFixedSize =
                      mMode != TabListMode.BOTTOM_STRIP
                              || !TabUiUtils.isDataSharingFunctionalityEnabled();
-@@ -418,6 +435,17 @@
+@@ -410,6 +427,17 @@
                              }
                          };
                  mRecyclerView.setLayoutManager(layoutManager);
@@ -441,7 +420,7 @@
              }
              mMediator.setRecyclerViewItemAnimationToggle(mRecyclerView::setDisableItemAnimations);
          }
-@@ -540,7 +568,7 @@
+@@ -529,7 +557,7 @@
      public void addTabListItemSizeChangedObserver(TabListItemSizeChangedObserver observer) {
          mTabListItemSizeChangedObserverList.addObserver(observer);
          Size size = mMediator.getDefaultGridCardSize();
@@ -450,7 +429,7 @@
          observer.onSizeChanged(mMediator.getCurrentSpanCount(), size);
      }
  
-@@ -564,7 +592,7 @@
+@@ -553,7 +581,7 @@
  
      Size getThumbnailSize() {
          Size size = mMediator.getDefaultGridCardSize();
@@ -459,7 +438,7 @@
          return TabUtils.deriveThumbnailSize(size, mActivity);
      }
  
-@@ -618,7 +646,7 @@
+@@ -601,7 +629,7 @@
      }
  
      private void configureRecyclerViewTouchHelpers() {
@@ -470,15 +449,17 @@
              if (mOnBeforeItemTouchHelperItemTouchListener == null
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListEditorCoordinator.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListEditorCoordinator.java
-@@ -420,7 +420,7 @@
-             mSnackbarManager = snackbarManager;
-             mTabActionState = initialTabActionState;
-             mTabContentManager = tabContentManager;
--            assert mode == TabListMode.GRID;
-+            assert mode == TabListMode.GRID || mode == TabListMode.LIST;
-             mTabListItemOnClickListenerProvider = tabListItemOnClickListenerProvider;
-             mModalDialogManager = modalDialogManager;
-             mEdgeToEdgeSupplier = edgeToEdgeSupplier;
+@@ -634,7 +634,9 @@
+         if (emptyViewParent == null) emptyViewParent = mTabListEditorLayout;
+         mTabListCoordinator =
+                 new TabListCoordinator(
+-                        TabListMode.GRID,
++                        TabUiFeatureUtilities.shouldUseListMode()
++                                ? TabListMode.LIST
++                                : TabListMode.GRID,
+                         mActivity,
+                         mBrowserControlsStateProvider,
+                         mModalDialogManager,
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListItemAnimator.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListItemAnimator.java
 @@ -461,7 +461,7 @@
@@ -492,24 +473,24 @@
                              holder,
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListMediator.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListMediator.java
-@@ -83,6 +83,7 @@
- import org.chromium.chrome.browser.tab_group_sync.TabGroupSyncServiceFactory;
- import org.chromium.chrome.browser.tab_ui.TabListFaviconProvider;
+@@ -83,6 +83,7 @@ import org.chromium.chrome.browser.tab_ui.TabListFaviconProvider;
  import org.chromium.chrome.browser.tab_ui.TabListFaviconProvider.TabFaviconFetcher;
-+import org.chromium.chrome.browser.tab_ui.TabListMode;
+ import org.chromium.chrome.browser.tab_ui.ThumbnailFetcher;
  import org.chromium.chrome.browser.tab_ui.ThumbnailProvider;
++import org.chromium.chrome.browser.tab_ui.TabListMode;
  import org.chromium.chrome.browser.tab_ui.ThumbnailProvider.MultiThumbnailMetadata;
  import org.chromium.chrome.browser.tabmodel.TabClosingSource;
-@@ -2082,6 +2083,8 @@
+ import org.chromium.chrome.browser.tabmodel.TabClosureParams;
+@@ -1933,6 +1934,8 @@ public class TabListMediator implements TabListNotificationHandler {
                  getLatestTitleForTabOrGroup(tab, groupInfo, /* useDefault= */ true));
          groupInfo.set(TabProperties.IS_COLLAPSED, isCollapsed);
          groupInfo.set(TabProperties.FAVICON_FETCHER, null);
 +        groupInfo.set(TabProperties.URL_DOMAIN, getDomainForTab(tab, groupInfo));
 +        updateFaviconForTab(groupInfo, tab, null, null);
+         @TabAlert int alertState = getTabGridAlertState(tab, groupInfo);
+         groupInfo.set(TabProperties.ALERT_STATE, alertState);
  
-         bindTabActionStateProperties(mTabActionState, tab, groupInfo);
- 
-@@ -2477,6 +2480,25 @@
+@@ -2319,6 +2322,25 @@ public class TabListMediator implements TabListNotificationHandler {
  
      void updateFaviconForTab(
              PropertyModel model, Tab tab, @Nullable Bitmap icon, @Nullable GURL iconUrl) {
@@ -1021,7 +1002,7 @@
 +}
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabSwitcherPaneBase.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabSwitcherPaneBase.java
-@@ -320,7 +320,7 @@
+@@ -317,7 +317,7 @@
                  || isFullSpaceModeOnAndroidXr;
  
          @Nullable Tab tab = getCurrentTab();
@@ -1030,7 +1011,7 @@
              return FadeHubLayoutAnimationFactory.createFadeInAnimatorProvider(
                      hubContainerView, HUB_LAYOUT_FADE_DURATION_MS, mOnToolbarAlphaChange);
          } else if (isFullSpaceModeOnAndroidXr && getTabListMode() == TabListMode.GRID) {
-@@ -350,7 +350,7 @@
+@@ -347,7 +347,7 @@
              HubContainerView hubContainerView) {
          assert !DeviceFormFactor.isNonMultiDisplayContextOnTablet(hubContainerView.getContext());
          Tab tab = getCurrentTab();
@@ -1069,7 +1050,7 @@
          return TAB_TEARING_OEM_ALLOWLIST.contains(Build.MANUFACTURER.toLowerCase(Locale.US));
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/vertical_tabs/VerticalTabListCoordinator.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/vertical_tabs/VerticalTabListCoordinator.java
-@@ -562,7 +562,7 @@
+@@ -577,7 +577,7 @@
          recyclerView.addItemDecoration(mDropIndicatorDecoration);
  
          TabListConfig tabListConfig =
@@ -1080,7 +1061,7 @@
                          .setTabClosingSource(TabClosingSource.VERTICAL_TAB_STRIP)
 --- a/chrome/android/features/tab_ui/tab_management_java_sources.gni
 +++ b/chrome/android/features/tab_ui/tab_management_java_sources.gni
-@@ -191,6 +191,8 @@
+@@ -184,6 +184,8 @@
    "//chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListObserverManager.java",
    "//chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListOnScrollListener.java",
    "//chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListRecyclerView.java",
@@ -1091,7 +1072,7 @@
    "//chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabManagementDelegateProvider.java",
 --- a/chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java
-@@ -744,7 +744,8 @@
+@@ -739,7 +739,8 @@
                      new TabContentManager(
                              this,
                              mBrowserControlsManagerSupplier.get(),

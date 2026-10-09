@@ -14,12 +14,12 @@
 *configs-from-config-app*.patch	GrapheneOS config app (Titanium)
 *new-tab-card*.patch	(Titanium)
 *predictive-back*.patch	(Titanium)
-0119-Make-HTTPS-only-mode-the-default.patch	HTTPS-Only breaks misconfigured redirect chains; Chromium's silent HTTPS upgrade with HTTP fallback instead
-0201-don-t-show-subresource-filter-UI-for-site.patch	built-in content filter: uBO does the blocking
-0202-enable-subresource-filter-on-all-sites.patch	built-in content filter: uBO does the blocking
-0203-Use-the-old-naming-convention-of-Ads-in-ads-site-set.patch	built-in content filter: uBO does the blocking
-0207-net-layer-for-fetching-OS-connectivity-check-setting.patch	GrapheneOS connectivity checks; Chromium's own Secure DNS
-0208-Respect-connectivity-check-setting-on-DNS-over-HTTPS.patch	GrapheneOS connectivity checks
-0209-Respect-connectivity-check-setting-on-dns_probe_runn.patch	GrapheneOS connectivity checks
-0210-Respect-connectivity-check-setting-on-browser-connec.patch	GrapheneOS connectivity checks
-0211-Respect-connectivity-check-setting-on-when-to-run-go.patch	GrapheneOS connectivity checks
+*-Make-HTTPS-only-mode-the-default.patch	HTTPS-Only breaks misconfigured redirect chains; Chromium's silent HTTPS upgrade with HTTP fallback instead
+*-don-t-show-subresource-filter-UI-for-site.patch	built-in content filter: uBO does the blocking
+*-enable-subresource-filter-on-all-sites.patch	built-in content filter: uBO does the blocking
+*-Use-the-old-naming-convention-of-Ads-in-ads-site-set.patch	built-in content filter: uBO does the blocking
+*-net-layer-for-fetching-OS-connectivity-check-setting.patch	GrapheneOS connectivity checks; Chromium's own Secure DNS
+*-Respect-connectivity-check-setting-on-DNS-over-HTTPS.patch	GrapheneOS connectivity checks
+*-Respect-connectivity-check-setting-on-dns_probe_runn.patch	GrapheneOS connectivity checks
+*-Respect-connectivity-check-setting-on-browser-connec.patch	GrapheneOS connectivity checks
+*-Respect-connectivity-check-setting-on-when-to-run-go.patch	GrapheneOS connectivity checks

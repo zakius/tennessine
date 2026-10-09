@@ -1,9 +1,7 @@
 # From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
-diff --git a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
-index 15e829f8..66568391 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
-@@ -488,7 +488,7 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
+@@ -483,7 +483,7 @@
          //   * some phones always identify as having a touchpad (crbug.com/429262357), and
          //   * known web compatibility issue on tablet devices (crbug.com/45188879).
          return (mParams.getSourceType() == MenuSourceType.MOUSE
@@ -12,7 +10,7 @@ index 15e829f8..66568391 100644
                          && mParams.getSourceType() == MenuSourceType.LONG_PRESS));
      }
  
-@@ -506,7 +506,7 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
+@@ -501,7 +501,7 @@
      }
  
      @VisibleForTesting
@@ -21,11 +19,9 @@ index 15e829f8..66568391 100644
          return DevToolsWindowAndroid.isDevToolsAllowedFor(
                          getProfile(), mItemDelegate.getWebContents())
                  && isTabletScreen();
-diff --git a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/MoreToolsItemBuilder.java b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/MoreToolsItemBuilder.java
-index 89bd40c7..052dd67e 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/MoreToolsItemBuilder.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/MoreToolsItemBuilder.java
-@@ -248,7 +248,7 @@ public class MoreToolsItemBuilder {
+@@ -252,7 +252,7 @@
       */
      public boolean shouldShowDevToolsItem(@Nullable Tab currentTab) {
          if (!ContentFeatureMap.isEnabled(ContentFeatureList.ANDROID_DEV_TOOLS_FRONTEND)
@@ -34,16 +30,14 @@ index 89bd40c7..052dd67e 100644
                  || currentTab == null
                  || currentTab.isNativePage()) {
              return false;
-diff --git a/chrome/browser/task_manager/common/task_manager_features.cc b/chrome/browser/task_manager/common/task_manager_features.cc
-index 056c9e71..684b6853 100644
 --- a/chrome/browser/task_manager/common/task_manager_features.cc
 +++ b/chrome/browser/task_manager/common/task_manager_features.cc
-@@ -11,7 +11,7 @@ namespace features {
+@@ -11,7 +11,7 @@
  #if BUILDFLAG(IS_ANDROID)
  // Enables the Task Manager on Clank.
  BASE_FEATURE(kTaskManagerClank,
 -             base::FEATURE_DISABLED_BY_DEFAULT
 +             base::FEATURE_ENABLED_BY_DEFAULT
  );
- #endif  // BUILDFLAG(IS_ANDROID)
  
+ // Enables the Task Manager Toolbar (chips and search) on Android.

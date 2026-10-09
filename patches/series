@@ -5,6 +5,7 @@ patches/titanium/manifest-tweaks.patch
 patches/titanium/dex-base-module-only.patch
 patches/titanium/restore-language-and-optimizer-settings.patch
 patches/titanium/intent-scheme-guard.patch
+patches/titanium/config-parser-no-config-app.patch
 patches/titanium/ntp-no-educational-tips.patch
 patches/titanium/unexpire-flags.patch
 patches/titanium/omnibox-site-search.patch
@@ -16,6 +17,7 @@ patches/titanium/background-playback.patch
 patches/titanium/ext-page-viewport.patch
 patches/titanium/ext-mv2.patch
 patches/titanium/ext-off-store-install.patch
+patches/titanium/ext-webstore-desktop-site.patch
 patches/titanium/ext-toolbar.patch
 patches/titanium/ext-popup.patch
 patches/titanium/ext-popup-fullscreen.patch

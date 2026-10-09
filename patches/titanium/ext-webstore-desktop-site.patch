@@ -1,0 +1,12 @@
+# From Titanium's patch.sh (v155.0.8059.39): the Chrome Web Store opens as a desktop site, so its install buttons show.
+--- a/chrome/browser/ui/android/desktop_site/java/src/org/chromium/chrome/browser/desktop_site/DesktopSiteUtils.java
++++ b/chrome/browser/ui/android/desktop_site/java/src/org/chromium/chrome/browser/desktop_site/DesktopSiteUtils.java
+@@ -191,7 +191,7 @@
+      * @param activity The current {@link Activity}.
+      * @param profile The current {@link Profile}.
+      */
+-    public static void maybeDefaultEnableWindowSetting(Activity activity, Profile profile) {
++    public static void maybeDefaultEnableWindowSetting(Activity activity, Profile profile) {WebsitePreferenceBridge.setContentSettingCustomScope(profile, ContentSettingsType.REQUEST_DESKTOP_SITE, "[*.]chromewebstore.google.com", SITE_WILDCARD, ContentSetting.ALLOW);
+         int smallestScreenWidthDp = DisplayUtil.getCurrentSmallestScreenWidth(activity);
+         boolean isOnExternalDisplay = isOnExternalDisplay(activity);
+         if (isOnExternalDisplay

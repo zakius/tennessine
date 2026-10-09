@@ -20,8 +20,8 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 
 1. `git -C vanadium fetch --tags && git -C vanadium checkout <tag>` (Vanadium tags follow Chromium stable).
 2. `git -C titanium fetch --tags && git -C titanium diff HEAD v<version> -- patch.sh`, port what's new into `patches/titanium/`, then `git -C titanium checkout v<version>`.
-3. `./check.sh`: applies everything to a sparse checkout of the new version and lists what fails.
-4. Fix the failing patches against `work/check/src` (`git diff` there gives the new hunks).
+3. `./check.sh`: applies everything to a shallow checkout of the new version (`work/chromium/src`, about 30 s after the first fetch) and lists what fails.
+4. For each failure, `STOP=1 ./check.sh`, then in `work/chromium/src`: `../../../tools/refresh.sh ../../../<patch>`. Read every hunk it reports with fuzz: fuzz can land a hunk inside the wrong `#if` or mid-expression. Fix those in the tree and take the fix with `tools/refresh.sh <patch> <file>`.
 5. `./local-build.sh`, install, commit.
 
 To take desktop fixes (uBlock Origin): `git -C oganesson pull`.
