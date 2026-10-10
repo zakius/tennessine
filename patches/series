@@ -54,6 +54,9 @@ patches/oganesson/firefox-sync.patch
 patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch
 
+# No saved history from oganesson.
+oganesson/patches/oganesson/core/no-saved-history.patch
+
 # Ours and Cromite's.
 patches/tennessine/jit-allowed-by-default.patch
 patches/tennessine/ntp-keeps-toolbar-position.patch
@@ -65,4 +68,6 @@ patches/tennessine/toolbar-swipe-offset-tags.patch
 patches/tennessine/crash-log.patch
 patches/tennessine/bottom-first-ui.patch
 patches/cromite/disable-omission-of-url-elements.patch
-patches/tennessine/clear-on-exit.patch
+
+# Privacy → History: switches for no saved history. Last: it edits the lists the patches above add to.
+patches/tennessine/history-saving-settings.patch

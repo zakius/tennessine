@@ -1,7 +1,7 @@
 # tennessine
 
 Chromium for Android with a configurable toolbar, Helium's built-in uBlock Origin, Chrome
-extensions, page scaling that follows Android's font size, a list-mode tab switcher, the full URL in the address bar, Delete browsing data on exit, and
+extensions, page scaling that follows Android's font size, a list-mode tab switcher, the full URL in the address bar, switches that stop saving history, and
 Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support.
 

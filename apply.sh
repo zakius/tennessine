@@ -1,7 +1,8 @@
 #!/bin/bash
 # Prepare the Chromium tree in the current directory:
 # 1. uBlock Origin into third_party/ublock, at the version and checksum in oganesson/deps.ini.
-# 2. Firefox Sync's code and strings from the oganesson submodule, then src/, copied over the tree.
+# 2. Firefox Sync's code and strings and no saved history's headers from the oganesson
+#    submodule, then src/, copied over the tree.
 # 3. Vanadium's patches, straight from the vanadium submodule, renamed to tennessine, minus
 #    patches/vanadium-drops.txt.
 # 4. patches/series: paths from the repo root, so patches shared with desktop come from the
@@ -22,9 +23,11 @@ rm -rf third_party/ublock third_party/uBlock0.chromium
 unzip -q "$zip" -d third_party
 mv third_party/uBlock0.chromium third_party/ublock
 
-# Firefox Sync's shared code and strings, then ours (src/chrome/browser/firefox_sync/android).
+# Firefox Sync's shared code and strings, no saved history's headers, then ours (src/).
 cp -r "$ROOT/oganesson/src/chrome/browser/firefox_sync" chrome/browser/
 cp "$ROOT/oganesson/src/chrome/app/oganesson_firefox_sync_strings.grdp" chrome/app/
+cp "$ROOT/oganesson/src/chrome/browser/download/download_history_saving.h" chrome/browser/download/
+cp "$ROOT/oganesson/src/components/sessions/core/closed_tabs_in_memory.h" components/sessions/core/
 cp -r "$ROOT/src/." .
 
 dropped() {

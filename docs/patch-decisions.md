@@ -1,6 +1,6 @@
 # Patch decisions
 
-tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, Helium's built-in uBlock Origin, other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, Delete browsing data on exit, and Firefox Sync. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
+tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, Helium's built-in uBlock Origin, other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, not saving history, and Firefox Sync. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
 
 ## Sources
 
@@ -9,7 +9,7 @@ tennessine is Vanadium plus one patch series, `patches/series`. What matters mos
 | [Vanadium](https://github.com/GrapheneOS/Vanadium) | The `vanadium` submodule; `apply.sh` applies its patches renamed to tennessine, minus `patches/vanadium-drops.txt` (with reasons). tennessine follows Vanadium's releases, which follow Chromium stable. |
 | [Titanium](https://github.com/jqssun/android-titanium-browser) | The `titanium` submodule, at the version `patches/titanium/*.patch` match: its `patch.sh` edits, one patch per group. The two that edit gclient dependencies, and the app icon, are in `post-sync.sh`. |
 | [Helium](https://github.com/imputnet/helium) | The uBlock Origin patches, from the `oganesson` submodule (desktop oganesson), as they are. |
-| [oganesson](https://github.com/zakius/oganesson-focused) | The `oganesson` submodule: Firefox Sync's C++ (with its Android branches), strings, Polish translations and Rust library, shared with desktop. Ours is `src/chrome/browser/firefox_sync/android/`. |
+| [oganesson](https://github.com/zakius/oganesson-focused) | The `oganesson` submodule: no saved history (its core patch; the switches in Privacy → History are ours, `tennessine/history-saving-settings`), Firefox Sync's C++ (with its Android branches), strings, Polish translations and Rust library, shared with desktop. Ours is `src/chrome/browser/firefox_sync/android/`. |
 | [Cromite](https://github.com/uazo/cromite) | `patches/cromite/`: the list-mode tab switcher (adapted: always on, without Cromite's flag framework, without tab thumbnails) and the full URL in the address bar. |
 
 ## Vanadium
@@ -29,7 +29,7 @@ Dropped:
 
 Kept for now:
 
-- 0154, a toggle to close tabs on exit. `tennessine/clear-on-exit` replaces it in Privacy with Delete browsing data on exit, and adds Exit to the app menu.
+- 0154, a toggle to close tabs on exit. Later privacy-settings patches build on it.
 - The GrapheneOS config-app framework and the WebView patches. They do nothing in this build (no config app, no WebView target), and later patches hook into them.
 
 ## Titanium
@@ -45,7 +45,7 @@ Dropped:
 
 ## Dropped on 2026-10-09
 
-Update cost for features outside the list above: the View source and Bookmark all tabs menu items.
+Update cost for features outside the list above: the View source and Bookmark all tabs menu items. Delete browsing data on exit gave way to oganesson's no saved history on 2026-10-10: not keeping history at all says what's meant.
 
 ## Not taken
 

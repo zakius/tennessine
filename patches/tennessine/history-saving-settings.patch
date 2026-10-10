@@ -1,0 +1,51 @@
+# Privacy → History (src/chrome/browser/history_saving): oganesson's switches that stop saving
+# browsing and download history. Its library joins chrome_java.
+--- a/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
++++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
+@@ -7,6 +7,7 @@
+ # Three lines of code for minimizing conflicts in rebasing changes
+ chrome_java_ext_full_path_deps = [
+   "//chrome/browser/firefox_sync/android:java",
++  "//chrome/browser/history_saving/android:java",
+   "//chrome/browser/crash_log/android:java",
+   "//chrome/browser/toolbar_items/android:java",
+   "//tennessine/android_config/parser:config_app_parser_java",
+--- a/tennessine/chromium_src/chrome/android/java/res/xml/privacy_preferences_ext.xml
++++ b/tennessine/chromium_src/chrome/android/java/res/xml/privacy_preferences_ext.xml
+@@ -10,6 +10,10 @@
+         android:title="@string/improve_search_suggestions_title"
+         android:summary="@string/improve_search_suggestions_summary"
+         android:persistent="false"/>
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
++        android:key="history_saving"
++        android:title="@string/history_saving_title"
++        android:fragment="org.chromium.chrome.browser.history_saving.HistorySavingSettings"/>
+     <org.chromium.components.browser_ui.settings.ChromeSwitchPreference
+         android:key="close_tabs_on_exit"
+         android:title="@string/close_tabs_on_exit_title"
+--- a/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
++++ b/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/privacy/settings/PrivacySettingsExt.java
+@@ -108,6 +108,11 @@
+             webRtcPolicyPref.setOrder(PRIVACY_PREFERENCES_ORDER);
+         }
+ 
++        Preference historySavingPref = prefFragment.findPreference("history_saving");
++        if (historySavingPref != null) {
++            historySavingPref.setOrder(PRIVACY_PREFERENCES_ORDER);
++        }
++
+         final Preference crossOriginReferrerPolicyPref =
+                 prefFragment.findPreference(PREF_CROSS_ORIGIN_REFERRER_POLICY);
+         if (crossOriginReferrerPolicyPref != null) {
+--- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
++++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
+@@ -12,6 +12,9 @@
+   <message name="IDS_FIREFOX_SYNC_TITLE" desc="Title of the Firefox Sync settings screen and its entry in Settings">
+     Firefox Sync
+   </message>
++  <message name="IDS_HISTORY_SAVING_TITLE" desc="Title of the Privacy setting and screen that stop saving browsing and download history">
++    History
++  </message>
+   <message name="IDS_CLOSE_TABS_ON_EXIT_TITLE" desc="Title of closing tabs on exit menu item">
+     Close tabs on exit
+   </message>
