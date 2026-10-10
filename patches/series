@@ -64,3 +64,5 @@ patches/tennessine/toolbar-hide-on-scroll.patch
 patches/tennessine/toolbar-swipe-offset-tags.patch
 patches/tennessine/crash-log.patch
 patches/tennessine/bottom-first-ui.patch
+patches/cromite/disable-omission-of-url-elements.patch
+patches/tennessine/clear-on-exit.patch
