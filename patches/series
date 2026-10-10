@@ -69,5 +69,7 @@ patches/tennessine/crash-log.patch
 patches/tennessine/bottom-first-ui.patch
 patches/cromite/disable-omission-of-url-elements.patch
 
-# Privacy → History: switches for no saved history. Last: it edits the lists the patches above add to.
+# Web apps: Open in <default browser> in the link menu, launched behind the web app.
+patches/tennessine/webapp-open-in-default-browser.patch
+# Privacy: switches for no saved history. Last: it edits the lists the patches above add to.
 patches/tennessine/history-saving-settings.patch

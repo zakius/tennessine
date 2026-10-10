@@ -1,6 +1,6 @@
 # Patch decisions
 
-tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, Helium's built-in uBlock Origin, other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, not saving history, and Firefox Sync. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
+tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, Helium's built-in uBlock Origin, other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, not saving history, and Firefox Sync, and links out of installed web apps. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
 
 ## Sources
 
@@ -9,7 +9,7 @@ tennessine is Vanadium plus one patch series, `patches/series`. What matters mos
 | [Vanadium](https://github.com/GrapheneOS/Vanadium) | The `vanadium` submodule; `apply.sh` applies its patches renamed to tennessine, minus `patches/vanadium-drops.txt` (with reasons). tennessine follows Vanadium's releases, which follow Chromium stable. |
 | [Titanium](https://github.com/jqssun/android-titanium-browser) | The `titanium` submodule, at the version `patches/titanium/*.patch` match: its `patch.sh` edits, one patch per group. The two that edit gclient dependencies, and the app icon, are in `post-sync.sh`. |
 | [Helium](https://github.com/imputnet/helium) | The uBlock Origin patches, from the `oganesson` submodule (desktop oganesson), as they are. |
-| [oganesson](https://github.com/zakius/oganesson-focused) | The `oganesson` submodule: no saved history (its core patch; the switches in Privacy → History are ours, `tennessine/history-saving-settings`), Firefox Sync's C++ (with its Android branches), strings, Polish translations and Rust library, shared with desktop. Ours is `src/chrome/browser/firefox_sync/android/`. |
+| [oganesson](https://github.com/zakius/oganesson-focused) | The `oganesson` submodule: no saved history (its core patch; the switches in Privacy, next to Close tabs on exit, are ours, `tennessine/history-saving-settings`), Firefox Sync's C++ (with its Android branches), strings, Polish translations and Rust library, shared with desktop. Ours is `src/chrome/browser/firefox_sync/android/`. |
 | [Cromite](https://github.com/uazo/cromite) | `patches/cromite/`: the list-mode tab switcher (adapted: always on, without Cromite's flag framework, without tab thumbnails) and the full URL in the address bar. |
 
 ## Vanadium
@@ -62,6 +62,7 @@ Update cost for features outside the list above: the View source and Bookmark al
 - Swiping the toolbar between tabs no longer leaves the toolbar stuck on screen while the page scrolls (`toolbar-swipe-offset-tags`, a Chromium bug with viz-driven browser controls).
 - Bottom-first UI with the address bar at the bottom (`bottom-first-ui`, #7): the app menu is reversed with its Back/Forward/Refresh row nearest the bar; typing in the address bar keeps it at the bottom above the keyboard, with suggestions on it, the best match nearest; the tab switcher's toolbar (new tab, tab count, grid toggle, search) sits below the tab list. Chromium moves the bar to the top while typing; its suggestion list already handled a bottom bar. With the bar at the top nothing changes.
 - The toolbar hides on scroll only when Settings → Toolbar layout → Hide toolbar on scroll is on; off by default. When on, it hides as soon as a page commits, without Chromium's extra 3-second lock (`toolbar-hide-on-scroll`).
+- In an installed web app, a link's long-press menu has Open in <default browser>, whichever browser that is, in place of Open in tennessine (`webapp-open-in-default-browser`). Android has no way to open a link in another app in the background. The link is launched behind the web app (`ActivityOptions.makeTaskLaunchBehind`), which keeps it behind only when the browser's link handler is its final activity. Firefox and Chromium-based browsers hand the link to their main activity, which comes to the front: the web app then moves back in front of it, when Android allows that. With tennessine as the default, the link becomes a background tab without an app switch, in an open window or, with none open, at the next start.
 
 ## Planned
 

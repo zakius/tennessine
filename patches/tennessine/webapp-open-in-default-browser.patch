@@ -1,0 +1,225 @@
+# Web apps: the link context menu's "Open in <browser>" opens the default browser, whichever it
+# is, instead of this one. The link is launched behind the web app; when the browser comes to the
+# front anyway, the web app moves back in front of it. When the default is tennessine, the link
+# becomes a background tab: in an open window, or queued for the next start.
+--- a/components/embedder_support/android/java/src/org/chromium/components/embedder_support/contextmenu/ContextMenuItemDelegate.java
++++ b/components/embedder_support/android/java/src/org/chromium/components/embedder_support/contextmenu/ContextMenuItemDelegate.java
+@@ -365,6 +365,11 @@
+      */
+     void onOpenInDefaultBrowser(GURL url);
+ 
++    /** tennessine: from a web app, opens {@code url} in the default browser behind the web app. */
++    default void onOpenInDefaultBrowserInBackground(GURL url) {
++        onOpenInDefaultBrowser(url);
++    }
++
+     /** Called when the current tab should be reloaded. */
+     default void onReloadCurrentTab() {}
+ }
+--- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
+@@ -957,7 +957,8 @@
+                                             : groupedItems.size() - 1);
+             if (UrlUtilities.isAcceptedScheme(mParams.getUrl())) {
+                 if (mMode == ContextMenuMode.WEB_APP) {
+-                    items.add(createListItem(Item.OPEN_IN_CHROME));
++                    // tennessine: the default browser, whichever it is.
++                    items.add(createListItem(Item.OPEN_IN_BROWSER_ID));
+                 } else if (mMode == ContextMenuMode.CUSTOM_TAB && !mItemDelegate.isIncognito()) {
+                     boolean addNewEntries =
+                             !UrlUtilities.isInternalScheme(mParams.getUrl())
+@@ -1322,7 +1323,11 @@
+                     });
+         } else if (itemId == R.id.contextmenu_open_in_browser_id) {
+             recordContextMenuSelection(ContextMenuUma.Action.OPEN_IN_BROWSER);
+-            mItemDelegate.onOpenInDefaultBrowser(mParams.getUrl());
++            if (mMode == ContextMenuMode.WEB_APP) {
++                mItemDelegate.onOpenInDefaultBrowserInBackground(mParams.getUrl());
++            } else {
++                mItemDelegate.onOpenInDefaultBrowser(mParams.getUrl());
++            }
+         } else if (itemId == R.id.contextmenu_share_highlight) {
+             recordContextMenuSelection(ContextMenuUma.Action.SHARE_HIGHLIGHT);
+             shareHighlighting();
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabContextMenuItemDelegate.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabContextMenuItemDelegate.java
+@@ -7,16 +7,22 @@
+ import static org.chromium.build.NullUtil.assumeNonNull;
+ 
+ import android.app.Activity;
++import android.app.ActivityManager.AppTask;
++import android.app.ActivityOptions;
+ import android.content.Context;
+ import android.content.Intent;
++import android.content.pm.ResolveInfo;
+ import android.net.MailTo;
+ import android.net.Uri;
++import android.os.SystemClock;
+ import android.provider.Browser;
+ import android.provider.ContactsContract;
+ import android.text.TextUtils;
+ 
+ import androidx.browser.customtabs.CustomTabsIntent;
+ 
++import org.chromium.base.ActivityState;
++import org.chromium.base.ApplicationStatus;
+ import org.chromium.base.CallbackUtils;
+ import org.chromium.base.ContextUtils;
+ import org.chromium.base.IntentUtils;
+@@ -24,6 +30,8 @@
+ import org.chromium.base.metrics.RecordUserAction;
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
++import org.chromium.chrome.R;
++import org.chromium.chrome.browser.ChromeTabbedActivity;
+ import org.chromium.chrome.browser.IntentHandler;
+ import org.chromium.chrome.browser.bookmarks.BookmarkManagerOpenerImpl;
+ import org.chromium.chrome.browser.bookmarks.BookmarkModel;
+@@ -45,6 +53,8 @@
+ import org.chromium.chrome.browser.profiles.Profile;
+ import org.chromium.chrome.browser.tabmodel.TabModelSelector;
+ import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
++import org.chromium.chrome.browser.util.AndroidTaskUtils;
++import org.chromium.chrome.browser.util.DefaultBrowserInfo;
+ import org.chromium.components.browser_ui.bottomsheet.BottomSheetController;
+ import org.chromium.components.embedder_support.contextmenu.ContextMenuItemDelegate;
+ import org.chromium.components.embedder_support.util.UrlUtilities;
+@@ -59,6 +69,7 @@
+ import org.chromium.ui.base.Clipboard;
+ import org.chromium.ui.base.PageTransition;
+ import org.chromium.ui.base.WindowAndroid;
++import org.chromium.ui.widget.Toast;
+ import org.chromium.url.GURL;
+ 
+ import java.util.function.Supplier;
+@@ -609,6 +620,55 @@
+         IntentUtils.safeStartActivity(mTab.getContext(), intent);
+     }
+ 
++    @Override
++    public void onOpenInDefaultBrowserInBackground(GURL url) {
++        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url.getSpec()));
++        intent.addCategory(Intent.CATEGORY_BROWSABLE);
++        // By package: a link in the web app's scope would otherwise go to its own WebAPK.
++        // No default browser set: this browser.
++        ResolveInfo browser = DefaultBrowserInfo.getDefaultWebBrowserInfo();
++        String browserPackage =
++                browser != null && browser.match != 0
++                        ? browser.activityInfo.packageName
++                        : mActivity.getPackageName();
++        // This browser: a tab added in the background, no app switch.
++        if (browserPackage.equals(mActivity.getPackageName())) {
++            ChromeTabbedActivity.openInBackgroundTab(url.getSpec());
++            Toast.makeText(mActivity, R.string.open_in_new_tab_toast, Toast.LENGTH_SHORT).show();
++            return;
++        }
++        intent.setPackage(browserPackage);
++        // Launched behind the web app, the browser's task waits in recents. Browsers whose link
++        // handler is a trampoline (Firefox, Chromium) still bring their main activity forward:
++        // once it covers the web app, the web app moves back to the front. Android may refuse
++        // that, and the browser stays in front.
++        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
++        long launchTime = SystemClock.elapsedRealtime();
++        ApplicationStatus.registerStateListenerForActivity(
++                new ApplicationStatus.ActivityStateListener() {
++                    @Override
++                    public void onActivityStateChange(Activity activity, int newState) {
++                        if (newState != ActivityState.STOPPED
++                                && newState != ActivityState.DESTROYED) {
++                            return;
++                        }
++                        ApplicationStatus.unregisterActivityStateListener(this);
++                        // ponytail: a stop within 5 s is taken as the browser's doing, not the
++                        // user leaving the web app.
++                        if (newState != ActivityState.STOPPED
++                                || SystemClock.elapsedRealtime() - launchTime > 5000) {
++                            return;
++                        }
++                        AppTask task =
++                                AndroidTaskUtils.getAppTaskFromId(activity, activity.getTaskId());
++                        if (task != null) task.moveToFront();
++                    }
++                },
++                mActivity);
++        IntentUtils.safeStartActivity(
++                mActivity, intent, ActivityOptions.makeTaskLaunchBehind().toBundle());
++    }
++
+     public void onOpenInReadingMode() {
+         ReaderModeManager readerModeManager =
+                 mTab.getUserDataHost().getUserData(ReaderModeManager.class);
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
+@@ -20,6 +20,7 @@
+ import android.app.ApplicationStartInfo;
+ import android.content.Context;
+ import android.content.Intent;
++import android.content.SharedPreferences;
+ import android.content.pm.ShortcutManager;
+ import android.content.res.Configuration;
+ import android.net.Uri;
+@@ -57,6 +58,7 @@
+ import org.chromium.base.CallbackController;
+ import org.chromium.base.CallbackUtils;
+ import org.chromium.base.CommandLine;
++import org.chromium.base.ContextUtils;
+ import org.chromium.base.DeviceInfo;
+ import org.chromium.base.IntentUtils;
+ import org.chromium.base.Log;
+@@ -1093,6 +1095,48 @@
+         RecordUserAction.record("MobileNewTabOpened");
+     }
+ 
++    // tennessine: links a web app opened in tennessine while no window was ready, one per line.
++    private static final String BACKGROUND_TAB_URLS = "tennessine_background_tab_urls";
++
++    /**
++     * tennessine: opens {@code url} in a background tab of a window that is ready, or queues it
++     * for the next window to start.
++     */
++    public static void openInBackgroundTab(String url) {
++        for (Activity activity : ApplicationStatus.getRunningActivities()) {
++            if (activity instanceof ChromeTabbedActivity cta
++                    && !cta.isActivityFinishingOrDestroyed()
++                    && cta.mTabModelSelector != null
++                    && cta.mTabModelSelector.isTabStateInitialized()) {
++                cta.openBackgroundTab(url);
++                return;
++            }
++        }
++        SharedPreferences prefs = ContextUtils.getAppSharedPreferences();
++        String queued = prefs.getString(BACKGROUND_TAB_URLS, null);
++        prefs.edit()
++                .putString(BACKGROUND_TAB_URLS, queued == null ? url : queued + "\n" + url)
++                .commit();
++    }
++
++    private void openQueuedBackgroundTabs() {
++        SharedPreferences prefs = ContextUtils.getAppSharedPreferences();
++        String queued = prefs.getString(BACKGROUND_TAB_URLS, null);
++        if (queued == null) return;
++        prefs.edit().remove(BACKGROUND_TAB_URLS).commit();
++        for (String url : queued.split("\n")) openBackgroundTab(url);
++    }
++
++    private void openBackgroundTab(String url) {
++        TabModel model = assumeNonNull(mTabModelSelector).getModel(false);
++        getTabCreator(false)
++                .createNewTab(
++                        new LoadUrlParams(url),
++                        TabLaunchType.FROM_LONGPRESS_BACKGROUND,
++                        null,
++                        model.getCount());
++    }
++
+     private void showOpenInNewTabToast() {
+         Toast toast = Toast.makeText(this, R.string.open_in_new_tab_toast, Toast.LENGTH_SHORT);
+         Runnable showToast =
+@@ -3930,6 +3974,7 @@
+                         if (mMultiInstanceManager != null) {
+                             mMultiInstanceManager.onTabStateInitialized();
+                         }
++                        openQueuedBackgroundTabs();
+                     }
+                 };
+         mTabModelSelector.addObserver(mTabModelSelectorObserver);

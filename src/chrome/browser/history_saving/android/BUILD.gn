@@ -2,24 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Privacy → History: the switches of oganesson's no-saved-history. Joins
-# chrome_java through Vanadium's chrome_java_ext_deps.gni
-# (tennessine/history-saving-settings.patch).
+# Privacy: the switches of oganesson's no-saved-history. Joins chrome_java
+# through Vanadium's chrome_java_ext_deps.gni (tennessine/history-saving-settings.patch).
 
 import("//build/config/android/rules.gni")
 
 android_library("java") {
-  sources = [ "java/src/org/chromium/chrome/browser/history_saving/HistorySavingSettings.java" ]
+  sources = [ "java/src/org/chromium/chrome/browser/history_saving/HistorySavingSwitches.java" ]
   deps = [
-    "//base:supplier_java",
     "//build/android:build_java",
     "//chrome/browser/profiles/android:java",
-    "//chrome/browser/settings:java",
-    "//chrome/browser/ui/android/strings:ui_strings_grd",
     "//components/browser_ui/settings/android:java",
     "//components/prefs/android:java",
     "//components/user_prefs/android:java",
     "//third_party/androidx:androidx_preference_preference_java",
   ]
-  resources_package = "org.chromium.chrome"
 }
