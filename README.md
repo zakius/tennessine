@@ -17,6 +17,8 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 
 ## Updating to a new Chromium
 
+`tools/upstream.sh` lists what is new upstream; it prints nothing when all three submodules are current.
+
 1. `git -C vanadium fetch --tags && git -C vanadium checkout <tag>` (Vanadium tags follow Chromium stable).
 2. `git -C titanium fetch --tags && git -C titanium diff HEAD v<version> -- patch.sh`, port what's new into `patches/titanium/`, then `git -C titanium checkout v<version>`.
 3. `./check.sh`: applies everything to a shallow checkout of the new version (`work/chromium/src`, about 30 s after the first fetch) and lists what fails.
