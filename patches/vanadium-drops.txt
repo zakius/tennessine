@@ -23,3 +23,4 @@
 *-Respect-connectivity-check-setting-on-dns_probe_runn.patch	GrapheneOS connectivity checks
 *-Respect-connectivity-check-setting-on-browser-connec.patch	GrapheneOS connectivity checks
 *-Respect-connectivity-check-setting-on-when-to-run-go.patch	GrapheneOS connectivity checks
+*-Enable-usage-of-Android-Autofill-by-default.patch	forces another autofill service even when none is set; Firefox Sync passwords fill from the built-in manager

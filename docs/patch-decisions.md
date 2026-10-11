@@ -20,6 +20,7 @@ Changed:
 
 - JavaScript JIT runs by default (`tennessine/jit-allowed-by-default`). Vanadium blocks it; the per-site setting stays.
 - HTTPS-Only is off (0119 dropped). It shows an error page when a site redirects `domain.tld` to `www.domain.tld` before HTTPS. Chromium's default upgrades to HTTPS silently and falls back to HTTP.
+- Autofill uses the built-in password manager by default (0164 dropped). Vanadium defaults to Android's autofill service and skips the check that one is set (0219), so with none set nothing fills, and Firefox Sync passwords live in the built-in store. Settings → Autofill services still switches to another service; its built-in option reads "Autofill with Tennessine", not Google (`tennessine/autofill-built-in-labels`).
 
 Dropped:
 

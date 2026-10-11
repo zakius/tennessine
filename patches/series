@@ -73,3 +73,5 @@ patches/cromite/disable-omission-of-url-elements.patch
 patches/tennessine/webapp-open-in-default-browser.patch
 # Privacy: switches for no saved history. Last: it edits the lists the patches above add to.
 patches/tennessine/history-saving-settings.patch
+# Autofill services: the built-in option is Tennessine's, not Google's.
+patches/tennessine/autofill-built-in-labels.patch
