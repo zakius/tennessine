@@ -53,6 +53,7 @@ if [ "$MODE" = x64 ]; then
   cmp -s $OUT/args.gn.new $OUT/args.gn || { mv $OUT/args.gn.new $OUT/args.gn; gn gen $OUT; }
 fi
 mkdir -p out/tmp out/release && rm -f out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk*
+set_version_code $OUT/args.gn
 autoninja ${JOBS:+-j $JOBS} -C $OUT chrome_public_apk
 mv $(find $OUT/apks -name "Chrome*.apk") out/tmp/$VERSION-$ABI.apk
 export PATH=$PWD/third_party/jdk/current/bin/:$PATH ANDROID_HOME=$PWD/third_party/android_sdk/public

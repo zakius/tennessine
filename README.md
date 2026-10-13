@@ -33,4 +33,12 @@ To take desktop fixes (uBlock Origin, Firefox Sync): `git -C oganesson pull`, th
 patches, compile, signing with a local test key. `./local-build.sh resume` recompiles after a
 change to `src/` only.
 
+Each build's versionCode is 10^9 plus the minutes since 2026-01-01 (`set_version_code` in
+`common.sh`), so a rebuild on the same Chromium version is still an update.
+
+`tools/publish_fdroid.py` publishes the APK in the F-Droid repository
+`https://packages.zakius.xyz/fdroid/repo` (fingerprint
+`A40055F0D1CF2D8B22F0DCD2CE8B874DB15352E5B6DC262C3B4FEA9FD46ADFBE`), for F-Droid or Obtainium. Its
+signing key exists only in `~/.local/share/tennessine-fdroid`: back that folder up.
+
 `docs/patch-decisions.md` has why each patch is in or out.

@@ -25,6 +25,7 @@ gclient runhooks || exit 1
 
 source $SCRIPT_DIR/post-sync.sh
 cp $SCRIPT_DIR/args.gn out/Default/args.gn
+set_version_code out/Default/args.gn
 gn gen out/Default # gn args out/Default; echo 'treat_warnings_as_errors = false' >> out/Default/args.gn
 rm -rf out/tmp out/release && mkdir -p out/tmp out/release
 

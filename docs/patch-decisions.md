@@ -72,4 +72,4 @@ Update cost for features outside the list above: the View source and Bookmark al
 
 ## Builds
 
-arm64 only, built locally (`local-build.sh`), published to this repo's GitHub Releases and updated on the phone with Obtainium.
+arm64 only, built locally (`local-build.sh`), published to the F-Droid repository at https://packages.zakius.xyz/fdroid/repo (`tools/publish_fdroid.py`), and updated on the phone with F-Droid or Obtainium.

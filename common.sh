@@ -27,3 +27,11 @@ sign_aab() {
 version_lt() {
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" = "$1" ]
 }
+
+# Android's versionCode: 10^9 plus the minutes since 2026-01-01 UTC, so each build updates the
+# last one, also on the same Chromium version, and stays above Chromium's own codes (805903974
+# for 155.0.8059.39 arm64). Android's ceiling, 2100000000, is about 2000 years away.
+set_version_code() {
+  sed -i '/^android_override_version_code/d' "$1"
+  echo "android_override_version_code = \"$(( 1000000000 + ($(date +%s) - 1767225600) / 60 ))\"" >> "$1"
+}

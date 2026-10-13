@@ -1,0 +1,14 @@
+# tennessine's F-Droid repository: the static files in ./www, at
+# https://packages.zakius.xyz/fdroid behind the host's Traefik. The longer
+# rule wins over pkgrepo's Host-only router.
+services:
+  fdroid:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./www:/usr/share/nginx/html/fdroid:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fdroid.rule=Host(`packages.zakius.xyz`) && PathPrefix(`/fdroid`)"
+      - "traefik.http.routers.fdroid.entrypoints=websecure"
+      - "traefik.http.services.fdroid.loadbalancer.server.port=80"
