@@ -32,6 +32,7 @@ version_lt() {
 # last one, also on the same Chromium version, and stays above Chromium's own codes (805903974
 # for 155.0.8059.39 arm64). Android's ceiling, 2100000000, is about 2000 years away.
 set_version_code() {
-  sed -i '/^android_override_version_code/d' "$1"
+  # The last line may lack its newline, and the code must go on a line of its own.
+  sed -i -e '/^android_override_version_code/d' -e '$a\' "$1"
   echo "android_override_version_code = \"$(( 1000000000 + ($(date +%s) - 1767225600) / 60 ))\"" >> "$1"
 }
