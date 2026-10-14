@@ -4,8 +4,7 @@
 # - typing in the omnibox keeps it at the bottom, above the keyboard, and the suggestions sit on
 #   it, the top suggestion nearest;
 # - the tab switcher's toolbar sits below the tab list, its buttons nearest the edge;
-# - the tab list sits on that toolbar, the newest tab nearest it, however few tabs there are, and
-#   moves above a snackbar (Undo) while one shows.
+# - the tab list sits on that toolbar, the newest tab nearest it, however few tabs there are.
 --- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 +++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 @@ -36,6 +36,7 @@
@@ -219,17 +218,7 @@
  import org.chromium.chrome.browser.ui.edge_to_edge.EdgeToEdgeController;
  import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
  import org.chromium.chrome.browser.undo_tab_close_snackbar.UndoBarThrottle;
-@@ -203,6 +205,9 @@
-     private final Activity mActivity;
-     private final ProfileProvider mProfileProvider;
-     private final Callback<Boolean> mOnVisibilityChanged = this::onVisibilityChanged;
-+    // tennessine: moves the bottom-anchored tab list above a snackbar (#7).
-+    private @Nullable SnackbarManager mSnackbarManager;
-+    private @Nullable Callback<Boolean> mOnSnackbarShowing;
-     private final NonNullObservableSupplier<Boolean> mIsVisibleSupplier;
-     private final NonNullObservableSupplier<Boolean> mIsAnimatingSupplier;
-     private final TabSwitcherPaneMediator mMediator;
-@@ -478,7 +483,33 @@
+@@ -478,7 +480,20 @@
              parentView.addView(layout);
  
              FrameLayout tabListContainer = layout.findViewById(R.id.tab_list_container);
@@ -239,38 +228,15 @@
 +                // tennessine: with the address bar at the bottom, so is the tab list, the newest
 +                // tab nearest it: the list is as tall as its tabs, up to the pane (#7).
 +                recyclerView.setHasFixedSize(false);
-+                FrameLayout.LayoutParams params =
++                tabListContainer.addView(
++                        recyclerView,
 +                        new FrameLayout.LayoutParams(
 +                                ViewGroup.LayoutParams.MATCH_PARENT,
 +                                ViewGroup.LayoutParams.WRAP_CONTENT,
-+                                Gravity.BOTTOM);
-+                tabListContainer.addView(recyclerView, params);
-+                // A snackbar (Undo after closing a tab) would cover the newest tabs: the list
-+                // moves above it while it shows. ponytail: a one-line snackbar's height (48dp,
-+                // and its 16dp margin, and 8dp); a two-line one still overlaps a little.
-+                int snackbarPx =
-+                        Math.round(72 * activity.getResources().getDisplayMetrics().density);
-+                mSnackbarManager = snackbarManager;
-+                mOnSnackbarShowing =
-+                        showing -> {
-+                            params.bottomMargin = showing ? snackbarPx : 0;
-+                            recyclerView.setLayoutParams(params);
-+                        };
-+                snackbarManager.isShowingSupplier().addSyncObserverAndCallIfNonNull(
-+                        mOnSnackbarShowing);
++                                Gravity.BOTTOM));
 +            } else {
 +                tabListContainer.addView(recyclerView);
 +            }
              mPaneHairline = layout.findViewById(R.id.pane_hairline);
  
              // TODO(crbug.com/436614730): Inline the view construction once feature is launched.
-@@ -666,6 +697,9 @@
-     @SuppressWarnings("NullAway")
-     public void destroy() {
-         mIsContextMenuFocusableSupplier.removeObserver(mOnContextMenuFocusableChanged);
-+        if (mSnackbarManager != null && mOnSnackbarShowing != null) {
-+            mSnackbarManager.isShowingSupplier().removeObserver(mOnSnackbarShowing);
-+        }
-         mTabListCoordinator.removeDragObserver(mDragObserver);
-         mDragObserver = null;
-         mMessageManager.removeObserver(mMessageUpdateObserver);
