@@ -5,6 +5,10 @@ extensions, page scaling that follows Android's font size, a list-mode tab switc
 Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support.
 
+## Install
+
+Add the F-Droid repository `https://packages.zakius.xyz/fdroid/repo` (fingerprint below) in F-Droid or Obtainium. Updates install in the background once the store has installed the app once and its battery use is unrestricted.
+
 ## Layout
 
 | Path | What |
@@ -23,7 +27,7 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 
 1. `git -C vanadium fetch --tags && git -C vanadium checkout <tag>` (Vanadium tags follow Chromium stable).
 2. `git -C titanium fetch --tags && git -C titanium diff HEAD v<version> -- patch.sh`, port what's new into `patches/titanium/`, then `git -C titanium checkout v<version>`.
-3. `git -C helium checkout <tag>` at the Helium tag desktop oganesson moves to (its `upstream.txt`).
+3. `git -C helium checkout <commit>` at the Helium commit desktop oganesson's `helium` submodule moves to.
 4. `./tennessine.py check`: applies everything to a shallow checkout of the new version (`work/chromium/src`, about 30 s after the first fetch) and lists what fails.
 5. For each failure, `./tennessine.py check --stop`, then in `work/chromium/src`: `../../../tennessine.py refresh ../../../<patch>`. Read every hunk it reports with fuzz: fuzz can land a hunk inside the wrong `#if` or mid-expression. Fix those in the tree and take the fix with `../../../tennessine.py refresh <patch> <file>`.
 6. `./tennessine.py build`, install, commit.
