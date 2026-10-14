@@ -11,6 +11,7 @@
 #include "base/functional/bind.h"
 #include "base/json/json_file_value_serializer.h"
 #include "base/logging.h"
+#include "base/one_shot_event.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
