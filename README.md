@@ -33,8 +33,8 @@ To take shared fixes (Firefox Sync, no saved history): `git -C dubna pull`, then
 ## Building
 
 `./tennessine.py build` builds an arm64 APK in a rootless Ubuntu container (podman,
-`tools/container-build.sh`): Chromium checkout, sync, patches, compile, signing with a local test
-key. `./tennessine.py build resume` recompiles after a change to `src/` only. `build.sh`,
+`tools/container-build.sh`): Chromium checkout, sync, patches, compile, and signing with the APK
+key in `~/.local/share/tennessine-signing`, which every update must be signed with. `./tennessine.py build resume` recompiles after a change to `src/` only. `build.sh`,
 `common.sh` and `post-sync.sh` come from Titanium and run inside the container.
 
 Each build's versionCode is 10^9 plus the minutes since 2026-01-01 (`set_version_code` in
@@ -43,6 +43,9 @@ Each build's versionCode is 10^9 plus the minutes since 2026-01-01 (`set_version
 `./tennessine.py publish` publishes the APK in the F-Droid repository
 `https://packages.zakius.xyz/fdroid/repo` (fingerprint
 `A40055F0D1CF2D8B22F0DCD2CE8B874DB15352E5B6DC262C3B4FEA9FD46ADFBE`), for F-Droid or Obtainium. Its
-signing key exists only in `~/.local/share/tennessine-fdroid`: back that folder up.
+index signing key is in `~/.local/share/tennessine-fdroid`.
+
+Both keys exist only on this machine: back up `~/.local/share/tennessine-signing` and
+`~/.local/share/tennessine-fdroid`. Losing the APK key means installed copies can't update.
 
 `docs/patch-decisions.md` has why each patch is in or out.

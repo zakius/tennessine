@@ -1,15 +1,12 @@
 #!/bin/bash
 # Runs inside the build container (tennessine.py build), in the scratch copy. MODE is empty for a
-# full build, resume or x64 (see tennessine.py). A local test keystore in /keys stands in for
-# signing secrets.
+# full build, resume or x64 (see tennessine.py). /keys holds the signing key.
 set -e
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq && apt-get install -y -qq sudo git curl bzip2 xz-utils unzip zstd lsb-release file python3 openjdk-21-jdk-headless >/dev/null
-if [ ! -f /keys/test.jks ]; then
-  keytool -genkeypair -keystore /keys/test.jks -alias tennessine -keyalg RSA -keysize 4096 \
-    -validity 10000 -storepass tennessine -keypass tennessine -dname "CN=tennessine local"
-  printf "storePassword=tennessine\nkeyPassword=tennessine\nkeyAlias=tennessine\n" > /keys/local.properties
-fi
+# The published APKs' signing key (tennessine.py mounts it): a new one would make every
+# installed copy refuse the update.
+[ -f /keys/test.jks ] || { echo "no signing key in /keys" >&2; exit 1; }
 git config --global user.name tennessine-build
 git config --global user.email build@localhost
 VERSION=$(grep -m1 -o "[0-9]\+\(\.[0-9]\+\)\{3\}" vanadium/args.gn)

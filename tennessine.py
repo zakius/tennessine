@@ -27,7 +27,8 @@ refresh PATCH [FILE...]
 upstream             lists newer upstream tags (vanadium, titanium, helium) and dubna
                      commits; exits 1 when there is one.
 build [resume|x64]   arm64 APK in a rootless Ubuntu container on a scratch copy in
-                     work/build (tools/container-build.sh), signed with a local test key.
+                     work/build (tools/container-build.sh), signed with the key in
+                     ~/.local/share/tennessine-signing.
                      Output: work/build/tennessine/chromium/src/out/release/*.apk.
                      resume: copies src/ over the prepared tree, then compiles and signs;
                      enough when only src/ changed. x64: the same for an x86_64 APK in
@@ -205,17 +206,21 @@ def upstream():
 def build(mode):
     work = ROOT / 'work'
     (work / 'build/tennessine').mkdir(parents=True, exist_ok=True)
-    (work / 'keys').mkdir(exist_ok=True)
+    if not (KEYS / 'test.jks').is_file():
+        sys.exit(f'tennessine: no APK signing key in {KEYS}')
     run('rsync', '-a', '--delete', '--exclude=/work', '--exclude=/dubna/rust/oganesson_sync/target',
         '--exclude=/chromium', '--exclude=/keys', '--exclude=/depot_tools', f'{ROOT}/',
         f'{work}/build/tennessine/')
     os.execvp('podman', ['podman', 'run', '--rm', '-i', '--pids-limit=-1',
-                         '-v', f'{work}/build:/build', '-v', f'{work}/keys:/keys',
+                         '-v', f'{work}/build:/build', '-v', f'{KEYS}:/keys',
                          '-w', '/build/tennessine', '-e', 'LOCAL_BUILD=1', '-e', f'MODE={mode}',
                          '-e', f'JOBS={os.environ.get("JOBS", "28")}',
                          'docker.io/library/ubuntu:24.04', 'bash', 'tools/container-build.sh'])
 
 
+# The APK signing key (test.jks, local.properties): every update must be signed with it, or
+# Android won't install it over the last one. It exists only there: back the folder up.
+KEYS = Path.home() / '.local/share/tennessine-signing'
 FDROID = Path.home() / '.local/share/tennessine-fdroid'
 FDROID_TARGET = 'oracle:fdroid'
 FDROID_IMAGE = 'registry.gitlab.com/fdroid/docker-executable-fdroidserver:master'
