@@ -1,6 +1,6 @@
 # tennessine
 
-tennessine is Chromium for Android, built on [Vanadium](https://github.com/GrapheneOS/Vanadium) with [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support. It adds a configurable toolbar, Helium's built-in uBlock Origin, Chrome extensions, Firefox-compatible Sync, and switches that stop saving history. Its desktop sibling is [oganesson](https://github.com/zakius/oganesson), and the code the two share is in [dubna](https://github.com/zakius/dubna).
+tennessine is Chromium for Android, built on [Vanadium](https://github.com/GrapheneOS/Vanadium) with [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support. It adds a configurable toolbar, uBlock Origin (installed on first run), Chrome extensions, Firefox-compatible Sync, and switches that stop saving history. Its desktop sibling is [oganesson](https://github.com/zakius/oganesson), and the code the two share is in [dubna](https://github.com/zakius/dubna).
 
 > **Highly volatile.** This is a personal project. Features change or disappear without notice, some may misbehave, updates can break things, and development may stop at any moment. Use it knowing that.
 
@@ -100,4 +100,4 @@ To take shared fixes (Firefox-compatible Sync, no saved history), run `git -C du
 
 tennessine's own code is GPL-2.0-or-later. Vanadium's patches are GPL-2.0-only, and GrapheneOS's license notes rule out combining them with GPL-3.0 code, so the APK is GPL-2.0 (`LICENSE`) and contains no GPL-3.0 code: dubna is used under its GPL-2.0 option, Titanium's changes are GPL-2.0, and Chromium and ungoogled-chromium are BSD-licensed. Helium's and Cromite's patches are GPL-3.0, so none are built in; the list-mode tab switcher and the full URL are our own implementations.
 
-uBlock Origin (GPL-3.0) is a separate program: the browser downloads Helium's build from [imputnet/uBlock](https://github.com/imputnet/uBlock) on first run, checks it against a pinned SHA-256, and installs it as an extension (`src/chrome/browser/ublock_installer/`). `./tennessine.py upstream` reports a newer release; the pin is in that folder. Its CNAME uncloaking needs a DNS API Helium's GPL-3.0 patches provide, so it is off for now.
+uBlock Origin (GPL-3.0) is a separate program: the browser downloads Helium's build from [imputnet/uBlock](https://github.com/imputnet/uBlock) on first run, checks it against a pinned SHA-256, and installs it as an extension (`src/chrome/browser/ublock_installer/`). `./tennessine.py upstream` reports a newer release; the pin is in that folder. Its CNAME uncloaking uses our own DNS API (`patches/tennessine/dns-api.patch`), written for tennessine in place of Helium's.
