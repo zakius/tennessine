@@ -7,6 +7,10 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 
 > **Highly volatile.** This is a personal project. Features change or disappear without notice, some may misbehave, updates can break things, and development may stop at any moment. Use it knowing that.
 
+## What it's for
+
+A browser that is complete for the way its maintainer uses it, not one that tries to do everything: Vivaldi shows where that leads, with so many features that some never work well. What an extension does well stays an extension's job. Content blocking is uBlock Origin, the state of the art, built in through Helium's work, and Chrome extensions run at all thanks to Titanium. The browser itself only builds what an extension can't do: a toolbar laid out as you like, a bottom-first layout for one-handed use, page zoom that follows Android's font size, a list-mode tab switcher, Firefox Sync, switches that stop saving history, and links in web apps that open in the default browser.
+
 ## The name
 
 Tennessine (Ts, element 117) is the neighbour of oganesson (118), after which its desktop sibling, [oganesson](https://github.com/zakius/oganesson), is named, and that is why it was picked. Both were first made at the Joint Institute for Nuclear Research in Dubna (tennessine in 2010, with Oak Ridge National Laboratory and other American labs; it is named after Tennessee): a coincidence, and the name of the [code they share](https://github.com/zakius/dubna).
