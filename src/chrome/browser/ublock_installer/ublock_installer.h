@@ -29,9 +29,9 @@ namespace ublock_installer {
 // profile. It is a separate GPL-3.0 program, so it isn't built in: Vanadium's
 // patches are GPL-2.0-only and exclude GPL-3.0 code. Once extensions are
 // ready, a missing or older copy is replaced by the pinned release: the zip is
-// downloaded, checked against its SHA-256, unpacked into the profile and
-// loaded as an unpacked extension. The key added to its manifest gives it the
-// ID Helium's built-in copy had, so earlier settings stay. A failed attempt
+// downloaded, checked against its SHA-256, unpacked and installed silently, as
+// the extension updater installs an update, so no developer mode is needed.
+// Its key gives it the ID Helium's built-in copy had, so earlier settings stay. A failed attempt
 // (offline, say) is tried again at the next start; a copy the user removed
 // stays removed.
 class UBlockInstaller : public KeyedService {

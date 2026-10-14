@@ -9,7 +9,6 @@
 
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
-#include "base/json/json_file_value_serializer.h"
 #include "base/logging.h"
 #include "base/one_shot_event.h"
 #include "base/strings/string_number_conversions.h"
@@ -21,14 +20,18 @@
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/storage_partition.h"
 #include "crypto/hash.h"
+#include "extensions/browser/crx_installer.h"
 #include "extensions/browser/extension_file_task_runner.h"
+#include "extensions/browser/extension_registrar.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_registry_factory.h"
 #include "extensions/browser/extension_system.h"
 #include "extensions/browser/extension_system_provider.h"
 #include "extensions/browser/extensions_browser_client.h"
-#include "extensions/browser/unpacked_installer.h"
+#include "extensions/browser/install/crx_install_error.h"
+#include "extensions/browser/uninstall_reason.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/mojom/manifest.mojom-shared.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -52,7 +55,8 @@ constexpr char kSha256[] =
 constexpr char kZipRoot[] = "uBlock0.chromium";
 
 // The public key behind the extension ID Helium's built-in copy has, which
-// keeps the settings it saved under that ID.
+// keeps the settings it saved under that ID. The installer adds it to the
+// manifest.
 constexpr char kId[] = "blockjmkbacgjkknlgpkjjiijinjdanf";
 constexpr char kKey[] =
     "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyqQYDhKkM6NlQjOgb11DpHQHsqvK"
@@ -83,11 +87,9 @@ constexpr net::NetworkTrafficAnnotationTag kTrafficAnnotation =
         setting: "Removing uBlock Origin stops it."
       })");
 
-// On the extension file task runner: checks the zip, unpacks it into `dir`
-// (replacing what's there), adds kKey to the manifest and returns the
-// extension's folder, or nothing on failure.
-std::optional<base::FilePath> Unpack(const base::FilePath& zip,
-                                     const base::FilePath& dir) {
+// On the extension file task runner: checks the zip and unpacks it next to
+// itself, returning the extension's folder, or nothing on failure.
+std::optional<base::FilePath> Unpack(const base::FilePath& zip) {
   std::optional<std::vector<uint8_t>> bytes = base::ReadFileToBytes(zip);
   base::FilePath unzipped = zip.AddExtensionASCII("d");
   bool ok = bytes &&
@@ -100,32 +102,7 @@ std::optional<base::FilePath> Unpack(const base::FilePath& zip,
     base::DeletePathRecursively(unzipped);
     return std::nullopt;
   }
-
-  base::FilePath manifest_path =
-      unzipped.AppendASCII(kZipRoot).AppendASCII("manifest.json");
-  JSONFileValueDeserializer reader(manifest_path);
-  std::unique_ptr<base::Value> manifest =
-      reader.Deserialize(nullptr, nullptr);
-  if (!manifest || !manifest->is_dict()) {
-    LOG(WARNING) << "uBlock Origin: no manifest in the download";
-    base::DeletePathRecursively(unzipped);
-    return std::nullopt;
-  }
-  manifest->GetDict().Set("key", kKey);
-  if (!JSONFileValueSerializer(manifest_path).Serialize(*manifest)) {
-    base::DeletePathRecursively(unzipped);
-    return std::nullopt;
-  }
-
-  // The extension stays where it is loaded from: a fresh folder per release.
-  base::DeletePathRecursively(dir);
-  if (!base::CreateDirectory(dir.DirName()) ||
-      !base::Move(unzipped.AppendASCII(kZipRoot), dir)) {
-    LOG(WARNING) << "uBlock Origin: can't move it into the profile";
-    return std::nullopt;
-  }
-  base::DeletePathRecursively(unzipped);
-  return dir;
+  return unzipped.AppendASCII(kZipRoot);
 }
 
 }  // namespace
@@ -148,6 +125,15 @@ void UBlockInstaller::OnExtensionsReady() {
   const extensions::Extension* installed =
       extensions::ExtensionRegistry::Get(profile_)->GetInstalledExtension(kId);
   PrefService* prefs = profile_->GetPrefs();
+  // The first builds loaded it unpacked, which needs developer mode: installed
+  // again from the download, as any other extension. Its settings are lost.
+  if (installed &&
+      installed->location() == extensions::mojom::ManifestLocation::kUnpacked) {
+    extensions::ExtensionRegistrar::Get(profile_)->UninstallExtension(
+        kId, extensions::UNINSTALL_REASON_REINSTALL, nullptr);
+    installed = nullptr;
+    prefs->ClearPref(kInstalledVersionPref);
+  }
   if (installed && installed->version() >= base::Version(kVersion)) {
     prefs->SetString(kInstalledVersionPref, installed->version().GetString());
     return;
@@ -175,11 +161,8 @@ void UBlockInstaller::OnDownloaded(base::FilePath zip) {
     LOG(WARNING) << "uBlock Origin: download failed, trying at the next start";
     return;
   }
-  base::FilePath dir = profile_->GetPath()
-                           .AppendASCII("tennessine_ublock")
-                           .AppendASCII(kVersion);
   extensions::GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&Unpack, zip, dir),
+      FROM_HERE, base::BindOnce(&Unpack, zip),
       base::BindOnce(
           [](base::WeakPtr<UBlockInstaller> self,
              std::optional<base::FilePath> extension_dir) {
@@ -191,17 +174,21 @@ void UBlockInstaller::OnDownloaded(base::FilePath zip) {
 }
 
 void UBlockInstaller::OnUnpacked(base::FilePath extension_dir) {
-  scoped_refptr<extensions::UnpackedInstaller> installer =
-      extensions::UnpackedInstaller::Create(profile_);
-  installer->set_be_noisy_on_failure(false);
-  // uBlock Origin is Manifest V2.
-  installer->set_require_modern_manifest_version(false);
-  installer->set_completion_callback(base::BindOnce(
-      [](base::WeakPtr<UBlockInstaller> self,
-         const extensions::Extension* extension, const base::FilePath&,
-         const std::u16string& error) {
-        if (!extension) {
-          LOG(WARNING) << "uBlock Origin: loading failed: " << error;
+  // Silent, like an update from the extension updater: no prompt, and no
+  // developer mode, which an unpacked extension needs. The installer copies it
+  // into the profile's extensions and deletes extension_dir.
+  scoped_refptr<extensions::CrxInstaller> installer =
+      extensions::CrxInstaller::CreateSilent(profile_);
+  installer->set_allow_silent_install(true);
+  installer->set_delete_source(true);
+  installer->AddInstallerCallback(base::BindOnce(
+      [](base::WeakPtr<UBlockInstaller> self, base::FilePath unzipped,
+         const std::optional<extensions::CrxInstallError>& error) {
+        extensions::GetExtensionFileTaskRunner()->PostTask(
+            FROM_HERE, base::GetDeletePathRecursivelyCallback(unzipped));
+        if (error) {
+          LOG(WARNING) << "uBlock Origin: installing failed: "
+                       << error->message();
           return;
         }
         if (self) {
@@ -209,8 +196,8 @@ void UBlockInstaller::OnUnpacked(base::FilePath extension_dir) {
                                                 kVersion);
         }
       },
-      weak_factory_.GetWeakPtr()));
-  installer->Load(extension_dir);
+      weak_factory_.GetWeakPtr(), extension_dir.DirName()));
+  installer->InstallUnpackedCrx(kId, kKey, extension_dir);
 }
 
 // static
