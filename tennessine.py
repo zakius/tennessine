@@ -212,7 +212,10 @@ def build(mode):
     run('rsync', '-a', '--delete', '--exclude=/work', '--exclude=/dubna/rust/oganesson_sync/target',
         '--exclude=/chromium', '--exclude=/keys', '--exclude=/depot_tools', f'{ROOT}/',
         f'{work}/build/tennessine/')
-    os.execvp('podman', ['podman', 'run', '--rm', '-i', '--pids-limit=-1',
+    # --init: stopping the build (SIGTERM) ends the container too, not only podman. --name: one
+    # build at a time in the shared tree.
+    os.execvp('podman', ['podman', 'run', '--rm', '-i', '--pids-limit=-1', '--init',
+                         '--name', 'tennessine-build',
                          '-v', f'{work}/build:/build', '-v', f'{KEYS}:/keys',
                          '-w', '/build/tennessine', '-e', 'LOCAL_BUILD=1', '-e', f'MODE={mode}',
                          '-e', f'JOBS={os.environ.get("JOBS", "28")}',
