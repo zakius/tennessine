@@ -9,7 +9,7 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 
 ## The name
 
-Tennessine (Ts, element 117) was first made in 2010 at the Joint Institute for Nuclear Research in Dubna, with Oak Ridge National Laboratory and other American labs, and is named after Tennessee. Its desktop sibling, [oganesson](https://github.com/zakius/oganesson), is named after element 118, also made in Dubna.
+Tennessine (Ts, element 117) is the neighbour of oganesson (118), after which its desktop sibling, [oganesson](https://github.com/zakius/oganesson), is named, and that is why it was picked. Both were first made at the Joint Institute for Nuclear Research in Dubna (tennessine in 2010, with Oak Ridge National Laboratory and other American labs; it is named after Tennessee): a coincidence, and the name of the [code they share](https://github.com/zakius/dubna).
 
 ## Install
 
