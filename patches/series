@@ -54,7 +54,7 @@ dubna/patches/no-saved-history.patch
 patches/tennessine/jit-allowed-by-default.patch
 patches/tennessine/ntp-keeps-toolbar-position.patch
 patches/tennessine/page-zoom-follows-font-size.patch
-# TODO rewrite as our own (Cromite is GPL-3.0): patches/cromite/list-mode-tab-switcher.patch
+patches/tennessine/list-mode-tab-switcher.patch
 patches/tennessine/toolbar-items.patch
 patches/tennessine/toolbar-hide-on-scroll.patch
 patches/tennessine/toolbar-swipe-offset-tags.patch

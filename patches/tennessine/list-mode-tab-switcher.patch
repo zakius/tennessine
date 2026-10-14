@@ -1,0 +1,168 @@
+# The tab switcher is a vertical list of compact rows instead of a grid of thumbnail cards:
+# favicon, title and close button, the selected tab highlighted, at every width.
+# It stays Chromium's grid at one span with short cards, so the mediator, the view binder, the
+# touch helper (swipe to close, drag to reorder or group), groups, incognito and accessibility
+# work unchanged. Rows have no thumbnail, so the hub fades in and out instead of shrinking.
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListCoordinator.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListCoordinator.java
+@@ -9,6 +9,7 @@
+ import static org.chromium.chrome.browser.tasks.tab_management.TabProperties.TAB_ID;
+ 
+ import android.app.Activity;
++import android.content.res.Resources;
+ import android.graphics.PointF;
+ import android.graphics.Rect;
+ import android.util.Size;
+@@ -108,9 +109,10 @@
+         void onDragEnd();
+     }
+ 
+-    static final int GRID_LAYOUT_SPAN_COUNT_COMPACT = 2;
+-    static final int GRID_LAYOUT_SPAN_COUNT_MEDIUM = 3;
+-    static final int GRID_LAYOUT_SPAN_COUNT_LARGE = 4;
++    // tennessine: the tab switcher is a list, one row per tab at every width and on every device.
++    static final int GRID_LAYOUT_SPAN_COUNT_COMPACT = 1;
++    static final int GRID_LAYOUT_SPAN_COUNT_MEDIUM = 1;
++    static final int GRID_LAYOUT_SPAN_COUNT_LARGE = 1;
+     static final int MAX_SCREEN_WIDTH_COMPACT_DP = 600;
+     static final int MAX_SCREEN_WIDTH_MEDIUM_DP = 800;
+     static final float PERCENTAGE_AREA_OVERLAP_MERGE_THRESHOLD = 0.5f;
+@@ -123,7 +125,6 @@
+     private final SimpleRecyclerViewAdapter mAdapter;
+     private final @TabListMode int mMode;
+     private final Activity mActivity;
+-    private final BrowserControlsStateProvider mBrowserControlsStateProvider;
+     private final TabListModel mModelList;
+     private final ViewGroup mParentView;
+     private final @DrawableRes int mEmptyStateImageResId;
+@@ -219,7 +220,6 @@
+         mMode = mode;
+         mTabActionState = initialTabActionState;
+         mActivity = activity;
+-        mBrowserControlsStateProvider = browserControlsStateProvider;
+         mModelList = new TabListModel();
+         mParentView = parentView;
+         mAdapter =
+@@ -257,6 +257,7 @@
+                                                         parentView,
+                                                         false);
+                         group.setClickable(true);
++                        hideThumbnail(group);
+                         return group;
+                     },
+                     TabGridViewBinder::bindTab);
+@@ -273,6 +274,7 @@
+                                                         parentView,
+                                                         false);
+                         group.setClickable(true);
++                        hideThumbnail(group);
+                         return group;
+                     },
+                     TabGridViewBinder::bindTab);
+@@ -656,6 +658,20 @@
+         }
+     }
+ 
++    /**
++     * tennessine: a list row is the card's 40dp header line (favicon, title, close button) plus
++     * the 8dp card margins. At 56dp the top-anchored 48dp close button is centered too.
++     */
++    static int getListRowHeightPx(Resources res) {
++        return res.getDimensionPixelSize(R.dimen.tab_grid_card_header_height)
++                + 2 * res.getDimensionPixelSize(R.dimen.tab_grid_card_margin);
++    }
++
++    /** tennessine: rows show no thumbnail, and the binder skips fetching one for a hidden view. */
++    private static void hideThumbnail(ViewGroup card) {
++        card.findViewById(R.id.tab_thumbnail).setVisibility(View.GONE);
++    }
++
+     private void updateGridCardLayout(int viewWidth) {
+         // Determine and set span count
+         final GridLayoutManager layoutManager =
+@@ -672,9 +688,7 @@
+         final int cardWidthPx =
+                 ((viewWidth - mRecyclerView.getPaddingStart() - mRecyclerView.getPaddingEnd())
+                         / layoutManager.getSpanCount());
+-        final int cardHeightPx =
+-                TabUtils.deriveGridCardHeight(
+-                        cardWidthPx, mActivity, mBrowserControlsStateProvider);
++        final int cardHeightPx = getListRowHeightPx(mActivity.getResources());
+ 
+         final Size oldDefaultSize = mMediator.getDefaultGridCardSize();
+         final Size newDefaultSize = new Size(cardWidthPx, cardHeightPx);
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
+@@ -382,6 +382,8 @@
+         if (model.get(TabProperties.SHOW_THUMBNAIL_SPINNER)) return;
+ 
+         TabThumbnailView thumbnail = view.fastFindViewById(R.id.tab_thumbnail);
++        // tennessine: list rows hide the thumbnail, and a row is too short for a thumbnail size.
++        if (thumbnail.getVisibility() == GONE) return;
+ 
+         // To GC on hide set a background color and remove the thumbnail.
+         final boolean isSelected = model.get(TabProperties.IS_SELECTED);
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListContainerViewBinder.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListContainerViewBinder.java
+@@ -42,7 +42,6 @@
+ import androidx.annotation.VisibleForTesting;
+ import androidx.core.util.Function;
+ import androidx.core.util.Pair;
+-import androidx.recyclerview.widget.GridLayoutManager;
+ import androidx.recyclerview.widget.LinearLayoutManager;
+ import androidx.recyclerview.widget.RecyclerView;
+ import androidx.recyclerview.widget.RecyclerView.OnScrollListener;
+@@ -54,7 +53,6 @@
+ import org.chromium.base.supplier.SettableNonNullObservableSupplier;
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.chrome.browser.browser_controls.BrowserControlsStateProvider;
+-import org.chromium.chrome.browser.tab.TabUtils;
+ import org.chromium.chrome.browser.tab_ui.TabListMode;
+ import org.chromium.chrome.browser.tasks.tab_management.TabListContainerProperties.SupplementaryContainerAnimationMetadata;
+ import org.chromium.chrome.tab_ui.R;
+@@ -320,14 +318,9 @@
+         }
+         if (width <= 0 || height <= 0) return 0;
+ 
+-        LinearLayoutManager layoutManager = (LinearLayoutManager) view.getLayoutManager();
+         assert model.get(MODE) == TabListMode.GRID;
+-        GridLayoutManager gridLayoutManager = (GridLayoutManager) layoutManager;
+-        assumeNonNull(gridLayoutManager);
+-        int cardWidth = width / gridLayoutManager.getSpanCount();
+-        int cardHeight =
+-                TabUtils.deriveGridCardHeight(
+-                        cardWidth, view.getContext(), browserControlsStateProvider);
++        // tennessine: center the current tab's list row.
++        int cardHeight = TabListCoordinator.getListRowHeightPx(view.getResources());
+         return Math.max(0, height / 2 - cardHeight / 2);
+     }
+ }
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabSwitcherPaneBase.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabSwitcherPaneBase.java
+@@ -89,6 +89,8 @@
+         implements TabSwitcher, TabSwitcherResetHandler {
+     private static final String TAG = "TabSwitcherPaneBase";
+     private static final int ON_SHOWN_IPH_DELAY = 700;
++    // tennessine: list rows have no thumbnail for the tab to shrink into or expand from.
++    private static final boolean SHRINK_EXPAND_ANIMATIONS = false;
+ 
+     private static boolean sShowIphForTesting;
+ 
+@@ -317,7 +319,7 @@
+                 || isFullSpaceModeOnAndroidXr;
+ 
+         @Nullable Tab tab = getCurrentTab();
+-        if (tab == null || SysUtils.isLowEndDevice()) {
++        if (tab == null || SysUtils.isLowEndDevice() || !SHRINK_EXPAND_ANIMATIONS) {
+             return FadeHubLayoutAnimationFactory.createFadeInAnimatorProvider(
+                     hubContainerView, HUB_LAYOUT_FADE_DURATION_MS, mOnToolbarAlphaChange);
+         } else if (isFullSpaceModeOnAndroidXr && getTabListMode() == TabListMode.GRID) {
+@@ -347,7 +349,7 @@
+             HubContainerView hubContainerView) {
+         assert !DeviceFormFactor.isNonMultiDisplayContextOnTablet(hubContainerView.getContext());
+         Tab tab = getCurrentTab();
+-        if (tab == null || SysUtils.isLowEndDevice()) {
++        if (tab == null || SysUtils.isLowEndDevice() || !SHRINK_EXPAND_ANIMATIONS) {
+             return FadeHubLayoutAnimationFactory.createFadeOutAnimatorProvider(
+                     hubContainerView, HUB_LAYOUT_FADE_DURATION_MS, mOnToolbarAlphaChange);
+         }
