@@ -60,7 +60,7 @@ patches/tennessine/toolbar-items.patch
 patches/tennessine/toolbar-hide-on-scroll.patch
 patches/tennessine/toolbar-swipe-offset-tags.patch
 patches/tennessine/crash-log.patch
-patches/tennessine/bottom-first-ui.patch
+patches/tennessine/layout-follows-address-bar.patch
 patches/tennessine/full-url.patch
 
 # Web apps: Open in <default browser> in the link menu, launched behind the web app.

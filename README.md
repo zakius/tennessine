@@ -10,7 +10,7 @@ tennessine is meant to be complete for the way the maintainer uses it. It does n
 
 Where an extension does the job well, the job stays with the extension. Content blocking is uBlock Origin, the state of the art, in the build Helium maintains, which the browser downloads and installs on first run. Other Chrome extensions run thanks to Titanium. The browser builds natively only what an extension can't do:
 
-- A toolbar laid out as you like, and a bottom-first layout for one-handed use.
+- A toolbar laid out as you like, and a layout that follows the address bar: put it at the bottom, and the menu, suggestions and tab switcher run up from it, for one-handed use.
 - Page zoom that follows Android's font size.
 - A list-mode tab switcher and the full URL in the address bar, as [Cromite](https://github.com/uazo/cromite) has them.
 - Firefox-compatible Sync. It works best with a self-hosted sync server.
