@@ -1,0 +1,335 @@
+# Firefox's dns.resolve and promise-returning blocking webRequest listeners, which uBlock
+# Origin's CNAME uncloaking needs. Chromium's own dns API (Chrome Apps, allowlisted) returns
+# Firefox's record shape, takes the canonical_name flag and a request URL, and is open to any
+# extension; a hostname a proxy would resolve (HTTP, HTTPS, SOCKS5) isn't resolved locally.
+# Extensions with the dns permission may return promises from blocking listeners, which
+# Chromium already supports for policy-installed Manifest V3 extensions.
+--- a/extensions/common/api/dns.webidl
++++ b/extensions/common/api/dns.webidl
+@@ -2,22 +2,34 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-dictionary ResolveCallbackResolveInfo {
+-  // The result code. Zero indicates success.
+-  required long resultCode;
++// tennessine: Firefox's dns.resolve, for uBlock Origin's CNAME uncloaking.
++enum ResolveFlag { "canonical_name" };
+ 
+-  // A string representing the IP address literal. Supplied only if resultCode
+-  // indicates success.
+-  DOMString address;
++dictionary DNSRecord {
++  // The resolved IP address literals.
++  required sequence<DOMString> addresses;
++
++  // The canonical name, when "canonical_name" was asked for and the resolver
++  // has one.
++  DOMString canonicalName;
+ };
+ 
+ // Use the <code>chrome.dns</code> API for dns resolution.
+ interface Dns {
+-  // Resolves the given hostname or IP address literal.
++  // Resolves the given hostname or IP address literal with the browser's
++  // resolver, Secure DNS included. Rejects with the network error
++  // ("net::ERR_NAME_NOT_RESOLVED", say) when resolution fails.
+   // |hostname| : The hostname to resolve.
++  // |flags| : "canonical_name" also asks for the canonical name.
++  // |requestUrl| : The URL of the request the hostname is for. A request that
++  // goes through a proxy which resolves names itself (HTTP, HTTPS, SOCKS5)
++  // isn't resolved here, so the name doesn't reach the local resolver: the
++  // promise rejects with "net::ERR_DNS_DIRECT_ONLY".
+   // |Returns|: Promise that resolves when the resolution operation completes.
+-  // |PromiseValue|: resolveInfo
+-  static Promise<ResolveCallbackResolveInfo> resolve(DOMString hostname);
++  // |PromiseValue|: record
++  static Promise<DNSRecord> resolve(DOMString hostname,
++                                    optional sequence<ResolveFlag> flags,
++                                    optional DOMString requestUrl);
+ };
+ 
+ partial interface Browser {
+--- a/extensions/common/api/_permission_features.json
++++ b/extensions/common/api/_permission_features.json
+@@ -237,21 +237,11 @@
+       ]
+     }
+   ],
+-  "dns": [
+-    {
+-      "channel": "dev",
+-      "extension_types": ["extension", "platform_app"]
+-    },
+-    {
+-      "channel": "stable",
+-      "extension_types": ["extension", "platform_app"],
+-      "allowlist": [
+-        "7AE714FFD394E073F0294CFA134C9F91DB5FBAA4",  // CCD Development
+-        "C7DA3A55C2355F994D3FDDAD120B426A0DF63843",  // CCD Testing
+-        "75E3CFFFC530582C583E4690EF97C70B9C8423B7"   // CCD Release
+-      ]
+-    }
+-  ],
++  // tennessine: for any extension, as in Firefox: uBlock Origin uncloaks CNAMEs.
++  "dns": {
++    "channel": "stable",
++    "extension_types": ["extension", "platform_app"]
++  },
+   "externally_connectable.all_urls": {
+     "channel": "stable",
+     "extension_types": ["extension"],
+--- a/extensions/browser/api/dns/dns_api.h
++++ b/extensions/browser/api/dns/dns_api.h
+@@ -5,20 +5,30 @@
+ #ifndef EXTENSIONS_BROWSER_API_DNS_DNS_API_H_
+ #define EXTENSIONS_BROWSER_API_DNS_DNS_API_H_
+ 
++#include <optional>
++#include <string>
++
+ #include "extensions/browser/extension_function.h"
+ #include "extensions/buildflags/buildflags.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "net/base/address_list.h"
++#include "net/base/network_anonymization_key.h"
+ #include "net/dns/public/host_resolver_results.h"
++#include "net/proxy_resolution/proxy_info.h"
+ #include "services/network/public/cpp/resolve_host_client_base.h"
+ #include "services/network/public/mojom/network_context.mojom.h"
++#include "services/network/public/mojom/proxy_lookup_client.mojom.h"
+ 
+ static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
+ 
+ namespace extensions {
+ 
++// tennessine: Firefox's dns.resolve (see dns.webidl). With a request URL, the
++// proxy lookup comes first, so a name a proxy resolves never reaches the local
++// resolver.
+ class DnsResolveFunction : public ExtensionFunction,
+-                           public network::ResolveHostClientBase {
++                           public network::ResolveHostClientBase,
++                           public network::mojom::ProxyLookupClient {
+  public:
+   DECLARE_EXTENSION_FUNCTION("dns.resolve", DNS_RESOLVE)
+ 
+@@ -31,6 +41,13 @@
+   ResponseAction Run() override;
+ 
+  private:
++  void StartResolution();
++
++  // network::mojom::ProxyLookupClient implementation:
++  void OnProxyLookupComplete(
++      int32_t net_error,
++      const std::optional<net::ProxyInfo>& proxy_info) override;
++
+   // network::mojom::ResolveHostClient implementation:
+   void OnComplete(
+       int result,
+@@ -41,6 +58,11 @@
+   // A reference to `this` must be taken while the request is being made on this
+   // receiver so the object is alive when the request completes.
+   mojo::Receiver<network::mojom::ResolveHostClient> receiver_{this};
++  mojo::Receiver<network::mojom::ProxyLookupClient> proxy_receiver_{this};
++
++  std::string hostname_;
++  bool canonical_name_ = false;
++  net::NetworkAnonymizationKey network_anonymization_key_;
+ };
+ 
+ }  // namespace extensions
+--- a/extensions/browser/api/dns/dns_api.cc
++++ b/extensions/browser/api/dns/dns_api.cc
+@@ -4,6 +4,9 @@
+ 
+ #include "extensions/browser/api/dns/dns_api.h"
+ 
++#include <algorithm>
++#include <utility>
++
+ #include "base/functional/bind.h"
+ #include "base/values.h"
+ #include "content/public/browser/browser_context.h"
+@@ -12,12 +15,16 @@
+ #include "extensions/common/api/dns.h"
+ #include "net/base/host_port_pair.h"
+ #include "net/base/net_errors.h"
++#include "net/base/proxy_chain.h"
+ #include "net/base/network_isolation_key.h"
++#include "net/base/proxy_server.h"
+ #include "net/dns/public/resolve_error_info.h"
++#include "url/gurl.h"
+ #include "url/origin.h"
+ 
+ using content::BrowserThread;
+-using extensions::api::dns::ResolveCallbackResolveInfo;
++using extensions::api::dns::DNSRecord;
++using extensions::api::dns::ResolveFlag;
+ 
+ namespace Resolve = extensions::api::dns::Resolve;
+ 
+@@ -32,26 +39,71 @@
+   std::optional<Resolve::Params> params = Resolve::Params::Create(args());
+   EXTENSION_FUNCTION_VALIDATE(params);
+ 
++  hostname_ = params->hostname;
++  canonical_name_ = params->flags &&
++                    std::ranges::contains(*params->flags,
++                                          ResolveFlag::kCanonicalName);
++  network_anonymization_key_ = net::NetworkAnonymizationKey::CreateSameSite(
++      net::SchemefulSite(extension_->origin()));
++
++  // Balanced in OnComplete().
++  AddRef();
++  if (!params->request_url) {
++    StartResolution();
++    return RespondLater();
++  }
++  GURL url(*params->request_url);
++  if (!url.is_valid()) {
++    Release();
++    return RespondNow(Error("Invalid requestUrl"));
++  }
++  browser_context()
++      ->GetDefaultStoragePartition()
++      ->GetNetworkContext()
++      ->LookUpProxyForURL(url, network_anonymization_key_,
++                          proxy_receiver_.BindNewPipeAndPassRemote());
++  proxy_receiver_.set_disconnect_handler(base::BindOnce(
++      &DnsResolveFunction::OnProxyLookupComplete, base::Unretained(this),
++      net::ERR_FAILED, std::nullopt));
++  return RespondLater();
++}
++
++void DnsResolveFunction::OnProxyLookupComplete(
++    int32_t net_error,
++    const std::optional<net::ProxyInfo>& proxy_info) {
++  DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  proxy_receiver_.reset();
++  // Resolved here only when the connection resolves the name locally too:
++  // direct, or a single SOCKS4 proxy, which takes IP addresses.
++  bool local = proxy_info &&
++               (proxy_info->is_direct() ||
++                (proxy_info->proxy_chain().is_single_proxy() &&
++                 proxy_info->proxy_chain().First().scheme() ==
++                     net::ProxyServer::SCHEME_SOCKS4));
++  if (net_error != net::OK || !local) {
++    Respond(Error("net::ERR_DNS_DIRECT_ONLY"));
++    Release();  // Added in Run().
++    return;
++  }
++  StartResolution();
++}
++
++void DnsResolveFunction::StartResolution() {
+   // Intentionally pass host only (no scheme or non-zero port) to only get a
+   // basic resolution for the hostname itself.
+-  net::HostPortPair host_port_pair(params->hostname, 0);
+-  net::SchemefulSite site = net::SchemefulSite(extension_->origin());
++  auto parameters = network::mojom::ResolveHostParameters::New();
++  parameters->include_canonical_name = canonical_name_;
+   browser_context()
+       ->GetDefaultStoragePartition()
+       ->GetNetworkContext()
+-      ->ResolveHost(
+-          network::mojom::HostResolverHost::NewHostPortPair(
+-              std::move(host_port_pair)),
+-          net::NetworkAnonymizationKey::CreateSameSite(std::move(site)),
+-          nullptr, receiver_.BindNewPipeAndPassRemote());
++      ->ResolveHost(network::mojom::HostResolverHost::NewHostPortPair(
++                        net::HostPortPair(hostname_, 0)),
++                    network_anonymization_key_, std::move(parameters),
++                    receiver_.BindNewPipeAndPassRemote());
+   receiver_.set_disconnect_handler(base::BindOnce(
+       &DnsResolveFunction::OnComplete, base::Unretained(this),
+       net::ERR_NAME_NOT_RESOLVED, net::ResolveErrorInfo(net::ERR_FAILED),
+       net::AddressList(), net::HostResolverEndpointResults()));
+-
+-  // Balanced in OnComplete().
+-  AddRef();
+-  return RespondLater();
+ }
+ 
+ void DnsResolveFunction::OnComplete(
+@@ -62,14 +114,23 @@
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   receiver_.reset();
+ 
+-  ResolveCallbackResolveInfo resolve_info;
+-  resolve_info.result_code = resolve_error_info.error;
+-  if (result == net::OK) {
+-    DCHECK(!resolved_addresses.empty());
+-    resolve_info.address = resolved_addresses.front().ToStringWithoutPort();
++  if (result != net::OK) {
++    Respond(Error(net::ErrorToString(resolve_error_info.error != net::OK
++                                         ? resolve_error_info.error
++                                         : result)));
++    Release();  // Added in Run().
++    return;
+   }
+-
+-  Respond(ArgumentList(Resolve::Results::Create(resolve_info)));
++  DNSRecord record;
++  for (const net::IPEndPoint& endpoint : resolved_addresses) {
++    record.addresses.push_back(endpoint.ToStringWithoutPort());
++  }
++  // The first alias is the canonical name, lowercase; an empty one is none.
++  if (canonical_name_ && !resolved_addresses.dns_aliases().empty() &&
++      !resolved_addresses.dns_aliases().front().empty()) {
++    record.canonical_name = resolved_addresses.dns_aliases().front();
++  }
++  Respond(ArgumentList(Resolve::Results::Create(record)));
+ 
+   Release();  // Added in Run().
+ }
+--- a/extensions/renderer/api/web_request_natives.cc
++++ b/extensions/renderer/api/web_request_natives.cc
+@@ -20,6 +20,8 @@
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_features.h"
+ #include "extensions/common/manifest.h"
++#include "extensions/common/mojom/api_permission_id.mojom-shared.h"
++#include "extensions/common/permissions/permissions_data.h"
+ #include "extensions/renderer/api/web_request_event_handling_tracker.h"
+ #include "extensions/renderer/native_extension_bindings_system.h"
+ #include "extensions/renderer/script_context.h"
+@@ -94,9 +96,14 @@
+   CHECK_EQ(0, args.Length());
+ 
+   const Extension* extension = context()->extension();
++  // tennessine: also an extension with the dns permission, which waits for a
++  // name's resolution before deciding (uBlock Origin's CNAME uncloaking).
+   bool always_allowed_async_handlers =
+-      extension && extension->manifest_version() >= 3 &&
+-      Manifest::IsPolicyLocation(extension->location());
++      extension &&
++      ((extension->manifest_version() >= 3 &&
++        Manifest::IsPolicyLocation(extension->location())) ||
++       extension->permissions_data()->HasAPIPermission(
++           mojom::APIPermissionID::kDns));
+ 
+   args.GetReturnValue().Set(always_allowed_async_handlers);
+ }
+--- a/extensions/renderer/resources/web_request_event.js
++++ b/extensions/renderer/resources/web_request_event.js
+@@ -353,6 +353,9 @@
+   this.webViewInstanceId = opt_webViewInstanceId || 0;
+   this.subEvents = [];  // Legacy sub-event dispatch.
+   this.listeners = [];  // Per-context dispatch.
++  // tennessine: whether a blocking listener may return a promise, which the
++  // request then waits for (uBlock Origin's CNAME uncloaking needs it).
++  this.supportsBlockingPromises = allowAsyncResponsesForAllEvents;
+ }
+ $Object.setPrototypeOf(WebRequestEventImpl.prototype, null);
+ 
+@@ -579,6 +582,9 @@
+     'removeRules',
+     'getRules',
+   ],
++  properties: [
++    'supportsBlockingPromises',
++  ],
+ });
+ 
+ exports.$set('WebRequestEvent', WebRequestEvent);

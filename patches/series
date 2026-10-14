@@ -39,6 +39,7 @@ patches/titanium/crbug-444024982-api-31.patch
 
 # uBlock Origin: Helium's uBO build, a separate program the browser installs on first run.
 patches/tennessine/ublock-installer.patch
+patches/tennessine/dns-api.patch
 
 # Firefox Sync from dubna (dubna/src/chrome/browser/firefox_sync, dubna/rust/); its Android side
 # is src/chrome/browser/firefox_sync/platform and android/.
