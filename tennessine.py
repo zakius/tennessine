@@ -212,14 +212,17 @@ def build(mode):
     run('rsync', '-a', '--delete', '--exclude=/work', '--exclude=/dubna/rust/oganesson_sync/target',
         '--exclude=/chromium', '--exclude=/keys', '--exclude=/depot_tools', f'{ROOT}/',
         f'{work}/build/tennessine/')
-    # --init: stopping the build (SIGTERM) ends the container too, not only podman. --name: one
-    # build at a time in the shared tree.
-    os.execvp('podman', ['podman', 'run', '--rm', '-i', '--pids-limit=-1', '--init',
+    # --name: one build at a time in the shared tree.
+    os.execvp('podman', ['podman', 'run', '--rm', '-i', '--pids-limit=-1',
                          '--name', 'tennessine-build',
                          '-v', f'{work}/build:/build', '-v', f'{KEYS}:/keys',
                          '-w', '/build/tennessine', '-e', 'LOCAL_BUILD=1', '-e', f'MODE={mode}',
                          '-e', f'JOBS={os.environ.get("JOBS", "28")}',
-                         'docker.io/library/ubuntu:24.04', 'bash', 'tools/container-build.sh'])
+                         # The container's first process ignores SIGTERM unless it traps it:
+                         # this one exits on it, which ends the whole build, so stopping podman
+                         # stops the build too.
+                         'docker.io/library/ubuntu:24.04', 'sh', '-c',
+                         'trap "exit 143" TERM; bash tools/container-build.sh & wait $!'])
 
 
 # The APK signing key (test.jks, local.properties): every update must be signed with it, or
