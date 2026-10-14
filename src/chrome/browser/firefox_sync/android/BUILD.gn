@@ -4,7 +4,7 @@
 
 # Settings → Firefox Sync. Joins chrome_java through Vanadium's
 # chrome_java_ext_deps.gni (tennessine/firefox-sync-android.patch); the JNI
-# side, firefox_sync_bridge.cc, is in //chrome/browser/firefox_sync.
+# side, firefox_sync_bridge.cc, is in ../platform.
 
 import("//build/config/android/rules.gni")
 import("//third_party/jni_zero/jni_zero.gni")

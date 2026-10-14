@@ -47,11 +47,13 @@ helium/patches/helium/core/ublock-install-as-component.patch
 helium/patches/helium/core/ublock-reconfigure-defaults.patch
 helium/patches/helium/core/ublock-dns-uncloaking.patch
 helium/patches/helium/ui/ublock-show-in-settings.patch
-patches/tennessine/ublock-assets-update.patch
+dubna/patches/ublock-assets-update.patch
 patches/tennessine/extensions-menu-component-only.patch
 
-# Firefox Sync from dubna (dubna/src/chrome/browser/firefox_sync, dubna/rust/), ported to Android.
-patches/oganesson/firefox-sync.patch
+# Firefox Sync from dubna (dubna/src/chrome/browser/firefox_sync, dubna/rust/); its Android side
+# is src/chrome/browser/firefox_sync/platform and android/.
+dubna/patches/firefox-sync.patch
+patches/tennessine/firefox-sync-strings.patch
 patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch
 

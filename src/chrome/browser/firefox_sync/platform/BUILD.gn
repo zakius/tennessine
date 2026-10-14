@@ -1,0 +1,23 @@
+# Copyright 2026 The tennessine Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Firefox Sync's Android side: dubna's firefox_sync_platform.h for tennessine,
+# and the settings screen's JNI bridge. dubna's firefox-sync.patch makes the
+# browser depend on this.
+source_set("platform") {
+  sources = [
+    "android_platform.cc",
+    "firefox_sync_bridge.cc",
+    "tabs_adapter_android.cc",
+    "tabs_adapter_android.h",
+  ]
+  public_deps = [ "//chrome/browser/firefox_sync" ]
+  deps = [
+    "//base",
+    "//chrome/browser/firefox_sync/android:jni_headers",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui/android/tab_model",
+    "//content/public/browser",
+  ]
+}
