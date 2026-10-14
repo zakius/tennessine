@@ -3,7 +3,7 @@
 # full build, resume or x64 (see tennessine.py). /keys holds the signing key.
 set -e
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq && apt-get install -y -qq sudo git curl bzip2 xz-utils unzip zstd lsb-release file python3 openjdk-21-jdk-headless >/dev/null
+apt-get update -qq && apt-get install -y -qq sudo git curl bzip2 xz-utils unzip zstd lsb-release file python3 pigz openjdk-21-jdk-headless >/dev/null
 # The published APKs' signing key (tennessine.py mounts it): a new one would make every
 # installed copy refuse the update.
 [ -f /keys/test.jks ] || { echo "no signing key in /keys" >&2; exit 1; }

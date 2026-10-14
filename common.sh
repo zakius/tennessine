@@ -16,7 +16,13 @@ set_keys() {
 sign_apk() {
     export apksigner=$(find $ANDROID_HOME/build-tools -name apksigner | sort | tail -n 1)
     source $SCRIPT_DIR/keys/local.properties
-    $apksigner sign -verbose -ks $SCRIPT_DIR/keys/test.jks --ks-pass pass:$storePassword --key-pass pass:$keyPassword --ks-key-alias $keyAlias --out $2 $1 || exit 1
+    # Zopfli for what's compressed, the native libraries included (tools/repack_apk.py), then
+    # aligned again for the stored entries.
+    python3 $SCRIPT_DIR/tools/repack_apk.py $1 $1.repacked || exit 1
+    $(dirname $apksigner)/zipalign -f 4 $1.repacked $1.aligned || exit 1
+    rm $1.repacked
+    $apksigner sign -verbose -ks $SCRIPT_DIR/keys/test.jks --ks-pass pass:$storePassword --key-pass pass:$keyPassword --ks-key-alias $keyAlias --out $2 $1.aligned || exit 1
+    rm $1.aligned
 }
 
 sign_aab() {

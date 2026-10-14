@@ -1,0 +1,29 @@
+# A smaller APK. The native libraries are stored compressed (tools/repack_apk.py deflates them
+# with Zopfli before signing), so Android unpacks them at install: extractNativeLibs is true. That
+# makes every download about 150 MB smaller, for about 110 MB more storage on the phone.
+# No XR module: headsets and ARCore, about 20 MB of libraries tennessine doesn't use.
+--- a/chrome/android/java/AndroidManifest.xml
++++ b/chrome/android/java/AndroidManifest.xml
+@@ -231,7 +231,7 @@
+ 
+     <!-- Set android:largeHeap to "true" to allow more than the default
+          Java heap limit (32Mb on Nexus S, 48Mb on Xoom). -->
+-      <application android:extractNativeLibs="false" android:name="{% block application_name %}org.chromium.chrome.browser.base.SplitChromeApplication{% endblock %}"
++      <application android:extractNativeLibs="true" android:name="{% block application_name %}org.chromium.chrome.browser.base.SplitChromeApplication{% endblock %}"
+         android:icon="@drawable/ic_launcher"
+         android:roundIcon="@drawable/ic_launcher_round"
+         android:label="{% block application_label %}@string/app_name{% endblock %}"
+--- a/chrome/android/modules/chrome_feature_modules.gni
++++ b/chrome/android/modules/chrome_feature_modules.gni
+@@ -27,10 +27,10 @@
+ #   paks: (Optional) PAKs going into module.
+ # Each new module needs to add a desc to one of the lists below.
+ 
++# tennessine: no XR module (headsets and ARCore, about 20 MB of libraries).
+ chrome_module_descs = [
+   on_demand_module_desc,
+   stack_unwinder_module_desc,
+-  xr_module_desc,
+ ]
+ if (dfmify_dev_ui) {
+   chrome_module_descs += [ dev_ui_module_desc ]
