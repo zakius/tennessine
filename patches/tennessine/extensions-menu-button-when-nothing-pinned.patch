@@ -1,0 +1,32 @@
+# The puzzle button, which titanium/ext-pin hides once unpinned, also shows while no
+# extension is pinned: unpinning uBlock Origin too left the extensions out of reach.
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/extensions/ExtensionsToolbarCoordinatorImpl.java
+@@ -95,6 +95,15 @@
+                 public void showPinnedByDefaultIPH(String extensionId) {
+                     showPinnedByDefaultIphInternal(extensionId);
+                 }
++
++                // tennessine: the puzzle button shows while nothing is pinned, see
++                // isMenuButtonPinned.
++                @Override
++                public void onPinnedActionsChanged() {
++                    ViewUtils.requestLayout(
++                            mContainer,
++                            "ExtensionsToolbarCoordinatorImpl.onPinnedActionsChanged()");
++                }
+             };
+     private final MenuButtonPinningDelegate mMenuButtonPinningDelegate =
+             new MenuButtonPinningDelegate();
+@@ -476,7 +485,10 @@
+             // ChromeAndroidTask}'s destruction, and it is currently being worked on.
+             return true;
+         }
+-        return mPrefService.getBoolean(Pref.PIN_EXTENSIONS_MENU_BUTTON);
++        // tennessine: also while no extension is pinned. The puzzle button is the only way
++        // to the extensions, and unpinning it and every extension left them out of reach.
++        return mPrefService.getBoolean(Pref.PIN_EXTENSIONS_MENU_BUTTON)
++                || (!mIsDestroyed && mExtensionsToolbarBridge.getPinnedActionIds().length == 0);
+     }
+ 
+     private void updateMenuIconVisibility() {

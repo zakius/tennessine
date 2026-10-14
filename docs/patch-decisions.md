@@ -6,10 +6,10 @@ tennessine is Vanadium plus one patch series, `patches/series`. What matters mos
 
 | Source | How it's taken |
 |---|---|
-| [Vanadium](https://github.com/GrapheneOS/Vanadium) | The `vanadium` submodule; `apply.sh` applies its patches renamed to tennessine, minus `patches/vanadium-drops.txt` (with reasons). tennessine follows Vanadium's releases, which follow Chromium stable. |
+| [Vanadium](https://github.com/GrapheneOS/Vanadium) | The `vanadium` submodule; `tennessine.py apply` applies its patches renamed to tennessine, minus `patches/vanadium-drops.txt` (with reasons). tennessine follows Vanadium's releases, which follow Chromium stable. |
 | [Titanium](https://github.com/jqssun/android-titanium-browser) | The `titanium` submodule, at the version `patches/titanium/*.patch` match: its `patch.sh` edits, one patch per group. The two that edit gclient dependencies, and the app icon, are in `post-sync.sh`. |
-| [Helium](https://github.com/imputnet/helium) | The uBlock Origin patches, from the `oganesson` submodule (desktop oganesson), as they are. |
-| [oganesson](https://github.com/zakius/oganesson-focused) | The `oganesson` submodule: no saved history (its core patch; the switches in Privacy, next to Close tabs on exit, are ours, `tennessine/history-saving-settings`), Firefox Sync's C++ (with its Android branches), strings, Polish translations and Rust library, shared with desktop. Ours is `src/chrome/browser/firefox_sync/android/`. |
+| [Helium](https://github.com/imputnet/helium) | The uBlock Origin patches, from the `helium` submodule at the tag desktop oganesson follows, as they are. |
+| [dubna](https://github.com/zakius/dubna) | The `dubna` submodule, shared with [desktop oganesson](https://github.com/zakius/oganesson-focused): no saved history (its core patch; the switches in Privacy, next to Close tabs on exit, are ours, `tennessine/history-saving-settings`), Firefox Sync's C++ (with its Android branches), strings, Polish translations and Rust library. Ours is `src/chrome/browser/firefox_sync/android/`. |
 | [Cromite](https://github.com/uazo/cromite) | `patches/cromite/`: the list-mode tab switcher (adapted: always on, without Cromite's flag framework, without tab thumbnails) and the full URL in the address bar. |
 
 ## Vanadium
@@ -72,4 +72,4 @@ Update cost for features outside the list above: the View source and Bookmark al
 
 ## Builds
 
-arm64 only, built locally (`local-build.sh`), published to the F-Droid repository at https://packages.zakius.xyz/fdroid/repo (`tools/publish_fdroid.py`), and updated on the phone with F-Droid or Obtainium.
+arm64 only, built locally (`tennessine.py build`), published to the F-Droid repository at https://packages.zakius.xyz/fdroid/repo (`tennessine.py publish`), and updated on the phone with F-Droid or Obtainium.

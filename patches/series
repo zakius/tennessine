@@ -1,4 +1,4 @@
-# Applied after Vanadium's patches (apply.sh). Paths from the repo root.
+# Applied after Vanadium's patches (tennessine.py apply). Paths from the repo root.
 
 # Titanium: its patch.sh, one patch per group. Ported by hand; titanium/ is the version they match.
 patches/titanium/manifest-tweaks.patch
@@ -22,6 +22,7 @@ patches/titanium/ext-toolbar.patch
 patches/titanium/ext-popup.patch
 patches/titanium/ext-popup-fullscreen.patch
 patches/titanium/ext-pin.patch
+patches/tennessine/extensions-menu-button-when-nothing-pinned.patch
 patches/titanium/ext-incognito.patch
 patches/titanium/ext-process-priority.patch
 patches/titanium/ext-settings-override.patch
@@ -36,26 +37,26 @@ patches/titanium/crbug-431004500-incognito-uaf.patch
 patches/titanium/crbug-40274462-incognito-uaf.patch
 patches/titanium/crbug-444024982-api-31.patch
 
-# uBlock Origin: Helium's built-in uBO, shared with desktop oganesson.
-oganesson/patches/ungoogled-chromium/extensions-manifestv2.patch
-oganesson/patches/helium/core/add-component-l10n-support.patch
-oganesson/patches/helium/core/add-component-managed-schema-support.patch
-oganesson/patches/helium/core/prioritize-platform-policy-loading.patch
-oganesson/patches/helium/core/ublock-setup-sources.patch
-oganesson/patches/helium/core/ublock-install-as-component.patch
-oganesson/patches/helium/core/ublock-reconfigure-defaults.patch
-oganesson/patches/helium/core/ublock-dns-uncloaking.patch
-oganesson/patches/helium/ui/ublock-show-in-settings.patch
+# uBlock Origin: Helium's built-in uBO, from the helium submodule (desktop oganesson has it too).
+helium/patches/ungoogled-chromium/extensions-manifestv2.patch
+helium/patches/helium/core/add-component-l10n-support.patch
+helium/patches/helium/core/add-component-managed-schema-support.patch
+helium/patches/helium/core/prioritize-platform-policy-loading.patch
+helium/patches/helium/core/ublock-setup-sources.patch
+helium/patches/helium/core/ublock-install-as-component.patch
+helium/patches/helium/core/ublock-reconfigure-defaults.patch
+helium/patches/helium/core/ublock-dns-uncloaking.patch
+helium/patches/helium/ui/ublock-show-in-settings.patch
 patches/tennessine/ublock-assets-update.patch
 patches/tennessine/extensions-menu-component-only.patch
 
-# Firefox Sync from oganesson (src/chrome/browser/firefox_sync, rust/), ported to Android.
+# Firefox Sync from dubna (dubna/src/chrome/browser/firefox_sync, dubna/rust/), ported to Android.
 patches/oganesson/firefox-sync.patch
 patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch
 
-# No saved history from oganesson.
-oganesson/patches/oganesson/core/no-saved-history.patch
+# No saved history from dubna.
+dubna/patches/no-saved-history.patch
 
 # Ours and Cromite's.
 patches/tennessine/jit-allowed-by-default.patch

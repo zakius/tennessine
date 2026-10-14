@@ -14,7 +14,7 @@ import org.chromium.components.user_prefs.UserPrefs;
 
 /**
  * Privacy: oganesson's switches that stop saving browsing and download history
- * (oganesson/patches/oganesson/core/no-saved-history.patch does the work).
+ * (dubna/patches/no-saved-history.patch does the work).
  */
 @NullMarked
 public final class HistorySavingSwitches {

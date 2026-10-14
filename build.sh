@@ -17,7 +17,7 @@ git fetch --depth 1 $CHROMIUM_SOURCE +refs/tags/$VERSION:chromium_$VERSION
 git checkout $VERSION
 cp $SCRIPT_DIR/.gclient ../.gclient
 
-$SCRIPT_DIR/apply.sh || exit 1
+python3 $SCRIPT_DIR/tennessine.py apply || exit 1
 
 gclient sync -D --no-history --nohooks || exit 1
 gclient runhooks || exit 1

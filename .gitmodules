@@ -4,6 +4,9 @@
 [submodule "titanium"]
 	path = titanium
 	url = https://github.com/jqssun/android-titanium-browser.git
-[submodule "oganesson"]
-	path = oganesson
-	url = git@github.com:zakius/oganesson-focused.git
+[submodule "dubna"]
+	path = dubna
+	url = git@github.com:zakius/dubna.git
+[submodule "helium"]
+	path = helium
+	url = https://github.com/imputnet/helium.git

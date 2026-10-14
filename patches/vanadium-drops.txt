@@ -1,5 +1,5 @@
 # Vanadium patches left out of patches/series. One per line: glob<TAB>reason.
-# tools/update_vanadium.sh writes them into the series as comments.
+# tennessine.py apply skips them, and warns about a line that matches no patch.
 *trichrome-apk-build-targets.patch	Trichrome is GrapheneOS's system build; tennessine is a standalone APK (Titanium)
 *trichrome-browser-apk-targets.patch	Trichrome is GrapheneOS's system build (Titanium)
 *detailed-language*.patch	GrapheneOS language settings (Titanium)
