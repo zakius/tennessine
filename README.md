@@ -1,65 +1,106 @@
 # tennessine
 
-Chromium for Android with a configurable toolbar, Helium's built-in uBlock Origin, Chrome
-extensions, page scaling that follows Android's font size, a list-mode tab switcher, the full URL in the address bar, switches that stop saving history, Open in default browser for links in web apps, and
-Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
-[Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support.
+tennessine is Chromium for Android, built on [Vanadium](https://github.com/GrapheneOS/Vanadium) with [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support. It adds a configurable toolbar, Helium's built-in uBlock Origin, Chrome extensions, Firefox-compatible Sync, and switches that stop saving history. Its desktop sibling is [oganesson](https://github.com/zakius/oganesson), and the code the two share is in [dubna](https://github.com/zakius/dubna).
 
 > **Highly volatile.** This is a personal project. Features change or disappear without notice, some may misbehave, updates can break things, and development may stop at any moment. Use it knowing that.
 
 ## What it's for
 
-A browser that is complete for the way its maintainer uses it, not one that tries to do everything: Vivaldi shows where that leads, with so many features that some never work well. What an extension does well stays an extension's job. Content blocking is uBlock Origin, the state of the art, built in through Helium's work, and Chrome extensions run at all thanks to Titanium. The browser itself only builds what an extension can't do: a toolbar laid out as you like, a bottom-first layout for one-handed use, page zoom that follows Android's font size, a list-mode tab switcher, Firefox-compatible Sync (best with your own self-hosted sync server), switches that stop saving history, and an Open in default browser item in web apps' link menu.
+tennessine is meant to be complete for the way the maintainer uses it. It does not try to do everything. Vivaldi tries to do too much, and some of its features never work well.
+
+Where an extension does the job well, the job stays with the extension. Content blocking is uBlock Origin, the state of the art, built in through Helium's work. Other Chrome extensions run thanks to Titanium. The browser builds natively only what an extension can't do:
+
+- A toolbar laid out as you like, and a bottom-first layout for one-handed use.
+- Page zoom that follows Android's font size.
+- A list-mode tab switcher and the full URL in the address bar, both adapted from [Cromite](https://github.com/uazo/cromite).
+- Firefox-compatible Sync. It works best with a self-hosted sync server.
+- Switches that stop saving history.
+- An Open in default browser item in the link menu of installed web apps.
+
+[docs/patch-decisions.md](docs/patch-decisions.md) explains why each patch is in or out.
 
 ## The name
 
-Tennessine (Ts, element 117) is the neighbour of oganesson (118), after which its desktop sibling, [oganesson](https://github.com/zakius/oganesson), is named, and that is why it was picked. Both were first made at the Joint Institute for Nuclear Research in Dubna (tennessine in 2010, with Oak Ridge National Laboratory and other American labs; it is named after Tennessee): a coincidence, and the name of the [code they share](https://github.com/zakius/dubna).
+Tennessine (Ts, element 117) was picked only because it is the neighbour of oganesson (118), the element its desktop sibling [oganesson](https://github.com/zakius/oganesson) is named after. Tennessine is named after Tennessee. It was first made in 2010 at the Joint Institute for Nuclear Research in Dubna, with Oak Ridge National Laboratory and other American labs. Oganesson was first made there too, in 2002, with Lawrence Livermore National Laboratory. That is a coincidence, and it gave the shared repo, [dubna](https://github.com/zakius/dubna), its name.
 
 ## Install
 
-Add the F-Droid repository `https://packages.zakius.xyz/fdroid/repo` (fingerprint below) in F-Droid or Obtainium. Updates install in the background once the store has installed the app once and its battery use is unrestricted.
+Add this F-Droid repository in F-Droid or Obtainium:
+
+```
+https://packages.zakius.xyz/fdroid/repo
+```
+
+Fingerprint:
+
+```
+A40055F0D1CF2D8B22F0DCD2CE8B874DB15352E5B6DC262C3B4FEA9FD46ADFBE
+```
+
+After the store installs the app for the first time, it installs updates in the background, provided the store's battery use is unrestricted.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `vanadium/` | Submodule at a Vanadium tag. Its tag sets the Chromium version. Its patches apply as they are, renamed to tennessine, minus `patches/vanadium-drops.txt`. |
-| `titanium/` | Submodule at the Titanium tag that `patches/titanium/` matches. Titanium edits with `sed` in `patch.sh`; ours are those edits as patches, so a change fails loudly. |
-| `helium/` | Submodule at the [Helium](https://github.com/imputnet/helium) tag that desktop oganesson follows. The uBlock Origin patches and version come from it, as they are. |
-| `dubna/` | Submodule: [dubna](https://github.com/zakius/dubna), what tennessine shares with [desktop oganesson](https://github.com/zakius/oganesson): Firefox Sync (C++, strings, translations, Rust library), no saved history, and the update policy that keeps both on one Chromium milestone. Its Android side is ours: `src/chrome/browser/firefox_sync/platform/` (dubna's `firefox_sync_platform.h`) and `android/` (the settings screen). |
-| `patches/series` | Everything applied after Vanadium, in order. Paths from the repo root. |
+| `vanadium/` | Submodule at a Vanadium tag, which sets the Chromium version. Its patches apply as they are, renamed to tennessine, minus `patches/vanadium-drops.txt`. |
+| `titanium/` | Submodule at the Titanium tag that `patches/titanium/` matches. Titanium makes its changes with `sed` in `patch.sh`. Ours are those changes as patches, so a change that no longer applies fails loudly. |
+| `helium/` | Submodule at the [Helium](https://github.com/imputnet/helium) commit that oganesson follows. The uBlock Origin patches and version come from it, as they are. |
+| `dubna/` | Submodule: [dubna](https://github.com/zakius/dubna), what tennessine shares with oganesson. That is Firefox-compatible Sync (C++, strings, translations, Rust library), no saved history, and the update policy that keeps both browsers on one Chromium milestone. The Android side of it is here: `src/chrome/browser/firefox_sync/platform/` (dubna's `firefox_sync_platform.h`) and `android/` (the settings screen). |
+| `patches/series` | Everything applied after Vanadium, in order. Paths are relative to the repo root. |
 | `src/` | New files copied over the tree, after `dubna/src/`. |
 | `tennessine.py` | Every command: `apply`, `check`, `refresh`, `upstream`, `build`, `publish`. Run it without arguments for help. |
 
-## Updating to a new Chromium
+## Build
 
-`./tennessine.py upstream` lists what is new upstream; it prints nothing when every submodule is current. dubna's update policy (`dubna/README.md`) says when to take it: a new release in the milestone at once, a new milestone only once desktop's upstream has it too, a fix for an exploit in the wild at once.
+`./tennessine.py build` builds an arm64 APK in a rootless Ubuntu container (podman, `tools/container-build.sh`). It checks out and syncs Chromium, applies the patches, compiles, and signs the APK with the key in `~/.local/share/tennessine-signing`. Every update must be signed with that key.
 
-1. `git -C vanadium fetch --tags && git -C vanadium checkout <tag>` (Vanadium tags follow Chromium stable).
-2. `git -C titanium fetch --tags && git -C titanium diff HEAD v<version> -- patch.sh`, port what's new into `patches/titanium/`, then `git -C titanium checkout v<version>`.
-3. `git -C helium checkout <commit>` at the Helium commit desktop oganesson's `helium` submodule moves to.
-4. `./tennessine.py check`: applies everything to a shallow checkout of the new version (`work/chromium/src`, about 30 s after the first fetch) and lists what fails.
-5. For each failure, `./tennessine.py check --stop`, then in `work/chromium/src`: `../../../tennessine.py refresh ../../../<patch>`. Read every hunk it reports with fuzz: fuzz can land a hunk inside the wrong `#if` or mid-expression. Fix those in the tree and take the fix with `../../../tennessine.py refresh <patch> <file>`.
-6. `./tennessine.py build`, install, commit.
+```sh
+./tennessine.py build           # full build
+./tennessine.py build resume    # recompile after a change to src/ only
+```
 
-To take shared fixes (Firefox Sync, no saved history): `git -C dubna pull`, then `./tennessine.py check`.
+`build.sh`, `common.sh` and `post-sync.sh` come from Titanium and run inside the container.
 
-## Building
+Each build's versionCode is 10^9 plus the minutes since 2026-01-01 (`set_version_code` in `common.sh`). A rebuild on the same Chromium version is therefore still an update.
 
-`./tennessine.py build` builds an arm64 APK in a rootless Ubuntu container (podman,
-`tools/container-build.sh`): Chromium checkout, sync, patches, compile, and signing with the APK
-key in `~/.local/share/tennessine-signing`, which every update must be signed with. `./tennessine.py build resume` recompiles after a change to `src/` only. `build.sh`,
-`common.sh` and `post-sync.sh` come from Titanium and run inside the container.
+## Updating
 
-Each build's versionCode is 10^9 plus the minutes since 2026-01-01 (`set_version_code` in
-`common.sh`), so a rebuild on the same Chromium version is still an update.
+`./tennessine.py upstream` lists what is new upstream. It prints nothing when every submodule is current. dubna's [update policy](https://github.com/zakius/dubna#update-policy) says when to update: a new release in the milestone at once, a new milestone only when oganesson's upstream has it too, and a fix for an exploit in the wild at once.
 
-`./tennessine.py publish` publishes the APK in the F-Droid repository
-`https://packages.zakius.xyz/fdroid/repo` (fingerprint
-`A40055F0D1CF2D8B22F0DCD2CE8B874DB15352E5B6DC262C3B4FEA9FD46ADFBE`), for F-Droid or Obtainium. Its
-index signing key is in `~/.local/share/tennessine-fdroid`.
+1. Move Vanadium to the new tag. Vanadium tags follow Chromium stable.
+   ```sh
+   git -C vanadium fetch --tags && git -C vanadium checkout <tag>
+   ```
+2. Compare Titanium's `patch.sh` with the new version and port what is new into `patches/titanium/`. Then check out the new version.
+   ```sh
+   git -C titanium fetch --tags && git -C titanium diff HEAD v<version> -- patch.sh
+   git -C titanium checkout v<version>
+   ```
+3. Move Helium to the commit that oganesson's `helium` submodule moves to.
+   ```sh
+   git -C helium checkout <commit>
+   ```
+4. Run `./tennessine.py check`. It applies everything to a shallow checkout of the new version in `work/chromium/src` and lists what fails. After the first fetch, this takes about 30 seconds.
+5. For each failure, run `./tennessine.py check --stop`, then refresh the patch from `work/chromium/src`:
+   ```sh
+   ../../../tennessine.py refresh ../../../<patch>
+   ```
+   Read every hunk it reports with fuzz, because fuzz can put a hunk inside the wrong `#if` or in the middle of an expression. Fix those hunks in the tree and take the fix into the patch with `../../../tennessine.py refresh <patch> <file>`.
+6. Run `./tennessine.py build`, install the APK, and commit.
 
-Both keys exist only on this machine: back up `~/.local/share/tennessine-signing` and
-`~/.local/share/tennessine-fdroid`. Losing the APK key means installed copies can't update.
+To take shared fixes (Firefox-compatible Sync, no saved history), run `git -C dubna pull`, then `./tennessine.py check`.
 
-`docs/patch-decisions.md` has why each patch is in or out.
+## Releasing
+
+`./tennessine.py publish` publishes the APK in the F-Droid repository listed under [Install](#install). The repository's index signing key is in `~/.local/share/tennessine-fdroid`.
+
+> **Back up both keys.** The APK key (`~/.local/share/tennessine-signing`) and the index key (`~/.local/share/tennessine-fdroid`) exist only on the build machine. If the APK key is lost, installed copies can't update.
+
+## Docs
+
+[Patch decisions](docs/patch-decisions.md): why each patch is in or out.
+
+## License
+
+GPL-2.0 (`LICENSE`).
