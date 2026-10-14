@@ -9,7 +9,7 @@ Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 
 ## What it's for
 
-A browser that is complete for the way its maintainer uses it, not one that tries to do everything: Vivaldi shows where that leads, with so many features that some never work well. What an extension does well stays an extension's job. Content blocking is uBlock Origin, the state of the art, built in through Helium's work, and Chrome extensions run at all thanks to Titanium. The browser itself only builds what an extension can't do: a toolbar laid out as you like, a bottom-first layout for one-handed use, page zoom that follows Android's font size, a list-mode tab switcher, Firefox Sync, switches that stop saving history, and links in web apps that open in the default browser.
+A browser that is complete for the way its maintainer uses it, not one that tries to do everything: Vivaldi shows where that leads, with so many features that some never work well. What an extension does well stays an extension's job. Content blocking is uBlock Origin, the state of the art, built in through Helium's work, and Chrome extensions run at all thanks to Titanium. The browser itself only builds what an extension can't do: a toolbar laid out as you like, a bottom-first layout for one-handed use, page zoom that follows Android's font size, a list-mode tab switcher, Firefox Sync, switches that stop saving history, and an Open in default browser item in web apps' link menu.
 
 ## The name
 
