@@ -13,12 +13,12 @@ fi
 git config --global user.name tennessine-build
 git config --global user.email build@localhost
 VERSION=$(grep -m1 -o "[0-9]\+\(\.[0-9]\+\)\{3\}" vanadium/args.gn)
-# A previous run left the tree patched: back to the Chromium tag. Ignored files (gclient
-# dependencies, out/) stay, so the sync and the compile resume from where they were.
-if [ "$MODE" != resume ] && [ "$MODE" != x64 ] && [ -d chromium/src/.git ] &&
-   git -C chromium/src rev-parse -q --verify "chromium_$VERSION" >/dev/null; then
+# A previous run left the tree patched: back to the Chromium tag it checked out, which build.sh
+# then moves to VERSION. Ignored files (gclient dependencies, out/) stay, so the sync and the
+# compile resume from where they were.
+if [ "$MODE" != resume ] && [ "$MODE" != x64 ] && [ -d chromium/src/.git ]; then
   git -C chromium/src am --abort 2>/dev/null || true
-  git -C chromium/src reset -q --hard "chromium_$VERSION"
+  git -C chromium/src reset -q --hard
   git -C chromium/src clean -qfd
 fi
 export LOCAL_TEST_JKS=$(base64 -w0 /keys/local.properties) STORE_TEST_JKS=$(base64 -w0 /keys/test.jks)
