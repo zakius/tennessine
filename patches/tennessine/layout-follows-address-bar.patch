@@ -4,7 +4,8 @@
 # - typing in the omnibox keeps it at the bottom, above the keyboard, and the suggestions sit on
 #   it, the top suggestion nearest;
 # - the tab switcher's toolbar sits below the tab list, its buttons nearest the edge;
-# - the tab list sits on that toolbar, the newest tab nearest it, however few tabs there are.
+# - the tab list sits on that toolbar, the newest tab nearest it, however few tabs there are;
+#   snackbars (Undo) show over the toolbar, not over the tabs.
 --- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 +++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 @@ -36,6 +36,7 @@
@@ -111,7 +112,11 @@
                  mDropdown.getBaseTopPadding() + mOmniboxAlignment.paddingTop,
 --- a/chrome/browser/hub/internal/android/java/src/org/chromium/chrome/browser/hub/HubCoordinator.java
 +++ b/chrome/browser/hub/internal/android/java/src/org/chromium/chrome/browser/hub/HubCoordinator.java
-@@ -13,7 +13,12 @@
+@@ -10,10 +10,16 @@
+ import android.app.Activity;
+ import android.content.Context;
+ import android.os.Handler;
++import android.view.Gravity;
  import android.view.LayoutInflater;
  import android.view.View;
  import android.view.ViewGroup;
@@ -124,7 +129,7 @@
  
  import org.chromium.base.Callback;
  import org.chromium.base.DeviceInfo;
-@@ -35,6 +40,7 @@
+@@ -35,6 +41,7 @@
  import org.chromium.chrome.browser.profiles.ProfileProvider;
  import org.chromium.chrome.browser.tab.Tab;
  import org.chromium.chrome.browser.toolbar.menu_button.MenuButtonCoordinator;
@@ -132,7 +137,7 @@
  import org.chromium.chrome.browser.ui.edge_to_edge.EdgeToEdgeController;
  import org.chromium.chrome.browser.ui.searchactivityutils.SearchActivityClient;
  import org.chromium.chrome.browser.user_education.UserEducationHelper;
-@@ -42,6 +48,7 @@
+@@ -42,6 +49,7 @@
  import org.chromium.components.feature_engagement.Tracker;
  import org.chromium.ui.edge_to_edge.EdgeToEdgePadAdjuster;
  
@@ -140,18 +145,36 @@
  import java.util.List;
  
  /** Root coordinator of the Hub. */
-@@ -126,6 +133,10 @@
+@@ -49,6 +57,8 @@
+ public class HubCoordinator implements PaneHubController, BackPressHandler, PaneViewProvider {
+     private final FrameLayout mContainerView;
+     private final ViewGroup mMainHubParent;
++    // tennessine: with the address bar at the bottom, snackbars show over the bottom toolbar.
++    private @Nullable ViewGroup mBottomSnackbarContainer;
+     private final PaneManager mPaneManager;
+     private final HubToolbarCoordinator mHubToolbarCoordinator;
+     private final @Nullable HubBottomToolbarCoordinator mHubBottomToolbarCoordinator;
+@@ -126,6 +136,11 @@
          int layoutId = DeviceInfo.isXr() ? R.layout.hub_xr_layout : R.layout.hub_layout;
          mMainHubParent = (ViewGroup) LayoutInflater.from(context).inflate(layoutId, null);
          mContainerView.addView(mMainHubParent);
 +        // tennessine: with the address bar at the bottom, so is the tab switcher's toolbar (#7).
 +        if (!DeviceInfo.isXr() && !AddressBarPreference.isToolbarConfiguredToShowOnTop()) {
 +            moveToolbarToBottom(mMainHubParent, mContainerView);
++            mBottomSnackbarContainer = addBottomSnackbarContainer(mMainHubParent);
 +        }
  
          ProfileProvider profileProvider = profileProviderSupplier.get();
          assert profileProvider != null;
-@@ -480,6 +491,48 @@
+@@ -413,6 +428,7 @@
+ 
+     /** Returns the view group to contain the snackbar. */
+     public ViewGroup getSnackbarContainer() {
++        if (mBottomSnackbarContainer != null) return mBottomSnackbarContainer;
+         return mHubPaneHostCoordinator.getSnackbarContainer();
+     }
+ 
+@@ -480,6 +496,67 @@
          return (Callback<T>) callback;
      }
  
@@ -188,6 +211,25 @@
 +        toolbarRoot.addOnLayoutChangeListener(
 +                (view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
 +                        setBottomInset(view, ViewCompat.getRootWindowInsets(view)));
++    }
++
++    /**
++     * A container at the hub's bottom, over the toolbar and above the navigation bar, for
++     * snackbars: there they cover the toolbar for a few seconds rather than the newest tabs, and
++     * Undo stays near the thumb.
++     */
++    private static ViewGroup addBottomSnackbarContainer(ViewGroup hub) {
++        FrameLayout container = new FrameLayout(hub.getContext());
++        hub.addView(
++                container,
++                new FrameLayout.LayoutParams(
++                        ViewGroup.LayoutParams.MATCH_PARENT,
++                        ViewGroup.LayoutParams.WRAP_CONTENT,
++                        Gravity.BOTTOM));
++        container.addOnLayoutChangeListener(
++                (view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
++                        setBottomInset(view, ViewCompat.getRootWindowInsets(view)));
++        return container;
 +    }
 +
 +    private static void setBottomInset(View view, @Nullable WindowInsetsCompat insets) {
