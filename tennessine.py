@@ -107,6 +107,7 @@ def apply(stop=False):
             return 1
     # dubna's translations of its strings, after the patches add the grdp.
     env = dict(os.environ, PYTHONPATH=str(ROOT / 'helium/utils'))
+    sys.stdout.flush()
     if subprocess.run([sys.executable, str(ROOT / 'dubna/tools/translate.py'), str(tree),
                        str(ROOT / 'dubna')], env=env).returncode:
         failed = True
