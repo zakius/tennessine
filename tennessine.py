@@ -2,15 +2,14 @@
 """tennessine's commands. Stdlib only, Python 3.10.
 
 apply [--stop]       prepares the Chromium tree in the current directory:
-                     1. uBlock Origin into third_party/ublock, at the version and checksum
-                        in helium/deps.ini.
-                     2. dubna/src/ (Firefox Sync, no saved history: shared with desktop),
+                     1. dubna/src/ (Firefox Sync, no saved history: shared with desktop),
                         then src/, copied over the tree.
-                     3. Vanadium's patches, straight from the vanadium submodule, renamed to
+                     2. Vanadium's patches, straight from the vanadium submodule, renamed to
                         tennessine, minus patches/vanadium-drops.txt.
-                     4. patches/series: paths from the repo root, so dubna/ and helium/
-                        patches come from those submodules.
-                     5. dubna's Polish translations of its strings.
+                     3. patches/series: paths from the repo root, so dubna/ patches come
+                        from that submodule. A series entry from a GPL-3.0 source fails:
+                        Vanadium's patches are GPL-2.0-only (see LICENSING below).
+                     4. dubna's Polish translations of its strings.
                      --stop stops at the first failure, for refresh.
 check [WORKDIR] [--stop]
                      apply on a Chromium checkout at Vanadium's version, zero fuzz. The
@@ -24,8 +23,9 @@ refresh PATCH [FILE...]
                      place: read every hunk patch reports with fuzz, fix the tree, then take
                      the fix with FILE: rewrites FILE's part of PATCH from the tree's git
                      diff (only when no other patch edits FILE).
-upstream             lists newer upstream tags (vanadium, titanium, helium) and dubna
-                     commits; exits 1 when there is one.
+upstream             lists newer upstream tags (vanadium, titanium), a newer uBlock Origin
+                     release than the installer's pin, and dubna commits; exits 1 when
+                     there is one.
 build [resume|x64]   arm64 APK in a rootless Ubuntu container on a scratch copy in
                      work/build (tools/container-build.sh), signed with the key in
                      ~/.local/share/tennessine-signing.
@@ -35,9 +35,13 @@ build [resume|x64]   arm64 APK in a rootless Ubuntu container on a scratch copy 
                      out/x64, for the emulator, whose ARM translation crashes arm64 Chromium.
 publish [APK]        puts the APK (default: the local build's arm64 one) in the F-Droid
                      repository, https://packages.zakius.xyz/fdroid/repo.
+
+LICENSING: Vanadium's patches are GPL-2.0-only and allow no GPL-3.0 code in the same
+program, so nothing GPL-3.0 is built in: not Helium's or Cromite's patches. dubna is used
+under its GPL-2.0 option. uBlock Origin (GPL-3.0, Helium's build) is a separate program
+that the browser downloads and installs on first run (src/chrome/browser/ublock_installer).
 """
-import configparser, fnmatch, hashlib, os, re, shutil, subprocess, sys, tempfile, urllib.request
-import zipfile
+import fnmatch, hashlib, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -52,26 +56,14 @@ def vanadium_version():
     return re.search(VERSION_RE, (ROOT / 'vanadium/args.gn').read_text())[0]
 
 
-def ublock(tree):
-    deps = configparser.ConfigParser()
-    deps.read(ROOT / 'helium/deps.ini')
-    ubo = deps['ublock_origin']
-    zip_path = ROOT / 'work' / ubo['download_filename']
-    zip_path.parent.mkdir(parents=True, exist_ok=True)
-    if not zip_path.is_file():
-        urllib.request.urlretrieve(ubo['url'], zip_path)
-    if hashlib.sha256(zip_path.read_bytes()).hexdigest() != ubo['sha256']:
-        sys.exit(f'tennessine: {zip_path} does not match the sha256 in helium/deps.ini')
-    out = tree / ubo['output_path']
-    shutil.rmtree(out, ignore_errors=True)
-    with tempfile.TemporaryDirectory() as tmp:
-        zipfile.ZipFile(zip_path).extractall(tmp)
-        shutil.move(Path(tmp) / ubo['strip_leading_dirs'], out)
+# Series sources whose code is GPL-3.0, which Vanadium's GPL-2.0-only license excludes.
+GPL3_SOURCES = ('helium/', 'patches/cromite/')
+# The uBlock Origin build the installer downloads: its pin is in this file.
+UBLOCK_INSTALLER = ROOT / 'src/chrome/browser/ublock_installer/ublock_installer.cc'
 
 
 def apply(stop=False):
     tree = Path.cwd()
-    ublock(tree)
     for top in (ROOT / 'dubna/src', ROOT / 'src'):
         shutil.copytree(top, tree, dirs_exist_ok=True)
 
@@ -91,6 +83,9 @@ def apply(stop=False):
             patches.append((f'vanadium/{p.name}', text))
     for line in (ROOT / 'patches/series').read_text().splitlines():
         if line and not line.startswith('#'):
+            if line.startswith(GPL3_SOURCES):
+                sys.exit(f'tennessine: {line} is GPL-3.0 code, which Vanadium\'s GPL-2.0-only '
+                         'license excludes (LICENSING in tennessine.py)')
             patches.append((line, (ROOT / line).read_text()))
 
     failed = False
@@ -107,10 +102,9 @@ def apply(stop=False):
         if stop:
             return 1
     # dubna's translations of its strings, after the patches add the grdp.
-    env = dict(os.environ, PYTHONPATH=str(ROOT / 'helium/utils'))
     sys.stdout.flush()
     if subprocess.run([sys.executable, str(ROOT / 'dubna/tools/translate.py'), str(tree),
-                       str(ROOT / 'dubna')], env=env).returncode:
+                       str(ROOT / 'dubna')]).returncode:
         failed = True
     return 1 if failed else 0
 
@@ -186,7 +180,7 @@ def upstream():
                         capture_output=True, text=True).stdout.strip()
     key = lambda tag: [int(n) if n.isdigit() else n for n in re.split(r'(\d+)', tag)]
     new = 0
-    for m in ('vanadium', 'titanium', 'helium'):
+    for m in ('vanadium', 'titanium'):
         tags = re.findall(r'refs/tags/(\S+)', remote('--tags', '--refs', url(m)))
         want = max(tags, key=key)
         have = subprocess.run(['git', '-C', str(ROOT / m), 'describe', '--tags', '--exact-match'],
@@ -194,6 +188,13 @@ def upstream():
         if have != want:
             print(f'{m}: {have} -> {want}')
             new = 1
+    pin = re.search(r'kVersion\[\] = "([^"]+)"', UBLOCK_INSTALLER.read_text())[1]
+    tags = re.findall(r'refs/tags/(\S+)', remote('--tags', '--refs',
+                                                  'https://github.com/imputnet/uBlock.git'))
+    latest = max(tags, key=key)
+    if key(latest) > key(pin):
+        print(f'uBlock Origin: {pin} -> {latest} (pin in {UBLOCK_INSTALLER.relative_to(ROOT)})')
+        new = 1
     have = run('git', '-C', str(ROOT / 'dubna'), 'rev-parse', 'HEAD', capture_output=True,
                text=True).stdout.strip()
     want = remote(url('dubna'), 'refs/heads/main').split()[0]

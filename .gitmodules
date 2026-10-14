@@ -7,6 +7,3 @@
 [submodule "dubna"]
 	path = dubna
 	url = git@github.com:zakius/dubna.git
-[submodule "helium"]
-	path = helium
-	url = https://github.com/imputnet/helium.git

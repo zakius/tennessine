@@ -37,18 +37,8 @@ patches/titanium/crbug-431004500-incognito-uaf.patch
 patches/titanium/crbug-40274462-incognito-uaf.patch
 patches/titanium/crbug-444024982-api-31.patch
 
-# uBlock Origin: Helium's built-in uBO, from the helium submodule (desktop oganesson has it too).
-helium/patches/ungoogled-chromium/extensions-manifestv2.patch
-helium/patches/helium/core/add-component-l10n-support.patch
-helium/patches/helium/core/add-component-managed-schema-support.patch
-helium/patches/helium/core/prioritize-platform-policy-loading.patch
-helium/patches/helium/core/ublock-setup-sources.patch
-helium/patches/helium/core/ublock-install-as-component.patch
-helium/patches/helium/core/ublock-reconfigure-defaults.patch
-helium/patches/helium/core/ublock-dns-uncloaking.patch
-helium/patches/helium/ui/ublock-show-in-settings.patch
-dubna/patches/ublock-assets-update.patch
-patches/tennessine/extensions-menu-component-only.patch
+# uBlock Origin: Helium's uBO build, a separate program the browser installs on first run.
+patches/tennessine/ublock-installer.patch
 
 # Firefox Sync from dubna (dubna/src/chrome/browser/firefox_sync, dubna/rust/); its Android side
 # is src/chrome/browser/firefox_sync/platform and android/.
@@ -64,13 +54,13 @@ dubna/patches/no-saved-history.patch
 patches/tennessine/jit-allowed-by-default.patch
 patches/tennessine/ntp-keeps-toolbar-position.patch
 patches/tennessine/page-zoom-follows-font-size.patch
-patches/cromite/list-mode-tab-switcher.patch
+# TODO rewrite as our own (Cromite is GPL-3.0): patches/cromite/list-mode-tab-switcher.patch
 patches/tennessine/toolbar-items.patch
 patches/tennessine/toolbar-hide-on-scroll.patch
 patches/tennessine/toolbar-swipe-offset-tags.patch
 patches/tennessine/crash-log.patch
 patches/tennessine/bottom-first-ui.patch
-patches/cromite/disable-omission-of-url-elements.patch
+# TODO rewrite as our own (Cromite is GPL-3.0): patches/cromite/disable-omission-of-url-elements.patch
 
 # Web apps: Open in <default browser> in the link menu, launched behind the web app.
 patches/tennessine/webapp-open-in-default-browser.patch

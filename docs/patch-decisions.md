@@ -1,6 +1,6 @@
 # Patch decisions
 
-tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, Helium's built-in uBlock Origin, other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, not saving history, and Firefox Sync, and links out of installed web apps. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
+tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, uBlock Origin (Helium's build, installed on first run), other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, not saving history, and Firefox Sync, and links out of installed web apps. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
 
 ## Sources
 
@@ -8,9 +8,9 @@ tennessine is Vanadium plus one patch series, `patches/series`. What matters mos
 |---|---|
 | [Vanadium](https://github.com/GrapheneOS/Vanadium) | The `vanadium` submodule; `tennessine.py apply` applies its patches renamed to tennessine, minus `patches/vanadium-drops.txt` (with reasons). tennessine follows Vanadium's releases, which follow Chromium stable. |
 | [Titanium](https://github.com/jqssun/android-titanium-browser) | The `titanium` submodule, at the version `patches/titanium/*.patch` match: its `patch.sh` edits, one patch per group. The two that edit gclient dependencies, and the app icon, are in `post-sync.sh`. |
-| [Helium](https://github.com/imputnet/helium) | The uBlock Origin patches, from the `helium` submodule at the tag desktop oganesson follows, as they are. |
-| [dubna](https://github.com/zakius/dubna) | The `dubna` submodule, shared with [desktop oganesson](https://github.com/zakius/oganesson): no saved history (its core patch; the switches in Privacy, next to Close tabs on exit, are ours, `tennessine/history-saving-settings`), Firefox Sync's C++, strings, Polish translations and Rust library, and the uBlock Origin filter-list URLs (`ublock-assets-update`). Ours is Sync's Android side, `src/chrome/browser/firefox_sync/platform/` and `android/`. |
-| [Cromite](https://github.com/uazo/cromite) | `patches/cromite/`: the list-mode tab switcher (adapted: always on, without Cromite's flag framework, without tab thumbnails) and the full URL in the address bar. |
+| [Helium](https://github.com/imputnet/helium) | Its uBlock Origin build ([imputnet/uBlock](https://github.com/imputnet/uBlock)), a separate program the browser downloads and installs on first run (`src/chrome/browser/ublock_installer`), with the ID Helium's built-in copy has, so its settings carry over. None of Helium's browser patches: they are GPL-3.0, which Vanadium's GPL-2.0-only license excludes (README, License). Without Helium's DNS API, uBlock Origin doesn't uncloak CNAMEs for now. |
+| [dubna](https://github.com/zakius/dubna) | The `dubna` submodule, shared with [desktop oganesson](https://github.com/zakius/oganesson): no saved history (its core patch; the switches in Privacy, next to Close tabs on exit, are ours, `tennessine/history-saving-settings`), Firefox Sync's C++, strings, Polish translations and Rust library. Ours is Sync's Android side, `src/chrome/browser/firefox_sync/platform/` and `android/`. |
+| [Cromite](https://github.com/uazo/cromite) | The ideas for the list-mode tab switcher (always on, without tab thumbnails) and the full URL in the address bar; the code is ours (`patches/tennessine/`), since Cromite's is GPL-3.0. |
 
 ## Vanadium
 

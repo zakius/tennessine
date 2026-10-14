@@ -1,0 +1,26 @@
+# Copyright 2026 The tennessine Authors
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# Installs uBlock Origin (Helium's build) on first run: see ublock_installer.h.
+# patches/tennessine/ublock-installer.patch makes the browser depend on it.
+source_set("ublock_installer") {
+  sources = [
+    "ublock_installer.cc",
+    "ublock_installer.h",
+  ]
+  deps = [
+    "//base",
+    "//chrome/browser/profiles:profile",
+    "//components/keyed_service/core",
+    "//components/pref_registry",
+    "//components/prefs",
+    "//content/public/browser",
+    "//crypto",
+    "//extensions/browser",
+    "//extensions/common",
+    "//net",
+    "//services/network/public/cpp",
+    "//third_party/zlib/google:zip",
+    "//url",
+  ]
+}
