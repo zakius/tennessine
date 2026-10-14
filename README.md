@@ -5,6 +5,12 @@ extensions, page scaling that follows Android's font size, a list-mode tab switc
 Firefox Sync. Built on [Vanadium](https://github.com/GrapheneOS/Vanadium), with
 [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support.
 
+> **Highly volatile.** This is a personal project. Features change or disappear without notice, some may misbehave, updates can break things, and development may stop at any moment. Use it knowing that.
+
+## The name
+
+Tennessine (Ts, element 117) was first made in 2010 at the Joint Institute for Nuclear Research in Dubna, with Oak Ridge National Laboratory and other American labs, and is named after Tennessee. Its desktop sibling, [oganesson](https://github.com/zakius/oganesson), is named after element 118, also made in Dubna.
+
 ## Install
 
 Add the F-Droid repository `https://packages.zakius.xyz/fdroid/repo` (fingerprint below) in F-Droid or Obtainium. Updates install in the background once the store has installed the app once and its battery use is unrestricted.
