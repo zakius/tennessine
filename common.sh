@@ -36,3 +36,12 @@ set_version_code() {
   sed -i -e '/^android_override_version_code/d' -e '$a\' "$1"
   echo "android_override_version_code = \"$(( 1000000000 + ($(date +%s) - 1767225600) / 60 ))\"" >> "$1"
 }
+
+# Compiles our C++ files' objects in $1 (dubna/tools/ours.py), all of them even after an
+# error, so the build stops on one of ours minutes in instead of hours. Run in chromium/src.
+build_ours() {
+    local ours
+    ours=$(python3 $SCRIPT_DIR/dubna/tools/ours.py $1 $SCRIPT_DIR/dubna/src $SCRIPT_DIR/src \
+        $(sed "/^#/d;/^$/d;s|^|$SCRIPT_DIR/|" $SCRIPT_DIR/patches/series)) || return 1
+    [ -z "$ours" ] || autoninja ${JOBS:+-j $JOBS} -C $1 -k 0 $ours
+}

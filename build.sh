@@ -35,6 +35,7 @@ mv $(find out/Default/apks -name 'Chrome*.apk') out/tmp/$VERSION-armeabi-v7a.apk
 fi
 sed -i 's/target_cpu = "arm"/target_cpu = "arm64"/' out/Default/args.gn
 $SCRIPT_DIR/tools/build-sync-lib.sh tennessine/sync_lib $SCRIPT_DIR/../sync-cache || exit 1
+build_ours out/Default || exit 1
 autoninja ${JOBS:+-j $JOBS} -C out/Default chrome_public_apk $([ -z "$LOCAL_BUILD" ] && echo chrome_public_bundle) || exit 1
 mv $(find out/Default/apks -name 'Chrome*.apk') out/tmp/$VERSION-arm64-v8a.apk
 [ -z "$LOCAL_BUILD" ] && mv $(find out/Default/apks -name 'Chrome*.aab') out/tmp/$VERSION-arm64-v8a.aab
