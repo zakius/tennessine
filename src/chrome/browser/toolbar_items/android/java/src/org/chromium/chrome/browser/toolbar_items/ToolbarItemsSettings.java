@@ -110,6 +110,19 @@ public class ToolbarItemsSettings extends ChromeBaseSettingsFragment {
         screen.removeAll();
         List<String> items = load();
 
+        // First, so a pending change isn't missed below the list.
+        if (!prefs().getString(PREF, "").equals(prefs().getString(APPLIED_PREF, ""))) {
+            Preference restart = new Preference(context);
+            restart.setTitle("Restart to apply");
+            restart.setSummary("The toolbar takes the new layout when the browser starts");
+            restart.setOnPreferenceClickListener(
+                    p -> {
+                        ApplicationLifetime.terminate(/* restart= */ true);
+                        return true;
+                    });
+            screen.addPreference(restart);
+        }
+
         ChromeSwitchPreference hideOnScroll = new ChromeSwitchPreference(context);
         hideOnScroll.setTitle("Hide toolbar on scroll");
         hideOnScroll.setSummary("Takes effect on the next page load");
@@ -124,7 +137,7 @@ public class ToolbarItemsSettings extends ChromeBaseSettingsFragment {
         Preference about = new Preference(context);
         about.setSummary(
                 "Left to right. Items before the address bar sit on its left. Tap an item to move"
-                        + " or hide it.");
+                        + " or hide it. Changes apply when the browser restarts.");
         about.setSelectable(false);
         screen.addPreference(about);
 
@@ -154,17 +167,6 @@ public class ToolbarItemsSettings extends ChromeBaseSettingsFragment {
                 });
         screen.addPreference(reset);
 
-        if (!prefs().getString(PREF, "").equals(prefs().getString(APPLIED_PREF, ""))) {
-            Preference restart = new Preference(context);
-            restart.setTitle("Restart to apply");
-            restart.setSummary("The toolbar takes the new layout when the browser starts");
-            restart.setOnPreferenceClickListener(
-                    p -> {
-                        ApplicationLifetime.terminate(/* restart= */ true);
-                        return true;
-                    });
-            screen.addPreference(restart);
-        }
     }
 
     private void showActions(List<String> items, int index) {
