@@ -207,8 +207,8 @@ def upstream():
 def build(mode):
     work = ROOT / 'work'
     (work / 'build/tennessine').mkdir(parents=True, exist_ok=True)
-    if not (KEYS / 'test.jks').is_file():
-        sys.exit(f'tennessine: no APK signing key in {KEYS}')
+    if not all((KEYS / f).is_file() for f in ('test.jks', 'local.properties')):
+        sys.exit(f'tennessine: no APK signing key (test.jks, local.properties) in {KEYS}')
     run('rsync', '-a', '--delete', '--exclude=/work', '--exclude=/dubna/rust/oganesson_sync/target',
         '--exclude=/chromium', '--exclude=/keys', '--exclude=/depot_tools', f'{ROOT}/',
         f'{work}/build/tennessine/')
