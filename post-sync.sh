@@ -3,7 +3,7 @@
 # in patches/series.
 
 # App icon: Titanium's tinted Vanadium icon until tennessine has its own.
-mkdir -p chrome/android/java/res_tennessine_base
+mkdir -p chrome/android/java/res_tennessine_base/drawable
 cp $SCRIPT_DIR/res/drawable/themed_app_icon.xml chrome/android/java/res_tennessine_base/drawable/themed_app_icon.xml
 for icon in $(find chrome/android/java/res_tennessine_base -type f -name '*.png'); do convert $icon -fill navy -tint 36 $icon && $SCRIPT_DIR/res/icon.sh $icon; done
 
