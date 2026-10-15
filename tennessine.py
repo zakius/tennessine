@@ -229,8 +229,21 @@ def build(mode):
 # Android won't install it over the last one. It exists only there: back the folder up.
 KEYS = Path.home() / '.local/share/tennessine-signing'
 FDROID = Path.home() / '.local/share/tennessine-fdroid'
-FDROID_TARGET = 'oracle:fdroid'
 FDROID_IMAGE = 'registry.gitlab.com/fdroid/docker-executable-fdroidserver:master'
+
+
+def env(name):
+    """NAME from the environment, else from tennessine's .env, which Git ignores: where things
+    are deployed stays out of the repository."""
+    if name in os.environ:
+        return os.environ[name]
+    path = ROOT / '.env'
+    for line in path.read_text().splitlines() if path.exists() else []:
+        key, _, value = line.partition('=')
+        if key.strip() == name:
+            return value.strip()
+    sys.exit(f'tennessine: set {name} in the environment or in {path}, e.g. {name}=myserver:fdroid')
+
 
 
 def publish(apk):
@@ -238,7 +251,7 @@ def publish(apk):
     key (keystore.p12, which exists only there: back the folder up), metadata/ and repo/.
     fdroid update, from F-Droid's fdroidserver image, renames the APK to
     <package>_<versionCode>.apk, keeps the newest 3 in repo/ and moves older ones to archive/,
-    and signs the index. repo/ and archive/ then go to oracle:fdroid/www, served by nginx
+    and signs the index. repo/ and archive/ then go to FDROID_TARGET/www (HOST:DIR, from .env), served by nginx
     (tools/fdroid-compose.yaml) behind the host's Traefik. An APK the repository already has is
     not added again."""
     out = ROOT / 'work/build/tennessine/chromium/src/out/release'
@@ -256,10 +269,11 @@ def publish(apk):
         '-e', 'GIT_CONFIG_COUNT=1', '-e', 'GIT_CONFIG_KEY_0=safe.directory',
         '-e', 'GIT_CONFIG_VALUE_0=*', '-v', f'{FDROID}:/repo', '-w', '/repo', FDROID_IMAGE,
         'update', '--rename-apks')
-    host, path = FDROID_TARGET.split(':', 1)
+    target = env('FDROID_TARGET')
+    host, path = target.split(':', 1)
     run('ssh', host, f'mkdir -p {path}/www')
-    run('rsync', '-a', '--delete', f'{FDROID}/repo', f'{FDROID}/archive', f'{FDROID_TARGET}/www/')
-    run('rsync', '-a', str(ROOT / 'tools/fdroid-compose.yaml'), f'{FDROID_TARGET}/compose.yaml')
+    run('rsync', '-a', '--delete', f'{FDROID}/repo', f'{FDROID}/archive', f'{target}/www/')
+    run('rsync', '-a', str(ROOT / 'tools/fdroid-compose.yaml'), f'{target}/compose.yaml')
     run('ssh', host, f'cd {path} && docker compose up -d --quiet-pull')
     return 0
 
