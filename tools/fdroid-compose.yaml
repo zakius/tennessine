@@ -12,3 +12,6 @@ services:
       - "traefik.http.routers.fdroid.rule=Host(`packages.zakius.xyz`) && PathPrefix(`/fdroid`)"
       - "traefik.http.routers.fdroid.entrypoints=websecure"
       - "traefik.http.services.fdroid.loadbalancer.server.port=80"
+      # HSTS like the rest of the host; pkgrepo's compose redirects plain http
+      - "traefik.http.routers.fdroid.middlewares=fdroid-hsts"
+      - "traefik.http.middlewares.fdroid-hsts.headers.stsSeconds=63072000"
