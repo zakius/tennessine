@@ -2,5 +2,6 @@
 /keys/
 *.apk
 *.aab
+__pycache__/
 # Where things are deployed: kept out of Git
 /.env
