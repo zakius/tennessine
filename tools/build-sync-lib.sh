@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds dubna/rust/oganesson_sync (Firefox Sync over application-services, shared with desktop) for arm64 Android into
+# Builds dubna/rust/oganesson_sync (Firefox Sync over application-services, shared with desktop) for Android (arm64, or x64 for the emulator) into
 # OUT/liboganesson_sync.so (build.sh: tennessine/sync_lib in the Chromium tree), which
 # patches/tennessine/firefox-sync-native-lib.patch packages with the APK. Runs where build.sh runs (Ubuntu with sudo, or the local build container).
 #

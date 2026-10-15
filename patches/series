@@ -51,7 +51,7 @@ patches/tennessine/firefox-sync-android.patch
 # No saved history from dubna.
 dubna/patches/no-saved-history.patch
 
-# Ours and Cromite's.
+# Ours. The list-mode tab switcher and the full URL are Cromite's ideas, not its GPL-3.0 code.
 patches/tennessine/jit-allowed-by-default.patch
 patches/tennessine/ntp-keeps-toolbar-position.patch
 patches/tennessine/page-zoom-follows-font-size.patch
