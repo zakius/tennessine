@@ -17,6 +17,8 @@ Where an extension does the job well, the job stays with the extension. Content 
 - Switches that stop saving history.
 - An Open in default browser item in the link menu of installed web apps.
 
+tennessine is not privacy-paranoid. It keeps features that some privacy-focused browsers remove, because they are useful: the built-in password manager, Sync, and Google among the search engines. Each one is yours to skip. DuckDuckGo is the default search engine, Sync stays off until you sign in, and saving passwords can be turned off in settings. If you don't trust a feature, don't use it.
+
 [docs/patch-decisions.md](docs/patch-decisions.md) explains why each patch is in or out.
 
 ## The name
