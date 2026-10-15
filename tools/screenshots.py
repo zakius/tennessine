@@ -55,13 +55,16 @@ class Devtools:
                            'Sec-WebSocket-Version: 13\r\n\r\n').encode())
         response = b''
         while b'\r\n\r\n' not in response:
-            response += self.sock.recv(1024)
+            response += self._recv(1)
         self.next_id = 0
 
     def _recv(self, n):
         data = b''
         while len(data) < n:
-            data += self.sock.recv(n - len(data))
+            chunk = self.sock.recv(n - len(data))
+            if not chunk:
+                sys.exit('screenshots: DevTools closed the connection')
+            data += chunk
         return data
 
     def call(self, method, **params):
