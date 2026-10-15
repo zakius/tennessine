@@ -137,6 +137,8 @@ def section_span(text, name):
     f = re.escape(name)
     start = re.compile(rf'^(diff --git a/{f} b/{f}\n(index .*\n)?)?--- (a/{f}|/dev/null)\n',
                        re.M).search(text)
+    if not start:
+        sys.exit(f'tennessine: the patch has no section for {name}')
     end = re.compile(r'^(diff --git |--- (a/|/dev/null))', re.M).search(text, start.end() + 1)
     return start.start(), end.start() if end else len(text)
 
@@ -166,8 +168,12 @@ def refresh(patch, files):
         for name in names:
             old = Path(before) / name
             old, label = (old, f'a/{name}') if old.is_file() else ('/dev/null', '/dev/null')
-            parts.append(subprocess.run(['diff', '-u', '--label', label, '--label', f'b/{name}',
-                                         str(old), name], capture_output=True, text=True).stdout)
+            result = subprocess.run(['diff', '-u', '--label', label, '--label', f'b/{name}',
+                                     str(old), name], capture_output=True, text=True)
+            # 2: trouble, e.g. no such file outside the tree; writing would empty the patch.
+            if result.returncode > 1:
+                sys.exit(f'tennessine: {result.stderr.strip()}')
+            parts.append(result.stdout)
     patch.write_text(header + ''.join(parts))
     print(f'refreshed {patch}')
     return 0
