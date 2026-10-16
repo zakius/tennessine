@@ -215,7 +215,9 @@ def build(mode):
     (work / 'build/tennessine').mkdir(parents=True, exist_ok=True)
     if not all((KEYS / f).is_file() for f in ('test.jks', 'local.properties')):
         sys.exit(f'tennessine: no APK signing key (test.jks, local.properties) in {KEYS}')
-    run('rsync', '-a', '--delete', '--exclude=/work', '--exclude=/dubna/rust/oganesson_sync/target',
+    # No .git: in a git worktree it is a file naming a gitdir outside the container, and with
+    # it every git command in the copy fails. H, not exclude, so --delete drops an old one.
+    run('rsync', '-a', '--delete', '--filter=H .git', '--exclude=/work', '--exclude=/dubna/rust/oganesson_sync/target',
         '--exclude=/chromium', '--exclude=/keys', '--exclude=/depot_tools', f'{ROOT}/',
         f'{work}/build/tennessine/')
     # --name: one build at a time in the shared tree.
