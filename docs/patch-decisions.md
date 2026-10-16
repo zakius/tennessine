@@ -1,6 +1,6 @@
 # Patch decisions
 
-tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, uBlock Origin (Helium's build, installed on first run), other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, not saving history, and Firefox Sync, and links out of installed web apps. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 is in the old [tennessine](https://github.com/zakius/tennessine) repo).
+tennessine is Vanadium plus one patch series, `patches/series`. What matters most: the configurable toolbar, uBlock Origin (Helium's build, installed on first run), other Chrome extensions, page scaling, the list-mode tab switcher, JIT on, the full URL in the address bar, not saving history, and Firefox Sync, and links out of installed web apps. Other features stay only while they cost nothing on updates (narrowed with the maintainer on 2026-10-09; the wider set of 2026-10-04 was in the old tennessine repo, since deleted).
 
 ## Sources
 
