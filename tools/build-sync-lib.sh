@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds dubna/rust/oganesson_sync (Firefox Sync over application-services, shared with desktop) for Android (arm64, or x64 for the emulator) into
 # OUT/liboganesson_sync.so (build.sh: tennessine/sync_lib in the Chromium tree), which
-# patches/tennessine/firefox-sync-native-lib.patch packages with the APK. Runs where build.sh runs (Ubuntu with sudo, or the local build container).
+# patches/tennessine/firefox-sync-native-lib.patch packages with the APK. Runs in the build container (tennessine.py build).
 #
 # Chromium on Android has no NSS, so NSS is built from source with application-services' own
 # scripts, at the commit the crate pins, and linked statically. Chromium's bundled NDK has no
