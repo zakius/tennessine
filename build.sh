@@ -29,20 +29,12 @@ set_version_code out/Default/args.gn
 gn gen out/Default # gn args out/Default; echo 'treat_warnings_as_errors = false' >> out/Default/args.gn
 rm -rf out/tmp out/release && mkdir -p out/tmp out/release
 
-if [ -z "$LOCAL_BUILD" ]; then # local builds: arm64 APK only
-autoninja ${JOBS:+-j $JOBS} -C out/Default chrome_public_apk || exit 1
-mv $(find out/Default/apks -name 'Chrome*.apk') out/tmp/$VERSION-armeabi-v7a.apk
-fi
-sed -i 's/target_cpu = "arm"/target_cpu = "arm64"/' out/Default/args.gn
 $SCRIPT_DIR/tools/build-sync-lib.sh tennessine/sync_lib $SCRIPT_DIR/../sync-cache || exit 1
 build_ours out/Default || exit 1
-autoninja ${JOBS:+-j $JOBS} -C out/Default chrome_public_apk $([ -z "$LOCAL_BUILD" ] && echo chrome_public_bundle) || exit 1
+autoninja ${JOBS:+-j $JOBS} -C out/Default chrome_public_apk || exit 1
 mv $(find out/Default/apks -name 'Chrome*.apk') out/tmp/$VERSION-arm64-v8a.apk
-[ -z "$LOCAL_BUILD" ] && mv $(find out/Default/apks -name 'Chrome*.aab') out/tmp/$VERSION-arm64-v8a.aab
 
 export PATH=$PWD/third_party/jdk/current/bin/:$PATH
 export ANDROID_HOME=$PWD/third_party/android_sdk/public
-[ -z "$LOCAL_BUILD" ] && sign_apk out/tmp/$VERSION-armeabi-v7a.apk out/release/$VERSION-armeabi-v7a.apk
 sign_apk out/tmp/$VERSION-arm64-v8a.apk out/release/$VERSION-arm64-v8a.apk
-[ -z "$LOCAL_BUILD" ] && sign_aab out/tmp/$VERSION-arm64-v8a.aab out/release/$VERSION-arm64-v8a.aab
 rm -rf $SCRIPT_DIR/keys

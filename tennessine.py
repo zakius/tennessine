@@ -222,7 +222,7 @@ def build(mode):
     os.execvp('podman', ['podman', 'run', '--rm', '-i', '--pids-limit=-1',
                          '--name', 'tennessine-build',
                          '-v', f'{work}/build:/build', '-v', f'{KEYS}:/keys',
-                         '-w', '/build/tennessine', '-e', 'LOCAL_BUILD=1', '-e', f'MODE={mode}',
+                         '-w', '/build/tennessine', '-e', f'MODE={mode}',
                          '-e', f'JOBS={os.environ.get("JOBS", "28")}',
                          # The container's first process ignores SIGTERM unless it traps it:
                          # this one exits on it, which ends the whole build, so stopping podman
