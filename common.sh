@@ -1,10 +1,5 @@
 export SCRIPT_DIR=$(realpath $(dirname $0))
 
-replace() {
-    export org=$2 new=$3
-    find $1 -type f -exec sed -i 's@'$org'@'$new'@g' {} \;
-}
-
 set_keys() {
     mkdir -p $SCRIPT_DIR/keys
     echo $LOCAL_TEST_JKS | base64 -d > $SCRIPT_DIR/keys/local.properties
@@ -23,10 +18,6 @@ sign_apk() {
     rm $1.repacked
     $apksigner sign -verbose -ks $SCRIPT_DIR/keys/test.jks --ks-pass pass:$storePassword --key-pass pass:$keyPassword --ks-key-alias $keyAlias --out $2 $1.aligned || exit 1
     rm $1.aligned
-}
-
-version_lt() {
-  [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" = "$1" ]
 }
 
 # Android's versionCode: 10^9 plus the minutes since 2026-01-01 UTC, so each build updates the
