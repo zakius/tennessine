@@ -17,6 +17,9 @@ if [ "$MODE" != resume ] && [ "$MODE" != x64 ] && [ -d chromium/src/.git ]; then
   git -C chromium/src am --abort 2>/dev/null || true
   git -C chromium/src reset -q --hard
   git -C chromium/src clean -qfd
+  # post-sync.sh edits this gclient dependency, which the reset above doesn't reach: left
+  # edited, the next sync refuses to move it to a new Chromium's revision.
+  git -C chromium/src/third_party/devtools-frontend/src checkout -q -- . 2>/dev/null || true
 fi
 export LOCAL_TEST_JKS=$(base64 -w0 /keys/local.properties) STORE_TEST_JKS=$(base64 -w0 /keys/test.jks)
 if [ "$MODE" != resume ] && [ "$MODE" != x64 ]; then exec ./build.sh; fi
