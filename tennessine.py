@@ -246,6 +246,12 @@ def env(name):
     if name in os.environ:
         return os.environ[name]
     path = ROOT / '.env'
+    if not path.exists():
+        # A git worktree has no .env of its own: the main checkout's is the one.
+        common = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--path-format=absolute',
+                                 '--git-common-dir'], capture_output=True, text=True).stdout.strip()
+        if common:
+            path = Path(common).parent / '.env'
     for line in path.read_text().splitlines() if path.exists() else []:
         key, _, value = line.partition('=')
         if key.strip() == name:
