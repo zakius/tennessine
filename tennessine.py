@@ -264,7 +264,8 @@ def publish(apk):
     """The repository lives in ~/.local/share/tennessine-fdroid: config.yml, the index signing
     key (keystore.p12, which exists only there: back the folder up), metadata/ and repo/.
     fdroid update, from F-Droid's fdroidserver image, renames the APK to
-    <package>_<versionCode>.apk, keeps the newest 3 in repo/ and moves older ones to archive/,
+    <package>_<versionCode>.apk, keeps the newest 3 in repo/ and moves older ones to archive/
+    (emptied of its APKs first, so it holds only the ones just moved),
     and signs the index. repo/ and archive/ then go to FDROID_TARGET/www (HOST:DIR, from .env), served by nginx
     (tools/fdroid-compose.yaml) behind the host's Traefik. An APK the repository already has is
     not added again."""
@@ -278,6 +279,9 @@ def publish(apk):
     have = {digest(f) for d in ('repo', 'archive') for f in (FDROID / d).glob('*.apk')}
     if digest(apks[0]) not in have:
         shutil.copy2(apks[0], FDROID / 'repo' / apks[0].name)
+    # The archive holds only what this update moves out of repo/: older APKs go.
+    for old in (FDROID / 'archive').glob('*.apk'):
+        old.unlink()
     run('docker', 'run', '--rm', '-u', f'{os.getuid()}:{os.getgid()}', '-e', 'HOME=/tmp',
         # The image checks its own fdroidserver checkout, owned by another user.
         '-e', 'GIT_CONFIG_COUNT=1', '-e', 'GIT_CONFIG_KEY_0=safe.directory',
