@@ -4,6 +4,11 @@
 # extension; a hostname a proxy would resolve (HTTP, HTTPS, SOCKS5) isn't resolved locally.
 # Extensions with the dns permission may return promises from blocking listeners, which
 # Chromium already supports for policy-installed Manifest V3 extensions.
+# A canonical-name lookup (also HTTP Negotiate's) goes to the browser's resolver, Secure DNS
+# included, not always to the system resolver; the canonical name is where the CNAME chain
+# ends. Android's system resolver, Private DNS on or off, gives the same name (the last CNAME
+# target, else the query name: DnsResolver's getanswer()), but from Private DNS's or the
+# network's server, not Secure DNS's.
 --- a/extensions/common/api/dns.webidl
 +++ b/extensions/common/api/dns.webidl
 @@ -2,22 +2,34 @@
@@ -141,7 +146,7 @@
  }  // namespace extensions
 --- a/extensions/browser/api/dns/dns_api.cc
 +++ b/extensions/browser/api/dns/dns_api.cc
-@@ -4,6 +4,9 @@
+@@ -4,6 +4,10 @@
  
  #include "extensions/browser/api/dns/dns_api.h"
  
@@ -149,9 +154,10 @@
 +#include <utility>
 +
  #include "base/functional/bind.h"
++#include "base/strings/string_util.h"
  #include "base/values.h"
  #include "content/public/browser/browser_context.h"
-@@ -12,12 +15,16 @@
+@@ -12,12 +16,16 @@
  #include "extensions/common/api/dns.h"
  #include "net/base/host_port_pair.h"
  #include "net/base/net_errors.h"
@@ -169,7 +175,7 @@
  
  namespace Resolve = extensions::api::dns::Resolve;
  
-@@ -32,26 +39,71 @@
+@@ -32,26 +40,71 @@
    std::optional<Resolve::Params> params = Resolve::Params::Create(args());
    EXTENSION_FUNCTION_VALIDATE(params);
  
@@ -252,7 +258,7 @@
  }
  
  void DnsResolveFunction::OnComplete(
-@@ -62,14 +114,23 @@
+@@ -62,14 +115,26 @@
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    receiver_.reset();
  
@@ -274,10 +280,13 @@
 +  for (const net::IPEndPoint& endpoint : resolved_addresses) {
 +    record.addresses.push_back(endpoint.ToStringWithoutPort());
 +  }
-+  // The first alias is the canonical name, lowercase; an empty one is none.
++  // The first alias is the canonical name; an empty one is none. Lowercased:
++  // resolvers keep the case the server sent, and uBlock Origin compares it
++  // with lowercase hostnames.
 +  if (canonical_name_ && !resolved_addresses.dns_aliases().empty() &&
 +      !resolved_addresses.dns_aliases().front().empty()) {
-+    record.canonical_name = resolved_addresses.dns_aliases().front();
++    record.canonical_name =
++        base::ToLowerASCII(resolved_addresses.dns_aliases().front());
 +  }
 +  Respond(ArgumentList(Resolve::Results::Create(record)));
  
@@ -333,3 +342,113 @@
  });
  
  exports.$set('WebRequestEvent', WebRequestEvent);
+--- a/net/dns/host_resolver_manager.cc
++++ b/net/dns/host_resolver_manager.cc
+@@ -1463,16 +1463,15 @@
+       // is to avoid the metrics being skewed by mechanical requests of other
+       // source types.
+       RecordDnsClientCapabilityMetrics(dns_client_.get());
+-      // Force address queries with canonname to use HostResolverSystemTask to
+-      // counter poor CNAME support in DnsTask. See https://crbug.com/872665
++      // tennessine: canonname queries too, so they keep to Secure DNS: DnsTask
++      // validates CNAME chains now (https://crbug.com/872665 was about poor
++      // CNAME support in DnsTask).
+       //
+-      // Otherwise, default to DnsTask (with allowed fallback to
++      // Default to DnsTask (with allowed fallback to
+       // HostResolverSystemTask for address queries). But if hostname appears to
+       // be an MDNS name (ends in *.local), go with HostResolverSystemTask for
+       // address queries and MdnsTask for non- address queries.
+-      if ((job_key.flags & HOST_RESOLVER_CANONNAME) && has_address_type) {
+-        out_tasks->push_back(TaskType::SYSTEM);
+-      } else if (!ResemblesMulticastDNSName(job_key.host.GetHostname())) {
++      if (!ResemblesMulticastDNSName(job_key.host.GetHostname())) {
+         bool system_task_allowed =
+             has_address_type &&
+             job_key.secure_dns_mode != SecureDnsMode::kSecure &&
+@@ -1529,11 +1528,8 @@
+       break;
+   }
+ 
+-  // `HOST_RESOLVER_CANONNAME` is only supported through system resolution.
++  // `HOST_RESOLVER_CANONNAME` isn't supported by MDNS.
+   if (job_key.flags & HOST_RESOLVER_CANONNAME) {
+-    DCHECK(std::ranges::find(*out_tasks, TaskType::DNS) == out_tasks->end());
+-    DCHECK(std::ranges::find(*out_tasks, TaskType::DNS_PLATFORM) ==
+-           out_tasks->end());
+     DCHECK(std::ranges::find(*out_tasks, TaskType::MDNS) == out_tasks->end());
+   }
+ }
+--- a/net/dns/host_resolver_manager_request_impl.cc
++++ b/net/dns/host_resolver_manager_request_impl.cc
+@@ -394,6 +394,11 @@
+   // Skip fixups for `include_canonical_name` requests. Just use the
+   // canonical name exactly as it was received from the system resolver.
+   if (parameters().include_canonical_name) {
++    // tennessine: a DnsTask result's aliases are its whole CNAME chain; the
++    // canonical name is where the chain ends, the address records' name.
++    if (!results_->canonical_names().empty()) {
++      fixed_up_dns_alias_results_ = {*results_->canonical_names().begin()};
++    }
+     DCHECK_LE(fixed_up_dns_alias_results_.size(), 1u);
+   } else {
+     fixed_up_dns_alias_results_ =
+--- a/net/dns/host_resolver_manager_unittest.cc
++++ b/net/dns/host_resolver_manager_unittest.cc
+@@ -8788,29 +8788,42 @@
+                   IPEndPoint(IPAddress::IPv6Localhost(), 80)))));
+ }
+ 
+-// Test that without specifying source, a request that would otherwise be
+-// handled by DNS is sent to the system resolver if cannonname is requested.
+-TEST_F(HostResolverManagerDnsTest, CanonicalNameForcesProc) {
+-  // Disable fallback to ensure system resolver is used directly, not via
+-  // fallback.
+-  set_allow_fallback_to_systemtask(false);
+-
+-  proc_->AddRuleForAllFamilies("nx_succeed", "192.168.1.102",
+-                               HOST_RESOLVER_CANONNAME, "canonical");
+-  proc_->SignalMultiple(1u);
+-
+-  ChangeDnsConfig(CreateValidDnsConfig());
++// tennessine: a canonname request keeps to Secure DNS, and its canonical name
++// is where the CNAME chain ends.
++TEST_F(HostResolverManagerDnsTest, CanonicalNameUsesSecureDns) {
++  MockDnsClientRuleList rules;
++  for (uint16_t qtype : {dns_protocol::kTypeA, dns_protocol::kTypeAAAA}) {
++    rules.emplace_back(
++        "first.test", qtype, /*secure=*/true,
++        MockDnsClientRule::Result(BuildTestDnsResponse(
++            "first.test", qtype,
++            {qtype == dns_protocol::kTypeA
++                 ? BuildTestAddressRecord("third.test",
++                                          IPAddress::IPv4Localhost())
++                 : BuildTestAddressRecord("third.test",
++                                          IPAddress::IPv6Localhost()),
++             BuildTestCnameRecord("second.test", "third.test"),
++             BuildTestCnameRecord("first.test", "second.test")})),
++        /*delay=*/false);
++  }
++  CreateResolver();
++  UseMockDnsClient(CreateValidDnsConfig(), std::move(rules));
++  DnsConfigOverrides overrides;
++  overrides.secure_dns_mode = SecureDnsMode::kSecure;
++  resolver_->SetDnsConfigOverrides(overrides);
+ 
+   HostResolver::ResolveHostParameters params;
+   params.include_canonical_name = true;
+   ResolveHostResponseHelper response(resolver_->CreateRequest(
+-      HostPortPair("nx_succeed", 80), NetworkAnonymizationKey(),
++      HostPortPair("first.test", 80), NetworkAnonymizationKey(),
+       handles::kInvalidNetworkHandle, NetLogWithSource(), params,
+       resolve_context_.get()));
+   ASSERT_THAT(response.result_error(), IsOk());
+ 
+   EXPECT_THAT(response.request()->GetDnsAliasResults(),
+-              testing::UnorderedElementsAre("canonical"));
++              testing::ElementsAre("third.test"));
++  EXPECT_THAT(response.request()->GetAddressResults().dns_aliases(),
++              testing::ElementsAre("third.test"));
+ }
+ 
+ TEST_F(HostResolverManagerDnsTest, DnsAliases) {
