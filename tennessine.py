@@ -225,7 +225,10 @@ def build(mode):
                          '--name', 'tennessine-build',
                          '-v', f'{work}/build:/build', '-v', f'{KEYS}:/keys',
                          '-w', '/build/tennessine', '-e', f'MODE={mode}',
-                         '-e', f'JOBS={os.environ.get("JOBS", "28")}',
+                         # A job per CPU of the machine: the system limits the containers'
+                         # CPUs by the time of day, and a build that starts under the
+                         # daytime limit then still fills every CPU at night.
+                         '-e', f'JOBS={os.environ.get("JOBS", os.cpu_count())}',
                          # The container's first process ignores SIGTERM unless it traps it:
                          # this one exits on it, which ends the whole build, so stopping podman
                          # stops the build too.
