@@ -14,10 +14,8 @@ concurrency:
   cancel-in-progress: false
 permissions:
   contents: write
-env:
-  MAIN: /home/zakius/dev/tennessine
-  # One browser build at a time on the machine, whichever repo's release starts it.
-  BUILDS_LOCK: /home/zakius/dev/.builds.lock
+# The runner's .env sets MAIN, the main checkout, and BUILDS_LOCK, which allows one browser build
+# at a time on the machine, whichever repo's release starts it.
 jobs:
   release:
     runs-on: [self-hosted, tennessine]
@@ -25,6 +23,7 @@ jobs:
     steps:
       - name: Main checkout at this commit
         run: |
+          : "${MAIN:?is set in the runner's .env}" "${BUILDS_LOCK:?is set in the runner's .env}"
           cd "$MAIN"
           git fetch -q origin --tags
           git merge -q --ff-only "$GITHUB_SHA"
