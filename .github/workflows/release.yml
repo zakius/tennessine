@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Main checkout at this commit
         run: |
-          : "${MAIN:?is set in the runner's .env}" "${BUILDS_LOCK:?is set in the runner's .env}"
+          : "${MAIN:?must be set in the .env of the runner}" "${BUILDS_LOCK:?must be set in the .env of the runner}"
           cd "$MAIN"
           git fetch -q origin --tags
           git merge -q --ff-only "$GITHUB_SHA"
