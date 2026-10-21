@@ -35,7 +35,7 @@ Kept for now:
 
 ## Titanium
 
-Kept: the extension support for phones (toolbar button, popups, pinning, MV2, Opera and Edge add-on installs, incognito, unpacked extensions from phone storage, the extensions page layout), DevTools on the phone, its fixes for Chromium bugs, accessibility fixes, un-expired flags, omnibox site search, the omnibox kept in phone behavior, and its feature overrides minus loading all tabs at startup.
+Kept: the extension support for phones (toolbar button, popups, pinning, MV2, Opera and Edge add-on installs, incognito, unpacked extensions from phone storage, the extensions page layout), DevTools on the phone, its fixes for Chromium bugs, accessibility fixes, un-expired flags, omnibox site search, the omnibox kept in phone behavior, and its feature overrides minus forced automatic picture-in-picture.
 
 Dropped:
 
@@ -43,6 +43,7 @@ Dropped:
 - Incognito as a separate window, from the desktop Android layout: private tabs stay in the tab switcher.
 - (`kLoadAllTabsAtStartup` was dropped at first, then restored: extensions crash on restored tabs without it.)
 - The software GL fallback for devices without GLES 3.
+- Forced automatic picture-in-picture (`kAutoPictureInPictureAndroid`), which is off upstream: chrome://flags#auto-picture-in-picture-android turns it on.
 
 ## Dropped on 2026-10-09
 

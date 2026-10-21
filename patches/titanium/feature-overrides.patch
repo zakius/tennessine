@@ -3,7 +3,7 @@ diff --git a/chrome/browser/chrome_browser_field_trials.cc b/chrome/browser/chro
 index 63e5aff1..b9f6d600 100644
 --- a/chrome/browser/chrome_browser_field_trials.cc
 +++ b/chrome/browser/chrome_browser_field_trials.cc
-@@ -134,7 +134,17 @@ void ChromeBrowserFieldTrials::RegisterFeatureOverrides(
+@@ -134,7 +134,16 @@ void ChromeBrowserFieldTrials::RegisterFeatureOverrides(
    }
  
  #if BUILDFLAG(IS_ANDROID)
@@ -13,7 +13,6 @@ index 63e5aff1..b9f6d600 100644
 +feature_overrides.EnableFeature(kAndroidMediaPicker);
 +feature_overrides.EnableFeature(features::kUserMediaScreenCapturing);
 +feature_overrides.EnableFeature(media::kAndroidEnableBackgroundMediaCapturing);
-+feature_overrides.EnableFeature(media::kAutoPictureInPictureAndroid);
 +feature_overrides.EnableFeature(media::kContextMenuPictureInPictureAndroid);
 +feature_overrides.EnableFeature(chrome::android::kChromeNativeUrlOverriding);
 +// tennessine: extensions' tab code needs a WebContents for every tab, restored ones included.
