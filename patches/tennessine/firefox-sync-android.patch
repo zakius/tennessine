@@ -7,9 +7,9 @@
  # Three lines of code for minimizing conflicts in rebasing changes
  chrome_java_ext_full_path_deps = [
 +  "//chrome/browser/firefox_sync/android:java",
+   "//chrome/browser/password_manager/android:java",
    "//tennessine/android_config/parser:config_app_parser_java",
    "//tennessine/android_config/proto:config_proto_java",
-   "//tennessine/chromium_src/base/settings/android:base_settings_java",
 --- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
 +++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
 @@ -3,6 +3,9 @@

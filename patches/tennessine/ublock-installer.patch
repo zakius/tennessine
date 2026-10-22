@@ -2,7 +2,7 @@
 # It installs Helium's uBO build, a separate program, instead of building uBO in.
 --- a/chrome/browser/profiles/BUILD.gn
 +++ b/chrome/browser/profiles/BUILD.gn
-@@ -1062,6 +1062,10 @@
+@@ -1067,6 +1067,10 @@
      ]
    }
  
@@ -16,16 +16,16 @@
 --- a/chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc
 +++ b/chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc
 @@ -259,6 +259,9 @@
+ #include "chrome/browser/tab_group_sync/tab_group_sync_service_factory.h"
  #include "chrome/browser/themes/theme_service_factory.h"
  #include "chrome/browser/tips/tips_service_factory.h"
- #include "chrome/browser/translate/translate_ranker_factory.h"
 +#if BUILDFLAG(IS_ANDROID)
 +#include "chrome/browser/ublock_installer/ublock_installer.h"
 +#endif
- #include "chrome/browser/ttc/ttc_keyed_service_factory.h"
+ #include "chrome/browser/translate/translate_ranker_factory.h"
+ #include "chrome/browser/ttc/core/ttc_keyed_service_factory.h"
  #include "chrome/browser/ui/autofill/autofill_client_provider_factory.h"
- #include "chrome/browser/ui/find_bar/find_bar_state_factory.h"
-@@ -1576,6 +1579,9 @@
+@@ -1570,6 +1573,9 @@
    unexportable_keys::UnexportableKeyProfileGarbageCollectionServiceFactory::
        GetInstance();
  #endif

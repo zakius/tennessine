@@ -252,15 +252,15 @@
  import android.view.LayoutInflater;
  import android.view.View;
  import android.view.ViewGroup;
-@@ -89,6 +90,7 @@
- import org.chromium.chrome.browser.tasks.tab_management.TabListMediator.TabListLayoutType;
- import org.chromium.chrome.browser.tasks.tab_management.TabSwitcherMessageManager.MessageUpdateObserver;
+@@ -91,6 +92,7 @@
+ import org.chromium.chrome.browser.tasks.tab_management.labels.SendTabToSelfTabLabeller;
+ import org.chromium.chrome.browser.tasks.tab_management.labels.TabGroupLabeller;
  import org.chromium.chrome.browser.tasks.tab_management.pinned_tabs.PinnedTabStripCoordinator;
 +import org.chromium.chrome.browser.toolbar.settings.AddressBarPreference;
  import org.chromium.chrome.browser.ui.edge_to_edge.EdgeToEdgeController;
  import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
  import org.chromium.chrome.browser.undo_tab_close_snackbar.UndoBarThrottle;
-@@ -478,7 +480,20 @@
+@@ -482,7 +484,20 @@
              parentView.addView(layout);
  
              FrameLayout tabListContainer = layout.findViewById(R.id.tab_list_container);

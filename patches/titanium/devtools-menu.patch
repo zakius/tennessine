@@ -1,4 +1,4 @@
-# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9). On Chromium 156 the tablet check is only in DevToolsWindowAndroid, as patch.sh's isDevToolsAvailable line has it.
 --- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
 @@ -483,7 +483,7 @@
@@ -10,26 +10,17 @@
                          && mParams.getSourceType() == MenuSourceType.LONG_PRESS));
      }
  
-@@ -501,7 +501,7 @@
+--- a/chrome/browser/devtools/android/java/src/org/chromium/chrome/browser/devtools/DevToolsWindowAndroid.java
++++ b/chrome/browser/devtools/android/java/src/org/chromium/chrome/browser/devtools/DevToolsWindowAndroid.java
+@@ -25,7 +25,7 @@
+ 
+     public static boolean isDevToolsAvailable(Context context) {
+         return ContentFeatureMap.isEnabled(ContentFeatureList.ANDROID_DEV_TOOLS_FRONTEND)
+-                && DeviceFormFactor.isNonMultiDisplayContextOnTablet(context);
++                && (true || DeviceFormFactor.isNonMultiDisplayContextOnTablet(context));
      }
  
-     @VisibleForTesting
--    boolean shouldShowDeveloperMenu() {
-+    boolean shouldShowDeveloperMenu() { if (true) return DevToolsWindowAndroid.isDevToolsAllowedFor(getProfile(), mItemDelegate.getWebContents());
-         return DevToolsWindowAndroid.isDevToolsAllowedFor(
-                         getProfile(), mItemDelegate.getWebContents())
-                 && isTabletScreen();
---- a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/MoreToolsItemBuilder.java
-+++ b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/MoreToolsItemBuilder.java
-@@ -252,7 +252,7 @@
-      */
-     public boolean shouldShowDevToolsItem(@Nullable Tab currentTab) {
-         if (!ContentFeatureMap.isEnabled(ContentFeatureList.ANDROID_DEV_TOOLS_FRONTEND)
--                || !DeviceFormFactor.isNonMultiDisplayContextOnTablet(mContext)
-+                || (false && !DeviceFormFactor.isNonMultiDisplayContextOnTablet(mContext))
-                 || currentTab == null
-                 || currentTab.isNativePage()) {
-             return false;
+     public static boolean isDevToolsAllowedFor(
 --- a/chrome/browser/task_manager/common/task_manager_features.cc
 +++ b/chrome/browser/task_manager/common/task_manager_features.cc
 @@ -11,7 +11,7 @@

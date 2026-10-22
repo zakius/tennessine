@@ -15,7 +15,7 @@
  </PreferenceScreen>
 --- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeApplicationImpl.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeApplicationImpl.java
-@@ -52,6 +52,8 @@
+@@ -54,6 +54,8 @@
          super.onCreate();
  
          ChromeApplicationImplHooks.onCreate();
@@ -32,8 +32,8 @@
    "//chrome/browser/firefox_sync/android:java",
 +  "//chrome/browser/crash_log/android:java",
    "//chrome/browser/toolbar_items/android:java",
+   "//chrome/browser/password_manager/android:java",
    "//tennessine/android_config/parser:config_app_parser_java",
-   "//tennessine/android_config/proto:config_proto_java",
 --- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
 +++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
 @@ -3,6 +3,9 @@
