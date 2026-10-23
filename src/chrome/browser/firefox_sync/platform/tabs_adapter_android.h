@@ -42,7 +42,7 @@ class TabsAdapter : public SyncAdapter,
   // stale for the tab list.
   void DidAddTab(TabAndroid* tab, TabModel::TabLaunchType type) override;
   void DidMoveTab(TabAndroid* tab, int new_index, int old_index) override;
-  void DidSelectTab(TabAndroid* tab, TabModel::TabSelectionType type) override;
+  void DidSelectTab(TabAndroid* tab) override;
   void OnTabCloseCommitted(const std::vector<TabAndroid*>& tabs,
                            bool is_all_tabs,
                            bool can_restore,

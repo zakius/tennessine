@@ -83,8 +83,7 @@ void TabsAdapter::DidMoveTab(TabAndroid* tab, int new_index, int old_index) {
   local_changed_.Run();
 }
 
-void TabsAdapter::DidSelectTab(TabAndroid* tab,
-                               TabModel::TabSelectionType type) {
+void TabsAdapter::DidSelectTab(TabAndroid* tab) {
   local_changed_.Run();
 }
 
