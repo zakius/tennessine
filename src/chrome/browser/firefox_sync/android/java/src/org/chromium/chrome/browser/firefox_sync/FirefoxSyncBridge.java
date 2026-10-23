@@ -4,6 +4,9 @@
 
 package org.chromium.chrome.browser.firefox_sync;
 
+import android.os.Build;
+import android.provider.Settings;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jni_zero.CalledByNative;
@@ -11,6 +14,7 @@ import org.jni_zero.JNINamespace;
 import org.jni_zero.JniType;
 import org.jni_zero.NativeMethods;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.chrome.browser.profiles.Profile;
 
@@ -71,6 +75,16 @@ public class FirefoxSyncBridge {
     @CalledByNative
     private void onStatusChanged() {
         mOnStatusChanged.run();
+    }
+
+    /** The phone's name as Settings → About phone shows it ("Zenfone 10"), else its model. */
+    @CalledByNative
+    private static @JniType("std::string") String getDeviceName() {
+        String name =
+                Settings.Global.getString(
+                        ContextUtils.getApplicationContext().getContentResolver(),
+                        Settings.Global.DEVICE_NAME);
+        return name == null || name.isEmpty() ? Build.MODEL : name;
     }
 
     @NativeMethods

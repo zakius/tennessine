@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 // JNI for FirefoxSyncBridge.java, the Android settings screen's access to
-// FirefoxSyncService.
+// FirefoxSyncService, and DeviceName() (firefox_sync_platform.h), which needs
+// the same JNI header.
 
 #include <string>
 
@@ -13,6 +14,7 @@
 #include "base/callback_list.h"
 #include "base/functional/bind.h"
 #include "base/json/json_writer.h"
+#include "chrome/browser/firefox_sync/firefox_sync_platform.h"
 #include "chrome/browser/firefox_sync/firefox_sync_service.h"
 #include "chrome/browser/firefox_sync/firefox_sync_service_factory.h"
 #include "chrome/browser/profiles/profile.h"
@@ -104,6 +106,11 @@ static void JNI_FirefoxSyncBridge_SetTypeEnabled(JNIEnv* env,
   if (auto* service = GetService(profile)) {
     service->SetTypeEnabled(name, enabled);
   }
+}
+
+std::string DeviceName() {
+  return "tennessine on " + Java_FirefoxSyncBridge_getDeviceName(
+                                base::android::AttachCurrentThread());
 }
 
 }  // namespace firefox_sync
