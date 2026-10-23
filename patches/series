@@ -47,6 +47,7 @@ dubna/patches/firefox-sync.patch
 patches/tennessine/firefox-sync-strings.patch
 patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch
+patches/tennessine/firefox-sync-send-tabs.patch
 
 # No saved history from dubna.
 dubna/patches/no-saved-history.patch
