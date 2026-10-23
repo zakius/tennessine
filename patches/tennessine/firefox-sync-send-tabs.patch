@@ -1,0 +1,96 @@
+# Firefox Sync: "Send to your device" in the share sheet and in a link's menu sends to a device on
+# the Firefox account (dubna's FirefoxSyncService::devices()), through SendTab.java in
+# src/chrome/browser/firefox_sync/android. Chromium's own send-tab-to-self item, label and
+# picker title are reused; the strings for a received tab's notification are new.
+--- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
+@@ -53,6 +53,7 @@
+ import org.chromium.chrome.browser.download.DownloadUtils;
+ import org.chromium.chrome.browser.enterprise.util.DataProtectionBridge;
+ import org.chromium.chrome.browser.ephemeraltab.EphemeralTabCoordinator;
++import org.chromium.chrome.browser.firefox_sync.SendTab;
+ import org.chromium.chrome.browser.firstrun.FirstRunStatus;
+ import org.chromium.chrome.browser.flags.ChromeFeatureList;
+ import org.chromium.chrome.browser.glic.GlicContextMenuUtils;
+@@ -704,6 +705,10 @@
+                     linkGroup.add(createListItem(Item.COPY_LINK_TEXT));
+                 }
+             }
++            // tennessine: the link to a device on the Firefox account.
++            if (SendTab.canSend(getProfile(), mParams.getLinkUrl().getSpec())) {
++                linkGroup.add(createListItem(Item.SEND_TAB_TO_SELF));
++            }
+             if (areMandatoryFlowsCompleted(getProfile())) {
+                 if (!mItemDelegate.isIncognito()
+                         && UrlUtilities.isDownloadableScheme(mParams.getLinkUrl())
+@@ -1207,7 +1212,14 @@
+         } else if (itemId == R.id.contextmenu_send_tab_to_self) {
+             recordContextMenuSelection(ContextMenuUma.Action.SEND_TAB_TO_SELF);
+             Tab tab = getTab();
+-            if (tab != null) {
++            // tennessine: in a link's menu, the item sends the link.
++            if (mParams.isAnchor()) {
++                SendTab.showDevicePicker(
++                        mContext,
++                        getProfile(),
++                        mParams.getLinkUrl().getSpec(),
++                        mParams.getLinkText().trim());
++            } else if (tab != null) {
+                 assumeNonNull(mShareDelegateSupplier.get()).sendTabToSelf(tab);
+             }
+         } else if (itemId == R.id.contextmenu_translate) {
+--- a/chrome/browser/share/android/java/src/org/chromium/chrome/browser/share/ChromeProvidedSharingOptionsProviderBase.java
++++ b/chrome/browser/share/android/java/src/org/chromium/chrome/browser/share/ChromeProvidedSharingOptionsProviderBase.java
+@@ -18,6 +18,7 @@
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.chrome.R;
++import org.chromium.chrome.browser.firefox_sync.SendTab;
+ import org.chromium.chrome.browser.preferences.Pref;
+ import org.chromium.chrome.browser.profiles.Profile;
+ import org.chromium.chrome.browser.screenshot_protection.ScreenshotProtectionController;
+@@ -323,7 +324,8 @@
+     private void maybeAddSendTabToSelfFirstPartyOption() {
+         Integer sendTabToSelfDisplayReason =
+                 SendTabToSelfAndroidBridge.getEntryPointDisplayReason(mProfile, mUrl);
+-        if (sendTabToSelfDisplayReason != null) {
++        // tennessine: or to a device on the Firefox account.
++        if (sendTabToSelfDisplayReason != null || SendTab.canSend(mProfile, mUrl)) {
+             mOrderedFirstPartyOptions.add(createSendTabToSelfFirstPartyOption());
+         }
+     }
+@@ -450,6 +452,11 @@
+                 .setFeatureNameForMetrics(USER_ACTION_SEND_TAB_TO_SELF_SELECTED)
+                 .setOnClickCallback(
+                         (view) -> {
++                            if (SendTab.canSend(mProfile, mUrl)) {
++                                SendTab.showDevicePicker(
++                                        mActivity, mProfile, mUrl, mShareParams.getTitle());
++                                return;
++                            }
+                             SendTabToSelfCoordinator sttsCoordinator =
+                                     new SendTabToSelfCoordinator(
+                                             mActivity,
+--- a/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
++++ b/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
+@@ -2139,4 +2139,6 @@
+ <translation id="992745192656291733">Liczba kart: <ph name="TAB_COUNT" /></translation>
+ <translation id="996149300115483134">Menu karty kanału jest zamknięte</translation>
+ <translation id="99907655649633293"><ph name="TAB_TITLE" />, karta incognito</translation>
++<translation id="414776566175657792">Karta z urządzenia <ph name="DEVICE" />: <ph name="TITLE" /></translation>
++<translation id="2321024629479061895">Wysłano na urządzenie <ph name="DEVICE" /></translation>
+ </translationbundle>
+\ No newline at end of file
+--- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
++++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
+@@ -56,4 +56,10 @@
+   <message name="IDS_WEBRTC_POLICY_DISABLE_NON_PROXIED_UDP" desc="Select value">
+     Disable non-proxied UDP
+   </message>
++  <message name="IDS_FIREFOX_SYNC_TAB_FROM" desc="Notification for a tab another device on the Firefox account sent">
++    Tab from <ph name="DEVICE">%1$s<ex>Firefox on Laptop</ex></ph>: <ph name="TITLE">%2$s<ex>Example Domain</ex></ph>
++  </message>
++  <message name="IDS_FIREFOX_SYNC_TAB_SENT" desc="Toast after choosing the device on the Firefox account to send a tab to">
++    Sent to <ph name="DEVICE">%1$s<ex>Firefox on Laptop</ex></ph>
++  </message>
+ </grit-part>
