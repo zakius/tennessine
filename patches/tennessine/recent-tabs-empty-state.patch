@@ -1,0 +1,14 @@
+# Recent tabs: the empty-state picture only while no other device's tabs show.
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ntp/RecentTabsRowAdapter.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ntp/RecentTabsRowAdapter.java
+@@ -1109,7 +1109,9 @@ public class RecentTabsRowAdapter extends BaseExpandableListAdapter {
+         } else {
+             boolean recentlyClosedGroupIsOnlyHeader =
+                     mRecentlyClosedTabsGroup.getChildrenCount() == 1;
+-            if (recentlyClosedGroupIsOnlyHeader) {
++            // The empty state asks to sign in on other devices: not while their tabs show.
++            if (recentlyClosedGroupIsOnlyHeader
++                    && mRecentTabsManager.getForeignSessions().isEmpty()) {
+                 addGroup(new EmptyStatePromoGroup());
+             }
+         }

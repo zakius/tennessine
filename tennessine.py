@@ -58,6 +58,10 @@ def vanadium_version():
 
 # Series sources whose code is GPL-3.0, which Vanadium's GPL-2.0-only license excludes.
 GPL3_SOURCES = ('helium/', 'patches/cromite/')
+# Vanadium's files whose text users read: grit's messages and their translations, and Android's
+# string resources (the launcher label is one). In them the name is lowercase, as everywhere
+# else; code keeps Tennessine, for identifiers.
+STRING_FILES = re.compile(r'diff --git a/\S+(\.grdp?|\.xtb|/values[^/]*/[^/\s]+\.xml) ')
 # The uBlock Origin build the installer downloads: its pin is in this file.
 UBLOCK_INSTALLER = ROOT / 'src/chrome/browser/ublock_installer/ublock_installer.cc'
 
@@ -77,7 +81,8 @@ def apply(stop=False):
     patches = []
     for p in vanadium:
         if not any(fnmatch.fnmatch(p.name, glob) for glob in drops):
-            text = p.read_text()
+            text = ''.join(s.replace('Vanadium', 'tennessine') if STRING_FILES.match(s) else s
+                           for s in re.split(r'(?m)^(?=diff --git )', p.read_text()))
             for old, new in rename:
                 text = text.replace(old, new)
             patches.append((f'vanadium/{p.name}', text))

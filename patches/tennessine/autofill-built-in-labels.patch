@@ -1,36 +1,36 @@
-# Autofill services: the built-in option names Tennessine and Firefox Sync instead of Google.
+# Autofill services: the built-in option names tennessine and Firefox Sync instead of Google.
 --- a/components/autofill_strings.grdp
 +++ b/components/autofill_strings.grdp
 @@ -476,19 +476,19 @@
        Enter <ph name="FIELD">$1<ex>ZIP code</ex></ph>
      </message>
-     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT" desc="Title of the option to use the default Tennessine autofill experience." formatter_data="android_java">
+     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT" desc="Title of the option to use the default tennessine autofill experience." formatter_data="android_java">
 -      Autofill with Google
-+      Autofill with Tennessine
++      Autofill with tennessine
      </message>
-     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN" desc="Title of the option to use third-party autofill in Tennessine." formatter_data="android_java">
+     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN" desc="Title of the option to use third-party autofill in tennessine." formatter_data="android_java">
        Autofill using another service
      </message>
-     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT_DESCRIPTION" desc="Description shown on the option to use the default Tennessine autofill experience." formatter_data="android_java">
--      Use Google Password Manager and Tennessine Autofill to save and fill passwords, payment methods, and addresses
-+      Use passwords, addresses, and payment methods saved in Tennessine, including those from Firefox Sync
+     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT_DESCRIPTION" desc="Description shown on the option to use the default tennessine autofill experience." formatter_data="android_java">
+-      Use Google Password Manager and tennessine Autofill to save and fill passwords, payment methods, and addresses
++      Use passwords, addresses, and payment methods saved in tennessine, including those from Firefox Sync
      </message>
-     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN_DESCRIPTION" desc="Description shown on the option enabling the use of third-party autofill in Tennessine." formatter_data="android_java">
-       To use another autofill service in Tennessine, turn it on in Android settings and here
+     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN_DESCRIPTION" desc="Description shown on the option enabling the use of third-party autofill in tennessine." formatter_data="android_java">
+       To use another autofill service in tennessine, turn it on in Android settings and here
      </message>
-     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT_DESCRIPTION_NEW" desc="Description shown on the option to use the default Tennessine autofill experience." formatter_data="android_java">
+     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_DEFAULT_DESCRIPTION_NEW" desc="Description shown on the option to use the default tennessine autofill experience." formatter_data="android_java">
 -      Use info saved in your Google Account to autofill passwords, passkeys, addresses, payment methods, and other info
-+      Use passwords, addresses, and payment methods saved in Tennessine, including those from Firefox Sync
++      Use passwords, addresses, and payment methods saved in tennessine, including those from Firefox Sync
      </message>
-     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN_DESCRIPTION_NEW" desc="Description shown on the option enabling the use of third-party autofill in Tennessine." formatter_data="android_java">
-       To use another autofill service in Tennessine, choose your autofill provider in Android settings
+     <message name="IDS_AUTOFILL_THIRD_PARTY_FILLING_OPT_IN_DESCRIPTION_NEW" desc="Description shown on the option enabling the use of third-party autofill in tennessine." formatter_data="android_java">
+       To use another autofill service in tennessine, choose your autofill provider in Android settings
 --- a/components/strings/components_strings_pl.xtb
 +++ b/components/strings/components_strings_pl.xtb
 @@ -4898,4 +4898,6 @@
  <translation id="995755448277384931">Dodaj numer IBAN</translation>
  <translation id="995782501881226248">YouTube</translation>
  <translation id="997986563973421916">Z Google Pay</translation>
-+<translation id="6615489446435081089">Autouzupełnianie z Tennessine</translation>
-+<translation id="6483066726108241029">Używaj haseł, adresów i form płatności zapisanych w Tennessine, także tych z Firefox Sync</translation>
++<translation id="5239128671806523975">Autouzupełnianie z tennessine</translation>
++<translation id="6484417362437396941">Używaj haseł, adresów i form płatności zapisanych w tennessine, także tych z Firefox Sync</translation>
  </translationbundle>
 \ No newline at end of file

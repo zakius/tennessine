@@ -50,6 +50,7 @@ patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch
 patches/tennessine/firefox-sync-send-tabs.patch
 patches/tennessine/firefox-sync-receive-tabs.patch
+patches/tennessine/recent-tabs-empty-state.patch
 
 # No saved history from dubna.
 dubna/patches/no-saved-history.patch
@@ -70,6 +71,6 @@ patches/tennessine/full-url.patch
 patches/tennessine/webapp-open-in-default-browser.patch
 # Privacy: switches for no saved history. Last: it edits the lists the patches above add to.
 patches/tennessine/history-saving-settings.patch
-# Autofill services: the built-in option is Tennessine's, not Google's.
+# Autofill services: the built-in option is tennessine's, not Google's.
 patches/tennessine/autofill-built-in-labels.patch
 patches/tennessine/smaller-apk.patch
