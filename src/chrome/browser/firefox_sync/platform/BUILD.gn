@@ -15,9 +15,11 @@ source_set("platform") {
   public_deps = [ "//chrome/browser/firefox_sync" ]
   deps = [
     "//base",
+    "//chrome/app:generated_resources",
     "//chrome/browser/firefox_sync/android:jni_headers",
     "//chrome/browser/profiles:profile",
     "//chrome/browser/ui/android/tab_model",
     "//content/public/browser",
+    "//ui/base",
   ]
 }

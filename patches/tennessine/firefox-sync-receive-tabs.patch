@@ -1,0 +1,44 @@
+# Firefox Sync: the background task that fetches the tabs and close requests other devices sent
+# (ReceiveTabsTask.java in src/chrome/browser/firefox_sync/android), at the receive interval while
+# the browser is in the background or not running. Its id is after Chromium's last.
+--- a/chrome/android/java/src/org/chromium/chrome/browser/background_task_scheduler/ChromeBackgroundTaskFactory.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/background_task_scheduler/ChromeBackgroundTaskFactory.java
+@@ -14,6 +14,7 @@
+ import org.chromium.chrome.browser.background_sync.BackgroundSyncBackgroundTask;
+ import org.chromium.chrome.browser.background_sync.PeriodicBackgroundSyncChromeWakeUpTask;
+ import org.chromium.chrome.browser.download.service.DownloadBackgroundTask;
++import org.chromium.chrome.browser.firefox_sync.ReceiveTabsTask;
+ import org.chromium.chrome.browser.notifications.NotificationTriggerBackgroundTask;
+ import org.chromium.chrome.browser.notifications.scheduler.NotificationSchedulerTask;
+ import org.chromium.chrome.browser.offlinepages.OfflineBackgroundTask;
+@@ -92,6 +93,8 @@
+                 return new AuxiliarySearchBackgroundTask();
+             case TaskIds.CHROME_SIGNALS_REPORTING_JOB_ID:
+                 return new SignalsReportingBackgroundTask();
++            case TaskIds.FIREFOX_SYNC_RECEIVE_TABS_JOB_ID:
++                return new ReceiveTabsTask();
+             // End of Java tasks. All native tasks should be listed here.
+             case TaskIds.QUERY_TILE_JOB_ID:
+             case TaskIds.FEEDV2_REFRESH_JOB_ID:
+--- a/components/background_task_scheduler/android/java/src/org/chromium/components/background_task_scheduler/BackgroundTaskSchedulerExternalUma.java
++++ b/components/background_task_scheduler/android/java/src/org/chromium/components/background_task_scheduler/BackgroundTaskSchedulerExternalUma.java
+@@ -237,6 +237,8 @@
+                 return "PumaUpload";
+             case TaskIds.STRUCTURED_METRICS_UPLOAD_JOB_ID:
+                 return "StructuredMetricsUpload";
++            case TaskIds.FIREFOX_SYNC_RECEIVE_TABS_JOB_ID:
++                return "FirefoxSyncReceiveTabs";
+         }
+         assert false;
+         return null;
+--- a/components/background_task_scheduler/task_ids.h
++++ b/components/background_task_scheduler/task_ids.h
+@@ -156,6 +156,8 @@
+   DWA_UPLOAD_JOB_ID = 117,
+   PUMA_UPLOAD_JOB_ID = 118,
+   STRUCTURED_METRICS_UPLOAD_JOB_ID = 119,
++  // tennessine: fetches the tabs other devices on the Firefox account sent.
++  FIREFOX_SYNC_RECEIVE_TABS_JOB_ID = 120,
+ };
+ 
+ }  // namespace background_task
