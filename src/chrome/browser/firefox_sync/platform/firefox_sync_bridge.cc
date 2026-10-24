@@ -14,10 +14,14 @@
 #include "base/callback_list.h"
 #include "base/functional/bind.h"
 #include "base/json/json_writer.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/values.h"
 #include "chrome/browser/firefox_sync/firefox_sync_platform.h"
 #include "chrome/browser/firefox_sync/firefox_sync_service.h"
 #include "chrome/browser/firefox_sync/firefox_sync_service_factory.h"
 #include "chrome/browser/profiles/profile.h"
+#include "chrome/grit/generated_resources.h"
+#include "ui/base/l10n/l10n_util.h"
 
 // Must come after all headers that specialize FromJniType() / ToJniType().
 #include "chrome/browser/firefox_sync/android/jni_headers/FirefoxSyncBridge_jni.h"
@@ -106,6 +110,43 @@ static void JNI_FirefoxSyncBridge_SetTypeEnabled(JNIEnv* env,
   if (auto* service = GetService(profile)) {
     service->SetTypeEnabled(name, enabled);
   }
+}
+
+static void JNI_FirefoxSyncBridge_PollCommands(JNIEnv* env, Profile* profile) {
+  if (auto* service = GetService(profile)) {
+    service->PollCommands();
+  }
+}
+
+static void JNI_FirefoxSyncBridge_SetReceiveInterval(JNIEnv* env,
+                                                     Profile* profile,
+                                                     jint minutes) {
+  if (auto* service = GetService(profile)) {
+    service->SetReceiveInterval(minutes);
+  }
+}
+
+// dubna's strings, which oganesson's settings use for the same dropdown.
+static std::string JNI_FirefoxSyncBridge_GetReceiveIntervals(JNIEnv* env) {
+  base::ListValue options;
+  for (int minutes : {15, 30, 60, 0}) {
+    std::string label;
+    if (minutes == 0) {
+      label = l10n_util::GetStringUTF8(IDS_FIREFOX_SYNC_RECEIVE_TABS_SYNC_ONLY);
+    } else if (minutes == 60) {
+      label = l10n_util::GetStringUTF8(IDS_FIREFOX_SYNC_RECEIVE_TABS_HOUR);
+    } else {
+      label = l10n_util::GetStringFUTF8(IDS_FIREFOX_SYNC_RECEIVE_TABS_MINUTES,
+                                        base::NumberToString16(minutes));
+    }
+    options.Append(
+        base::DictValue().Set("minutes", minutes).Set("label", label));
+  }
+  return base::WriteJson(base::DictValue()
+                             .Set("title", l10n_util::GetStringUTF8(
+                                               IDS_FIREFOX_SYNC_RECEIVE_TABS))
+                             .Set("options", std::move(options)))
+      .value_or("{}");
 }
 
 std::string DeviceName() {

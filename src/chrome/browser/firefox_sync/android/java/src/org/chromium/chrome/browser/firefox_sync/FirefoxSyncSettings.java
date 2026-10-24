@@ -30,9 +30,9 @@ import org.chromium.chrome.browser.settings.ChromeBaseSettingsFragment;
 import org.chromium.components.browser_ui.settings.ChromeSwitchPreference;
 
 /**
- * Settings → Firefox Sync: the account, the sync server, a switch per data type, and the tabs
- * of other Firefox devices. Mirrors oganesson's settings section; the screen is rebuilt from
- * the service's status whenever it changes.
+ * Settings → Firefox Sync: the account, the sync server, how often to check for tabs other devices
+ * sent, a switch per data type, and the tabs of other Firefox devices. Mirrors oganesson's settings
+ * section; the screen is rebuilt from the service's status whenever it changes.
  */
 @NullMarked
 public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
@@ -97,7 +97,16 @@ public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
 
         if (signedIn) {
             screen.addPreference(button(context, "Sync now", bridge::syncNow));
-            screen.addPreference(button(context, "Sign out", bridge::signOut));
+            screen.addPreference(
+                    receiveInterval(context, bridge, status.optInt("receiveInterval")));
+            screen.addPreference(
+                    button(
+                            context,
+                            "Sign out",
+                            () -> {
+                                bridge.signOut();
+                                ReceiveTabsTask.schedule(0, true);
+                            }));
         } else {
             String server = status.optString("server");
             String syncServer = status.optString("syncServer");
@@ -213,6 +222,45 @@ public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
                                 bridge.setServer(input.getText().toString().trim(), syncStorage))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    /** How often to check for the tabs other devices sent, as oganesson's dropdown has it. */
+    private static Preference receiveInterval(
+            Context context, FirefoxSyncBridge bridge, int current) {
+        JSONObject setting = FirefoxSyncBridge.getReceiveIntervals();
+        String title = setting.optString("title");
+        JSONArray options = setting.optJSONArray("options");
+        if (options == null) options = new JSONArray();
+        int count = options.length();
+        String[] labels = new String[count];
+        int[] minutes = new int[count];
+        int checked = -1;
+        for (int i = 0; i < count; i++) {
+            JSONObject option = options.optJSONObject(i);
+            labels[i] = option.optString("label");
+            minutes[i] = option.optInt("minutes");
+            if (minutes[i] == current) checked = i;
+        }
+        int checkedItem = checked;
+        Preference pref =
+                button(
+                        context,
+                        title,
+                        () ->
+                                new AlertDialog.Builder(context)
+                                        .setTitle(title)
+                                        .setSingleChoiceItems(
+                                                labels,
+                                                checkedItem,
+                                                (dialog, which) -> {
+                                                    dialog.dismiss();
+                                                    bridge.setReceiveInterval(minutes[which]);
+                                                    ReceiveTabsTask.schedule(minutes[which], true);
+                                                })
+                                        .setNegativeButton(android.R.string.cancel, null)
+                                        .show());
+        if (checked >= 0) pref.setSummary(labels[checked]);
+        return pref;
     }
 
     private Context getStyledContext() {
