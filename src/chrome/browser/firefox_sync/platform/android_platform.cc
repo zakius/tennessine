@@ -5,10 +5,10 @@
 // Firefox Sync's Android side (see dubna's firefox_sync_platform.h), the JNI
 // for SendTab.java, which sends tabs to other devices, and the fetches of the
 // tabs other devices sent: when the browser comes to the front, and in
-// ReceiveTabsTask.java's background task. Other devices' tabs need nothing
-// here: dubna's RemoteTabs feeds them to Recent tabs through Chromium's synced
-// sessions. Android has no account picture on the profile, so that stays
-// Platform's no-op.
+// ReceiveTabsTask.java's background task, scheduled while signed in. Other
+// devices' tabs need nothing here: dubna's RemoteTabs feeds them to Recent
+// tabs through Chromium's synced sessions. Android has no account picture on
+// the profile, so that stays Platform's no-op.
 
 #include <algorithm>
 #include <memory>
@@ -56,14 +56,7 @@ class AndroidPlatform : public Platform {
       : profile_(profile),
         app_state_(base::android::ApplicationStatusListener::New(
             base::BindRepeating(&AndroidPlatform::OnApplicationState,
-                                base::Unretained(this)))) {
-    // Posted: the service creating this isn't its factory's yet. The
-    // listener may have missed the browser's start, and a new version's first
-    // start has no task scheduled.
-    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE, base::BindOnce(&AndroidPlatform::ScheduleReceiveTabs,
-                                  weak_factory_.GetWeakPtr()));
-  }
+                                base::Unretained(this)))) {}
 
   std::unique_ptr<SyncAdapter> CreateTabsAdapter(
       base::RepeatingClosure local_changed) override {
@@ -99,6 +92,13 @@ class AndroidPlatform : public Platform {
                                  url.spec(), title);
   }
 
+  // Posted: at startup the service calling this isn't its factory's yet.
+  void OnSignedIn(bool signed_in) override {
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE, base::BindOnce(&AndroidPlatform::ScheduleReceiveTabs,
+                                  weak_factory_.GetWeakPtr(), signed_in));
+  }
+
   void CloseTabs(const std::string& from,
                  const std::vector<GURL>& urls) override {
     for (TabModel* model : TabModelList::models()) {
@@ -125,26 +125,19 @@ class AndroidPlatform : public Platform {
     if (FirefoxSyncService* service = GetService(profile_)) {
       service->PollCommands();
     }
-    ScheduleReceiveTabs();
   }
 
   // The background task runs at the receive interval while signed in. The
-  // settings screen replaces it when the interval changes or the account
-  // signs out; this one only adds it, and cancels it once signed out.
-  void ScheduleReceiveTabs() {
+  // settings screen replaces it when the interval changes; this only adds it,
+  // keeping a scheduled one's timing, or cancels it.
+  void ScheduleReceiveTabs(bool signed_in) {
     FirefoxSyncService* service = GetService(profile_);
-    if (!service) {
-      return;
+    int minutes = 0;
+    if (signed_in && service) {
+      minutes = service->GetStatus().FindInt("receiveInterval").value_or(0);
     }
-    base::DictValue status = service->GetStatus();
-    // The email, not signedIn: that waits for the saved account's
-    // decryption.
-    const std::string* email = status.FindString("email");
-    Java_ReceiveTabsTask_schedule(
-        base::android::AttachCurrentThread(),
-        email && !email->empty() ? status.FindInt("receiveInterval").value_or(0)
-                                 : 0,
-        /*replace=*/false);
+    Java_ReceiveTabsTask_schedule(base::android::AttachCurrentThread(), minutes,
+                                  /*replace=*/false);
   }
 
   // The profile's tabs in a browser window, not incognito's or archived ones:

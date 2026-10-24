@@ -100,13 +100,7 @@ public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
             screen.addPreference(
                     receiveInterval(context, bridge, status.optInt("receiveInterval")));
             screen.addPreference(
-                    button(
-                            context,
-                            "Sign out",
-                            () -> {
-                                bridge.signOut();
-                                ReceiveTabsTask.schedule(0, true);
-                            }));
+                    button(context, "Sign out", bridge::signOut));
         } else {
             String server = status.optString("server");
             String syncServer = status.optString("syncServer");

@@ -72,9 +72,12 @@ public class FirefoxSyncBridge {
         FirefoxSyncBridgeJni.get().setTypeEnabled(mProfile, name, enabled);
     }
 
-    /** Fetches the tabs and close requests other devices sent, without a sync. */
-    public void pollCommands() {
-        FirefoxSyncBridgeJni.get().pollCommands(mProfile);
+    /**
+     * Fetches the tabs and close requests other devices sent, without a sync. {@code done} runs
+     * once what was fetched is handled (FirefoxSyncService::PollCommands).
+     */
+    public void pollCommands(Runnable done) {
+        FirefoxSyncBridgeJni.get().pollCommands(mProfile, done);
     }
 
     /** How often to fetch them: 15, 30 or 60 minutes, or 0 for only with each sync. */
@@ -131,7 +134,8 @@ public class FirefoxSyncBridge {
                 @JniType("std::string") String name,
                 boolean enabled);
 
-        void pollCommands(@JniType("Profile*") Profile profile);
+        void pollCommands(
+                @JniType("Profile*") Profile profile, @JniType("base::OnceClosure") Runnable done);
 
         void setReceiveInterval(@JniType("Profile*") Profile profile, int minutes);
 

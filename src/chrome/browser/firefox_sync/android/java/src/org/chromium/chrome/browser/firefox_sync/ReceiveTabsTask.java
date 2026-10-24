@@ -7,6 +7,7 @@ package org.chromium.chrome.browser.firefox_sync;
 import android.content.Context;
 import android.text.format.DateUtils;
 
+import org.json.JSONObject;
 import org.jni_zero.CalledByNative;
 
 import org.chromium.base.ContextUtils;
@@ -28,12 +29,13 @@ import org.chromium.components.background_task_scheduler.TaskParameters;
  */
 @NullMarked
 public class ReceiveTabsTask extends NativeBackgroundTask {
-    // PollCommands reports no completion, so the task holds the process this long: the fetch is
-    // a request or two. Commands a killed process didn't handle wait on the accounts server for
-    // the next fetch, since the account that marks them handled is saved before they apply.
-    private static final long HOLD_MS = 30 * DateUtils.SECOND_IN_MILLIS;
+    // The task ends when the fetch is handled; this caps it if the account never decrypts or a
+    // sync under way takes long. Android stops a task after 10 minutes.
+    private static final long TIMEOUT_MS = 5 * DateUtils.MINUTE_IN_MILLIS;
 
     private @Nullable FirefoxSyncBridge mBridge;
+    private @Nullable TaskFinishedCallback mCallback;
+    private boolean mPolling;
 
     /**
      * Runs the task every {@code minutes}, or never for 0. With {@code replace}, a scheduled task
@@ -71,25 +73,30 @@ public class ReceiveTabsTask extends NativeBackgroundTask {
     @Override
     protected void onStartTaskWithNative(
             Context context, TaskParameters taskParameters, TaskFinishedCallback callback) {
-        FirefoxSyncBridge bridge =
-                new FirefoxSyncBridge(ProfileManager.getLastUsedRegularProfile(), this::poll);
-        mBridge = bridge;
-        bridge.pollCommands();
-        PostTask.postDelayedTask(
-                TaskTraits.UI_DEFAULT,
-                () -> {
-                    mBridge = null;
-                    bridge.destroy();
-                    callback.taskFinished(false);
-                },
-                HOLD_MS);
+        mCallback = callback;
+        mBridge = new FirefoxSyncBridge(ProfileManager.getLastUsedRegularProfile(), this::poll);
+        PostTask.postDelayedTask(TaskTraits.UI_DEFAULT, this::finish, TIMEOUT_MS);
+        poll();
     }
 
-    // On each status change too: in a browser that just started, PollCommands does nothing until
-    // the account is decrypted, and a sync under way fetches the commands itself. It does nothing
-    // within a minute of the last fetch.
+    // On each status change too: in a browser that just started, PollCommands has nothing to
+    // fetch with until the saved account is decrypted, which signedIn waits for.
     private void poll() {
-        if (mBridge != null) mBridge.pollCommands();
+        if (mBridge == null || mPolling) return;
+        JSONObject status = mBridge.getStatus();
+        if (status.optString("email").isEmpty() || status.optBoolean("needsSignIn")) {
+            finish();
+        } else if (status.optBoolean("signedIn")) {
+            mPolling = true;
+            mBridge.pollCommands(this::finish);
+        }
+    }
+
+    private void finish() {
+        if (mBridge == null || mCallback == null) return;
+        mBridge.destroy();
+        mBridge = null;
+        mCallback.taskFinished(false);
     }
 
     @Override
@@ -100,6 +107,10 @@ public class ReceiveTabsTask extends NativeBackgroundTask {
 
     @Override
     protected boolean onStopTaskWithNative(Context context, TaskParameters taskParameters) {
+        if (mBridge != null) {
+            mBridge.destroy();
+            mBridge = null;
+        }
         return false;
     }
 }

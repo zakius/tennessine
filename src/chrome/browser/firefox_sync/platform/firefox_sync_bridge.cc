@@ -7,7 +7,9 @@
 // the same JNI header.
 
 #include <string>
+#include <utility>
 
+#include "base/android/callback_android.h"
 #include "base/android/jni_android.h"
 #include "base/android/jni_string.h"
 #include "base/android/scoped_java_ref.h"
@@ -112,9 +114,13 @@ static void JNI_FirefoxSyncBridge_SetTypeEnabled(JNIEnv* env,
   }
 }
 
-static void JNI_FirefoxSyncBridge_PollCommands(JNIEnv* env, Profile* profile) {
+static void JNI_FirefoxSyncBridge_PollCommands(JNIEnv* env,
+                                               Profile* profile,
+                                               base::OnceClosure done) {
   if (auto* service = GetService(profile)) {
-    service->PollCommands();
+    service->PollCommands(std::move(done));
+  } else {
+    std::move(done).Run();
   }
 }
 
