@@ -5,9 +5,10 @@
 // Firefox Sync's Android side (see dubna's firefox_sync_platform.h), the JNI
 // for SendTab.java, which sends tabs to other devices, and the fetches of the
 // tabs other devices sent: when the browser comes to the front, and in
-// ReceiveTabsTask.java's background task. Android has no
-// synced tabs views and no account picture on the profile, so those stay
-// Platform's no-ops.
+// ReceiveTabsTask.java's background task. Other devices' tabs need nothing
+// here: dubna's RemoteTabs feeds them to Recent tabs through Chromium's synced
+// sessions. Android has no account picture on the profile, so that stays
+// Platform's no-op.
 
 #include <algorithm>
 #include <memory>
