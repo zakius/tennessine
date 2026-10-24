@@ -9,7 +9,9 @@ apply [--stop]       prepares the Chromium tree in the current directory:
                      3. patches/series: paths from the repo root, so dubna/ patches come
                         from that submodule. A series entry from a GPL-3.0 source fails:
                         Vanadium's patches are GPL-2.0-only (see LICENSING below).
-                     4. dubna's Polish translations of its strings.
+                     4. The translations of every message the renaming changed, moved to
+                        its new ID (rekey_translations).
+                     5. dubna's Polish translations of its strings.
                      --stop stops at the first failure, for refresh.
 check [WORKDIR] [--stop]
                      apply on a Chromium checkout at Vanadium's version, zero fuzz. The
@@ -42,6 +44,7 @@ under its GPL-2.0 option. uBlock Origin (GPL-3.0, Helium's build) is a separate 
 that the browser downloads and installs on first run (src/chrome/browser/ublock_installer).
 """
 import fnmatch, hashlib, os, re, shutil, subprocess, sys, tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -62,6 +65,12 @@ GPL3_SOURCES = ('helium/', 'patches/cromite/')
 # string resources (the launcher label is one). In them the name is lowercase, as everywhere
 # else; code keeps Tennessine, for identifiers.
 STRING_FILES = re.compile(r'diff --git a/\S+(\.grdp?|\.xtb|/values[^/]*/[^/\s]+\.xml) ')
+# The browser's names in messages: Chromium's, which Vanadium's patches rename to Vanadium, which
+# apply renames to ours. A message whose text differs from Chromium's only in these is renamed.
+CHROMIUM = r'\b(?:Google )?Chrom(?:e|ium)\b'
+NAMES = re.compile(rf'{CHROMIUM}|\bVanadium\b|\btennessine\b')
+# The ones a renamed message's translations still have where Vanadium's patches don't reach.
+OLD_NAMES = re.compile(rf'{CHROMIUM}|\bVanadium\b')
 # The uBlock Origin build the installer downloads: its pin is in this file.
 UBLOCK_INSTALLER = ROOT / 'src/chrome/browser/ublock_installer/ublock_installer.cc'
 
@@ -93,6 +102,8 @@ def apply(stop=False):
                          'license excludes (LICENSING in tennessine.py)')
             patches.append((line, (ROOT / line).read_text()))
 
+    grds = {path: Path(path).read_text() for _, text in patches
+            for path in re.findall(r'(?m)^\+\+\+ b/(\S+\.grdp?)$', text) if Path(path).is_file()}
     failed = False
     for name, text in patches:
         result = subprocess.run(['git', 'apply', '--whitespace=nowarn'], input=text, text=True,
@@ -106,12 +117,71 @@ def apply(stop=False):
         failed = True
         if stop:
             return 1
+    rekey_translations(tree, grds)
     # dubna's translations of its strings, after the patches add the grdp.
     sys.stdout.flush()
     if subprocess.run([sys.executable, str(ROOT / 'dubna/tools/translate.py'), str(tree),
                        str(ROOT / 'dubna')]).returncode:
         failed = True
     return 1 if failed else 0
+
+
+def messages(text, generate_id):
+    """{(name, nth of that name): (ID, text)} of a .grd/.grdp's messages. The ID is grit's: the
+    fingerprint of the text with each placeholder shown as its name in capitals, trimmed, and of
+    the meaning. In the text, each placeholder is a NUL, so a name next to one stays a word."""
+    found = {}
+    for message in ET.fromstring(text).iter('message'):
+        shown = plain = message.text or ''
+        for ph in message.findall('ph'):
+            shown += ph.get('name').upper() + (ph.tail or '')
+            plain += '\0' + (ph.tail or '')
+        # grit's markers for whitespace a message keeps at its ends.
+        shown = shown.strip().removeprefix("'''").removesuffix("'''").strip()
+        name, nth = message.get('name'), 0
+        while (name, nth) in found:
+            nth += 1
+        found[(name, nth)] = generate_id(shown, message.get('meaning', '')), plain
+    return found
+
+
+def rekey_translations(tree, before):
+    """grit finds a message's translation by its ID, the fingerprint of its English text: a
+    message renamed (NAMES) gets a new ID, and its translations, under the old one, would no longer
+    apply. Every .xtb's translation of such a message gets a copy under the new ID, renamed too,
+    except where the English still names Chromium: the translation's word order can't tell those
+    uses from the renamed ones. The old one stays, for a message with that text elsewhere.
+    before: {path: text} of the .grd/.grdp files the patches change, before they did."""
+    sys.path.insert(0, str(tree / 'tools/grit'))
+    from grit.extern import tclib
+    new_ids = {}
+    for path, text in before.items():
+        old = messages(text, tclib.GenerateMessageId)
+        for key, (new_id, new_text) in messages(Path(path).read_text(),
+                                                tclib.GenerateMessageId).items():
+            old_id, old_text = old.get(key, (new_id, ''))
+            if old_id != new_id and NAMES.sub('', old_text) == NAMES.sub('', new_text):
+                new_ids[old_id] = new_id, not re.search(CHROMIUM, new_text)
+    files = moved = 0
+    for name in run('git', '-C', str(tree), 'ls-files', '-z', '*.xtb', capture_output=True,
+                    text=True).stdout.split('\0')[:-1]:
+        xtb = tree / name
+        content = xtb.read_text()
+        have = set(re.findall(r'<translation id="(\d+)"', content))
+        added = []
+        for old_id, translation in re.findall(r'<translation id="(\d+)">(.*?)</translation>',
+                                              content, re.S):
+            new_id, rename = new_ids.get(old_id, (None, False))
+            if new_id and new_id not in have:
+                have.add(new_id)
+                text = OLD_NAMES.sub('tennessine', translation) if rename else translation
+                added.append(f'<translation id="{new_id}">{text}</translation>\n')
+        if added:
+            xtb.write_text(content.replace('</translationbundle>',
+                                           ''.join(added) + '</translationbundle>', 1))
+            files += 1
+            moved += len(added)
+    print(f'rekeyed {moved} translations of {len(new_ids)} renamed messages, in {files} .xtb files')
 
 
 def check(workdir, stop):
