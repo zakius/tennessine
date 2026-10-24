@@ -44,6 +44,7 @@ patches/tennessine/dns-api.patch
 # Firefox Sync from dubna (dubna/src/chrome/browser/firefox_sync, dubna/rust/); its Android side
 # is src/chrome/browser/firefox_sync/platform and android/.
 dubna/patches/firefox-sync.patch
+dubna/patches/firefox-sync-remote-tabs.patch
 patches/tennessine/firefox-sync-strings.patch
 patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch
