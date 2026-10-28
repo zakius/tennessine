@@ -66,10 +66,19 @@ STRING_FILES = re.compile(r'diff --git a/\S+(\.grdp?|\.xtb|/values[^/]*/[^/\s]+\
 UBLOCK_INSTALLER = ROOT / 'src/chrome/browser/ublock_installer/ublock_installer.cc'
 
 
+def copy_if_changed(src, dst):
+    """Copies a file whose content differs, with the time of the copy: a source's own older
+    time would leave outputs that another checkout's build made from it looking up to date."""
+    if not (os.path.isfile(dst) and Path(src).read_bytes() == Path(dst).read_bytes()):
+        shutil.copyfile(src, dst)
+    shutil.copymode(src, dst)
+    return dst
+
+
 def apply(stop=False):
     tree = Path.cwd()
     for top in (ROOT / 'dubna/src', ROOT / 'src'):
-        shutil.copytree(top, tree, dirs_exist_ok=True)
+        shutil.copytree(top, tree, dirs_exist_ok=True, copy_function=copy_if_changed)
 
     drops = [line.split('\t')[0] for line in (ROOT / 'patches/vanadium-drops.txt').read_text()
              .splitlines() if line and not line.startswith('#')]
