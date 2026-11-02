@@ -74,3 +74,5 @@ patches/tennessine/history-saving-settings.patch
 # Autofill services: the built-in option is tennessine's, not Google's.
 patches/tennessine/autofill-built-in-labels.patch
 patches/tennessine/smaller-apk.patch
+# Uploads: photos keep their location; the file chooser asks for ACCESS_MEDIA_LOCATION.
+patches/tennessine/photo-location.patch
