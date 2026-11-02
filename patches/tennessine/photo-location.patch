@@ -1,0 +1,26 @@
+--- a/chrome/android/java/AndroidManifest.xml
++++ b/chrome/android/java/AndroidManifest.xml
+@@ -98,6 +98,7 @@
+     <!-- Needed to determine whether an app installed on the device should handle a web navigation.  -->
+     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+ 
++    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+ 
+     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+--- a/ui/android/java/src/org/chromium/ui/base/SelectFileDialog.java
++++ b/ui/android/java/src/org/chromium/ui/base/SelectFileDialog.java
+@@ -491,6 +491,13 @@
+                 missingPermissions.add(Manifest.permission.RECORD_AUDIO);
+             }
+         }
++        // Without it, Android strips the location from the photos a page is handed.
++        if (!mCapture
++                && shouldShowImageTypes()
++                && !window.hasPermission(Manifest.permission.ACCESS_MEDIA_LOCATION)
++                && window.canRequestPermission(Manifest.permission.ACCESS_MEDIA_LOCATION)) {
++            missingPermissions.add(Manifest.permission.ACCESS_MEDIA_LOCATION);
++        }
+ 
+         if (missingPermissions.isEmpty()) {
+             launchSelectFileIntent();
