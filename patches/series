@@ -54,6 +54,8 @@ patches/tennessine/recent-tabs-empty-state.patch
 
 # No saved history from dubna.
 dubna/patches/no-saved-history.patch
+# Links out of installed web apps, with per-app scope rules, from dubna.
+dubna/patches/app-links.patch
 
 # Ours. The list-mode tab switcher and the full URL are Cromite's ideas, not its GPL-3.0 code.
 patches/tennessine/jit-allowed-by-default.patch
@@ -76,3 +78,5 @@ patches/tennessine/autofill-built-in-labels.patch
 patches/tennessine/smaller-apk.patch
 # Uploads: photos keep their location; the file chooser asks for ACCESS_MEDIA_LOCATION.
 patches/tennessine/photo-location.patch
+# Web apps: links out of the app open in the default browser, with per-app scope rules (dubna).
+patches/tennessine/app-links.patch
