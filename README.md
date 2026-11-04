@@ -15,7 +15,7 @@ Where an extension does the job well, the job stays with the extension. Content 
 - A list-mode tab switcher and the full URL in the address bar, as [Cromite](https://github.com/uazo/cromite) has them.
 - Firefox-compatible Sync. It works best with a self-hosted sync server.
 - Switches that stop saving history.
-- An Open in default browser item in the link menu of installed web apps.
+- Installed web apps send links that leave the app to your default browser, with per-app scope rules in Settings → Web apps, shared with oganesson.
 
 tennessine is not privacy-paranoid. It keeps features that some privacy-focused browsers remove, because they are useful: the built-in password manager, Sync, and Google among the search engines. Each one is yours to skip. DuckDuckGo is the default search engine, Sync stays off until you sign in, and saving passwords can be turned off in settings. If you don't trust a feature, don't use it.
 

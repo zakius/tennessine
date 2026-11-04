@@ -1,0 +1,18 @@
+# Copyright 2026 The tennessine Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# dubna's app_links_platform.h for tennessine, and the settings screens' JNI
+# (../android). dubna's app-links.patch makes the browser depend on this.
+source_set("platform") {
+  sources = [ "app_links_android.cc" ]
+  public_deps = [ "//chrome/browser/app_links" ]
+  deps = [
+    "//base",
+    "//chrome/android:chrome_jni_headers",
+    "//chrome/browser/profiles:profile",
+    "//components/prefs",
+    "//content/public/browser",
+    "//url",
+  ]
+}

@@ -1,0 +1,197 @@
+# Links out of installed web apps (dubna's chrome/browser/app_links), on Android: new windows from
+# a web app go through it, a web app has no prerendering, the out-of-app bar follows the user's
+# scope rules, and Settings → Web apps and a site's page in Site settings open each app's rules
+# (src/chrome/browser/app_links/android). The Java joins chrome_java; webapp-open-in-default-browser
+# uses its DefaultBrowser.
+--- a/chrome/browser/android/tab_web_contents_delegate_android.cc
++++ b/chrome/browser/android/tab_web_contents_delegate_android.cc
+@@ -23,6 +23,7 @@
+ #include "base/rand_util.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "chrome/browser/actor/actor_util.h"
++#include "chrome/browser/app_links/app_links.h"
+ #include "chrome/browser/android/customtabs/client_data_header_web_contents_observer.h"
+ #include "chrome/browser/android/framebust_intervention/framebust_blocked_delegate_android.h"
+ #include "chrome/browser/android/tab_android.h"
+@@ -561,6 +562,13 @@
+         source, params, std::move(navigation_handle_callback));
+   }
+ 
++  // tennessine: a new tab out of an installed web app's scope goes to the default browser.
++  if (app_links::MaybeOpenNewContentsOutsideApp(
++          source, params.url, disposition, params.post_data != nullptr,
++          /*new_contents=*/nullptr)) {
++    return nullptr;
++  }
++
+   popup_delegate->nav_params()->opened_by_another_window = true;
+   TabModelList::HandlePopupNavigation(popup_delegate->nav_params());
+   return nullptr;
+@@ -600,6 +608,14 @@
+     }
+   }
+ 
++  // tennessine: a new window out of an installed web app's scope goes to the
++  // default browser.
++  if (app_links::MaybeOpenNewContentsOutsideApp(source, target_url, disposition,
++                                                /*post=*/false,
++                                                new_contents.get())) {
++    return nullptr;
++  }
++
+   // At this point the |new_contents| is beyond the popup blocker, but we use
+   // the same logic for determining if the popup tracker needs to be attached.
+   if (source && blocked_content::ConsiderForPopupBlocking(disposition)) {
+@@ -705,6 +721,10 @@
+ TabWebContentsDelegateAndroid::IsPrerender2Supported(
+     content::WebContents& web_contents,
+     content::PreloadingTriggerType trigger_type) {
++  // tennessine: a prerendered page activates without app_links' throttle.
++  if (app_links::IsInAppWindow(&web_contents)) {
++    return content::PreloadingEligibility::kPreloadingUnsupportedByWebContents;
++  }
+   Profile* profile =
+       Profile::FromBrowserContext(web_contents.GetBrowserContext());
+   return prefetch::IsSomePreloadingEnabled(*profile->GetPrefs());
+--- a/chrome/android/java/src/org/chromium/chrome/browser/browserservices/ui/controller/webapps/WebApkVerifier.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/browserservices/ui/controller/webapps/WebApkVerifier.java
+@@ -27,6 +27,8 @@
+ 
+     @Override
+     protected boolean isUrlInScope(String url) {
+-        return UrlUtilities.isUrlWithinScope(url, mWebappExtras.scopeUrl);
++        // tennessine: with the user's scope rules.
++        return org.chromium.chrome.browser.app_links.AppLinksBridge.isUrlInScope(
++                mWebappExtras.id, url, UrlUtilities.isUrlWithinScope(url, mWebappExtras.scopeUrl));
+     }
+ }
+--- a/chrome/android/java/src/org/chromium/chrome/browser/browserservices/ui/controller/webapps/AddToHomescreenVerifier.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/browserservices/ui/controller/webapps/AddToHomescreenVerifier.java
+@@ -31,6 +31,8 @@
+ 
+     @Override
+     protected boolean isUrlInScope(String url) {
+-        return UrlUtilities.sameDomainOrHost(mWebappExtras.url, url, true);
++        // tennessine: with the user's scope rules.
++        return org.chromium.chrome.browser.app_links.AppLinksBridge.isUrlInScope(
++                mWebappExtras.id, url, UrlUtilities.sameDomainOrHost(mWebappExtras.url, url, true));
+     }
+ }
+--- a/chrome/android/java/src/org/chromium/chrome/browser/webapps/WebappRegistry.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/webapps/WebappRegistry.java
+@@ -542,6 +542,12 @@
+     }
+ 
+     /** Returns the list of web app IDs which are written to SharedPreferences. */
++    /** tennessine: the ids of every registered web app, for Settings → Web apps. */
++    public Set<String> getRegisteredWebappIds() {
++        return Collections.unmodifiableSet(
++                mPreferences.getStringSet(KEY_WEBAPP_SET, Collections.emptySet()));
++    }
++
+     public static Set<String> getRegisteredWebappIdsForTesting() {
+         // Wrap with unmodifiableSet to ensure it's never modified. See crbug.com/40448581.
+         return Collections.unmodifiableSet(
+--- a/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
++++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
+@@ -6,6 +6,10 @@
+ # Three lines of code for minimizing conflicts in rebasing changes
+ # Three lines of code for minimizing conflicts in rebasing changes
+ chrome_java_ext_full_path_sources = [
++  "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/AppLinksBridge.java",
++  "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/DefaultBrowser.java",
++  "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppLinksSettings.java",
++  "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppsSettings.java",
+   "//chrome/android/java/src/org/chromium/chrome/browser/password_manager/settings/PasswordSettings.java",
+ ]
+ # Three lines of code for minimizing conflicts in rebasing changes
+--- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
++++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
+@@ -9,6 +9,9 @@
+   <message name="IDS_TOOLBAR_ITEMS_TITLE" desc="Title of the setting and screen that order and hide the toolbar items">
+     Toolbar layout
+   </message>
++  <message name="IDS_WEB_APPS_TITLE" desc="Title of the settings screen that lists the installed web apps, and its entry in Settings">
++    Web apps
++  </message>
+   <message name="IDS_FIREFOX_SYNC_TITLE" desc="Title of the Firefox Sync settings screen and its entry in Settings">
+     Firefox Sync
+   </message>
+--- a/chrome/android/java/res/xml/main_preferences.xml
++++ b/chrome/android/java/res/xml/main_preferences.xml
+@@ -134,6 +134,11 @@
+         android:order="27"
+         android:title="@string/prefs_site_settings"/>
+     <org.chromium.components.browser_ui.settings.ChromeBasePreference
++        android:fragment="org.chromium.chrome.browser.app_links.WebAppsSettings"
++        android:key="web_apps"
++        android:order="27"
++        android:title="@string/web_apps_title"/>
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
+         android:fragment="org.chromium.chrome.browser.language.settings.LanguageSettings"
+         android:key="languages"
+         android:order="28"
+--- a/components/browser_ui/site_settings/android/java/src/org/chromium/components/browser_ui/site_settings/SiteSettingsDelegate.java
++++ b/components/browser_ui/site_settings/android/java/src/org/chromium/components/browser_ui/site_settings/SiteSettingsDelegate.java
+@@ -34,6 +34,15 @@
+     BrowserContextHandle getBrowserContextHandle();
+ 
+     /**
++     * tennessine: adds the entries of the web apps installed from {@code origin} to a site's page,
++     * {@code group}.
++     */
++    default void addWebAppEntries(
++            androidx.preference.PreferenceGroup group,
++            android.content.Context context,
++            String origin) {}
++
++    /**
+      * @return the ManagedPreferenceDelegate instance that should be used when rendering
+      *     Preferences.
+      */
+--- a/components/browser_ui/site_settings/android/java/src/org/chromium/components/browser_ui/site_settings/SingleWebsiteSettings.java
++++ b/components/browser_ui/site_settings/android/java/src/org/chromium/components/browser_ui/site_settings/SingleWebsiteSettings.java
+@@ -653,6 +653,13 @@
+         setUpRelatedSitesPreferences();
+ 
+         setUpAdsInformationalBanner();
++        if (!mHideNonPermissionPreferences) {
++            getSiteSettingsDelegate()
++                    .addWebAppEntries(
++                            getPreferenceScreen(),
++                            getStyledContext(),
++                            mSite.getAddress().getOrigin());
++        }
+ 
+         // Remove categories if no sub-items.
+         if (!hasUsagePreferences()) {
+--- a/chrome/android/java/src/org/chromium/chrome/browser/site_settings/ChromeSiteSettingsDelegate.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/site_settings/ChromeSiteSettingsDelegate.java
+@@ -116,6 +116,15 @@
+     }
+ 
+     @Override
++    public void addWebAppEntries(
++            androidx.preference.PreferenceGroup group,
++            android.content.Context context,
++            String origin) {
++        org.chromium.chrome.browser.app_links.WebAppsSettings.addSiteEntries(
++                group, context, origin);
++    }
++
++    @Override
+     public ManagedPreferenceDelegate getManagedPreferenceDelegate() {
+         if (mManagedPreferenceDelegate == null) {
+             mManagedPreferenceDelegate =
+--- a/chrome/android/BUILD.gn
++++ b/chrome/android/BUILD.gn
+@@ -3266,6 +3266,9 @@
+       "//chrome/browser/webid:jni_headers",
+       "//components/tabs/public/android:jni_headers",
+     ]
++
++    # tennessine: links out of installed web apps (chrome/browser/app_links).
++    sources += [ "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/AppLinksBridge.java" ]
+   }
+ 
+   source_set("chrome_test_util") {
