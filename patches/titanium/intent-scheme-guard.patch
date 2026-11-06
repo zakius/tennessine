@@ -1,32 +1,30 @@
-# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+# From Titanium's patch.sh (jqssun/android-titanium-browser@8516166).
 diff --git a/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/LaunchIntentDispatcherHooks.java b/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/LaunchIntentDispatcherHooks.java
-index b26dc4d8..4996ce99 100644
 --- a/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/LaunchIntentDispatcherHooks.java
 +++ b/tennessine/chromium_src/chrome/android/java/src/org/chromium/chrome/browser/LaunchIntentDispatcherHooks.java
-@@ -25,7 +25,7 @@ public final class LaunchIntentDispatcherHooks {
+@@ -15,14 +15,14 @@
+ public final class LaunchIntentDispatcherHooks {
  
- 
-     static Intent maybeModifyActionViewIntents(Activity activity, Intent intent) {
+     static void maybeModifyActionViewIntents(Intent intent) {
 -        if (!Intent.ACTION_VIEW.equals(intent.getAction())) {
 +        if (!Intent.ACTION_VIEW.equals(intent.getAction()) || !android.webkit.URLUtil.isNetworkUrl(IntentHandler.getUrlFromIntent(intent))) {
-             return intent;
+             return;
          }
  
-@@ -37,7 +37,7 @@ public final class LaunchIntentDispatcherHooks {
-         return newIntent;
+         TabPreferencesUtils.maybeModifyNeededIncognitoExtras(intent);
      }
  
--    static Intent maybeModifyCustomTabIntents(Context context, Intent intent) {
-+    static Intent maybeModifyCustomTabIntents(Context context, Intent intent) { if (!android.webkit.URLUtil.isNetworkUrl(IntentHandler.getUrlFromIntent(intent))) { return intent; }
-         Intent newIntent = maybeCreateIncognitoTabIntentFor(context, intent);
- 
-         return newIntent;
-@@ -61,7 +61,7 @@ public final class LaunchIntentDispatcherHooks {
+-    static void maybeModifyCustomTabIntents(Intent intent) {
++    static void maybeModifyCustomTabIntents(Intent intent) { if (!android.webkit.URLUtil.isNetworkUrl(IntentHandler.getUrlFromIntent(intent))) { return; }
+         TabPreferencesUtils.maybeModifyNeededIncognitoExtras(intent);
+         if (TabPreferencesUtils.shouldOpenExternalLinksInIncognito(intent)) {
+             intent.putExtra(CustomTabsIntent.EXTRA_ENABLE_EPHEMERAL_BROWSING, true);
+@@ -49,7 +49,7 @@
          }
  
          String urlFromIntent = IntentHandler.getUrlFromIntent(intent);
 -        if (urlFromIntent == null) {
 +        if (!android.webkit.URLUtil.isNetworkUrl(urlFromIntent)) {
-             return intent;
+             return;
          }
  

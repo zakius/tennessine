@@ -1,4 +1,4 @@
-# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
+# From Titanium's patch.sh (jqssun/android-titanium-browser@8516166).
 --- a/chrome/browser/chrome_browser_field_trials.cc
 +++ b/chrome/browser/chrome_browser_field_trials.cc
 @@ -128,7 +128,16 @@
@@ -11,8 +11,8 @@
 +feature_overrides.EnableFeature(kAndroidMediaPicker);
 +feature_overrides.EnableFeature(features::kUserMediaScreenCapturing);
 +feature_overrides.EnableFeature(media::kAndroidEnableBackgroundMediaCapturing);
-+feature_overrides.EnableFeature(media::kContextMenuPictureInPictureAndroid);
 +feature_overrides.EnableFeature(chrome::android::kChromeNativeUrlOverriding);
++feature_overrides.EnableFeature(download::features::kEnableDownloadSaveAsContextMenu);
 +// tennessine: extensions' tab code needs a WebContents for every tab, restored ones included.
 +feature_overrides.EnableFeature(chrome::android::kLoadAllTabsAtStartup);
 +#if 0

@@ -36,7 +36,7 @@
          android:visibility="gone"
 --- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/ToolbarPhone.java
 +++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/ToolbarPhone.java
-@@ -162,6 +162,8 @@
+@@ -163,6 +163,8 @@
      private MonotonicObservableSupplier<Tracker> mTrackerSupplier;
  
      private ViewGroup mToolbarButtonsContainer;
@@ -45,7 +45,7 @@
      private @MonotonicNonNull OptionalButtonCoordinator mOptionalButtonCoordinator;
      // Non-null after inflation occurs.
      private ImageView mHomeButton;
-@@ -376,6 +378,8 @@
+@@ -379,6 +381,8 @@
              mToolbarButtonsContainer = findViewById(R.id.toolbar_buttons);
              mHomeButton = findViewById(R.id.home_button);
              mToolbarBackButton = findViewById(R.id.back_button);
@@ -54,7 +54,7 @@
  
              mToolbarBackground =
                      new ColorDrawable(getToolbarColorForVisualState(VisualState.NORMAL));
-@@ -863,13 +867,17 @@
+@@ -875,13 +879,17 @@
  
          // If home button is visible, mHomeButton.getMeasuredWidth() should be returned as the left
          // bound.
@@ -73,7 +73,7 @@
  
          return padding;
      }
-@@ -1252,6 +1260,7 @@
+@@ -1264,6 +1272,7 @@
  
          int toolbarButtonVisibility = getToolbarButtonVisibility();
          mToolbarButtonsContainer.setVisibility(toolbarButtonVisibility);
@@ -81,7 +81,7 @@
          boolean showBackButtonOutside = shouldShowBackButtonOutside();
          // Enforce mutual exclusivity: if the back button should be shown outside,
          // we must hide the home button to prevent them from overlapping during transitions.
-@@ -1491,6 +1500,7 @@
+@@ -1503,6 +1512,7 @@
          mLocationBar.getPhoneCoordinator().setTranslationX(0);
          if (!mUrlFocusChangeInProgress) {
              mToolbarButtonsContainer.setTranslationY(0);
@@ -89,7 +89,7 @@
              mHomeButton.setTranslationY(0);
          }
  
-@@ -1628,6 +1638,7 @@
+@@ -1640,6 +1650,7 @@
          int transY = mTabSwitcherState == STATIC_TAB ? Math.min(mNtpSearchBoxTranslation.y, 0) : 0;
  
          mToolbarButtonsContainer.setTranslationY(transY);
@@ -97,7 +97,7 @@
          mHomeButton.setTranslationY(transY);
      }
  
-@@ -1646,9 +1657,13 @@
+@@ -1658,9 +1669,13 @@
          canvas.save();
          canvas.clipRect(mBackgroundOverlayBounds);
  
@@ -112,7 +112,7 @@
  
          if (mBackButtonCoordinator != null && mBackButtonCoordinator.isVisible()) {
              drawChild(canvas, mToolbarBackButton, SystemClock.uptimeMillis());
-@@ -1676,7 +1691,9 @@
+@@ -1688,7 +1703,9 @@
          // it's not supposed to. (See https://crbug.com/40896761 for an example of this happening).
          if (mOptionalButtonCoordinator != null
                  && mOptionalButtonCoordinator.getViewVisibility() != View.GONE
@@ -123,7 +123,7 @@
              canvas.save();
              ViewUtils.translateCanvasToView(
                      mToolbarButtonsContainer,
-@@ -1686,7 +1703,7 @@
+@@ -1698,7 +1715,7 @@
              canvas.restore();
          }
  
@@ -132,7 +132,7 @@
          // Draw the signin button if visible.
          if (mSigninButtonCoordinator != null && mSigninButtonCoordinator.isVisible()) {
              View signinButtonView = mSigninButtonCoordinator.getViewForDrawing();
-@@ -1703,14 +1720,21 @@
+@@ -1715,14 +1732,21 @@
                  getTabSwitcherButtonCoordinator();
          if (tabSwitcherButtonCoordinator != null
                  && tabSwitcherButtonCoordinator.isVisible()
@@ -156,7 +156,7 @@
              menuButtonCoordinator.drawTabSwitcherAnimationOverlay(
                      mToolbarButtonsContainer, canvas, rgbAlpha);
          }
-@@ -2130,6 +2154,55 @@
+@@ -2136,6 +2160,55 @@
          }
      }
  
@@ -210,9 +210,9 @@
 +    }
 +
      private boolean shouldShowBackButtonOutside() {
-         return ToolbarVariationUtils.shouldModifyToolbarButtons(
-                         getContext(), isNtpVisualState(mVisualState))
-@@ -2758,6 +2831,7 @@
+         return mIsToolbarUiRefactorEnabled
+                 && !ToolbarVariationUtils.shouldBackButtonBeInOmnibox()
+@@ -2762,6 +2835,7 @@
              homeBtnVis = toolbarBtnsVis;
          }
          mToolbarButtonsContainer.setVisibility(toolbarBtnsVis);

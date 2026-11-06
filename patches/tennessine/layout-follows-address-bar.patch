@@ -8,15 +8,7 @@
 #   snackbars (Undo) show over the toolbar, not over the tabs.
 --- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 +++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
-@@ -36,6 +36,7 @@
- import org.chromium.build.annotations.Nullable;
- import org.chromium.build.annotations.RequiresNonNull;
- import org.chromium.chrome.browser.browser_controls.BrowserControlsStateProvider;
-+import org.chromium.chrome.browser.browser_controls.BrowserControlsStateProvider.ControlsPosition;
- import org.chromium.chrome.browser.lifecycle.ActivityLifecycleDispatcher;
- import org.chromium.chrome.browser.lifecycle.ConfigurationChangedObserver;
- import org.chromium.chrome.browser.lifecycle.StartStopWithNativeObserver;
-@@ -337,6 +338,13 @@
+@@ -339,6 +339,13 @@
          assert !(isByPermanentButton && startDragging);
  
          mModelList = mDelegate.getMenuItems();

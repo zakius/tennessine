@@ -5,16 +5,16 @@
 # they belong to, and a hidden tab dropping its tags no longer clears the visible tab's.
 --- a/chrome/android/java/src/org/chromium/chrome/browser/fullscreen/BrowserControlsManager.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/fullscreen/BrowserControlsManager.java
-@@ -128,6 +128,8 @@ public class BrowserControlsManager implements ActivityStateListener, BrowserCon
+@@ -129,6 +129,8 @@
  
-     private boolean mForceRelayoutOnVisibilityChange;
+     private @BrowserControlsState int mLastConstraints = BrowserControlsState.BOTH;
  
 +    // tennessine: the tab mOffsetTagDefinitions belong to.
 +    private @Nullable Tab mOffsetTagsOwner;
      private BrowserControlsOffsetTagDefinitions mOffsetTagDefinitions =
              new BrowserControlsOffsetTagDefinitions();
  
-@@ -311,6 +313,18 @@ public class BrowserControlsManager implements ActivityStateListener, BrowserCon
+@@ -301,6 +303,18 @@
                              BrowserControlsOffsetTagsInfo oldOffsetTagsInfo,
                              BrowserControlsOffsetTagsInfo offsetTagsInfo,
                              @BrowserControlsState int constraints) {
@@ -33,7 +33,7 @@
                          int hairlineHeight = getTopControlsHairlineHeight();
                          offsetTagsInfo.mTopControlsAdditionalHeight = hairlineHeight;
                          offsetTagsInfo.mContentConstraints =
-@@ -1466,8 +1480,12 @@ public class BrowserControlsManager implements ActivityStateListener, BrowserCon
+@@ -1499,8 +1513,12 @@
      private void updateOffsetTagDefinitions(BrowserControlsOffsetTagDefinitions newDefinitions) {
          mOffsetTagDefinitions = newDefinitions;
  

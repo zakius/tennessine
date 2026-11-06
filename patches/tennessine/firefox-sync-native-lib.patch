@@ -1,8 +1,7 @@
 # Packages Firefox Sync's library (tools/build-sync-lib.sh) with the APK's native libraries.
 --- a/chrome/android/chrome_public_apk_tmpl.gni
 +++ b/chrome/android/chrome_public_apk_tmpl.gni
-@@ -380,7 +380,15 @@
-       deps += [ "//chrome/android:product_version_resources" ]
+@@ -393,6 +393,14 @@
      }
  
      loadable_modules = []

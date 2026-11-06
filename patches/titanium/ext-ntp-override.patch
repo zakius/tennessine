@@ -1,12 +1,10 @@
-# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
-diff --git a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
-index b1b4f9a5..a3deb0f9 100644
+# From Titanium's patch.sh (jqssun/android-titanium-browser@8516166).
 --- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
-@@ -2665,7 +2665,7 @@ public class ChromeTabbedActivity extends ChromeActivity implements PreAttachInt
-                 Tab currentTab = getActivityTab();
+@@ -2744,7 +2744,7 @@
                  boolean isTabNtp = isTabRegularNtp(currentTab);
                  boolean isTabWebUiNtp = UrlOverrideUtils.isWebUiNtpOverrideEnabled();
+                 assumeNonNull(currentTab);
 -                if (isTabNtp && !currentTab.isNativePage() && !isTabWebUiNtp) {
 +                if (isTabNtp && !currentTab.isNativePage() && !isTabWebUiNtp && !UrlOverrideUtils.isNtpOverrideEnabled()) {
                      // This will be a NTP, but the native page hasn't been created yet. Need to wait
