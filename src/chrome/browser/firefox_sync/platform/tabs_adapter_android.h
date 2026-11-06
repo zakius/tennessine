@@ -41,7 +41,7 @@ class TabsAdapter : public SyncAdapter,
   // ponytail: no per-tab WebContentsObserver; add one if 30 minutes is too
   // stale for the tab list.
   void DidAddTab(TabAndroid* tab, TabModel::TabLaunchType type) override;
-  void DidMoveTab(TabAndroid* tab, int new_index, int old_index) override;
+  void DidMoveTab(TabAndroid* tab) override;
   void DidSelectTab(TabAndroid* tab) override;
   void OnTabCloseCommitted(const std::vector<TabAndroid*>& tabs,
                            bool is_all_tabs,
