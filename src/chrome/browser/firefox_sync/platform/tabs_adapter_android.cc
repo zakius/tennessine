@@ -28,9 +28,11 @@ TabsAdapter::~TabsAdapter() {
 }
 
 bool TabsAdapter::ShouldTrack(TabModel* model) const {
-  // Incognito and archived tabs stay local.
+  // Incognito and archived tabs stay local, and so do an installed web app's
+  // and a Custom Tab's.
   return model->GetProfile() == profile_ && !model->IsOffTheRecord() &&
-         model->GetTabModelType() == TabModel::TabModelType::kStandard;
+         model->GetTabModelType() == TabModel::TabModelType::kStandard &&
+         model->activity_type() == chrome::android::ActivityType::kTabbed;
 }
 
 void TabsAdapter::GetLocal(base::OnceCallback<void(base::Value)> done) {
