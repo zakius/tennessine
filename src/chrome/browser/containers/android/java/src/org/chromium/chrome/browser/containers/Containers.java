@@ -59,8 +59,23 @@ public final class Containers {
                 profile, id, initiallyHidden, initializeRenderer);
     }
 
+    /**
+     * Whether a new tab of launch type {@code type} from {@code parent} goes into a container. Then
+     * it can't take the spare tab custom tabs warm up, which isn't in one.
+     */
+    public static boolean goesInContainer(
+            @Nullable Tab parent, @TabLaunchType int type, Profile profile) {
+        return !profile.isOffTheRecord() && !containerFor(type, parent, profile).isEmpty();
+    }
+
     private static String containerFor(Tab tab, Profile profile) {
-        switch (tab.getLaunchType()) {
+        Tab parent = TabWindowManagerSingleton.getInstance().getTabById(tab.getParentId());
+        return containerFor(tab.getLaunchType(), parent, profile);
+    }
+
+    private static String containerFor(
+            @TabLaunchType int type, @Nullable Tab parent, Profile profile) {
+        switch (type) {
             case TabLaunchType.FROM_LINK:
             case TabLaunchType.FROM_LONGPRESS_FOREGROUND:
             case TabLaunchType.FROM_LONGPRESS_BACKGROUND:
@@ -69,7 +84,6 @@ public final class Containers {
             case TabLaunchType.FROM_LINK_CREATING_NEW_WINDOW:
             case TabLaunchType.FROM_HISTORY_NAVIGATION_FOREGROUND:
             case TabLaunchType.FROM_HISTORY_NAVIGATION_BACKGROUND:
-                Tab parent = TabWindowManagerSingleton.getInstance().getTabById(tab.getParentId());
                 WebContents source = parent != null ? parent.getWebContents() : null;
                 return source != null ? ContainersBridge.containerOf(source) : "";
             case TabLaunchType.FROM_CHROME_UI:

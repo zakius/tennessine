@@ -67,4 +67,3 @@ Lines added, includes and comments counted; TabImpl changes 5 more.
 - Firefox's container icons: a container has a color only. The icon stays in the prefs, so oganesson still shows it.
 - Archived tabs (Chromium's inactive tabs) have no WebContents until they are restored, so they don't count as using their container. A temporary container whose only tab is archived loses its data.
 - Tabs of a window that isn't open (Android's multi-instance windows) don't count either, the same way.
-- A spare tab that Chromium prepares for a custom tab is outside containers; a new tab that takes it from the browser's UI then is too. Custom tabs prepare one only on a feature flag.

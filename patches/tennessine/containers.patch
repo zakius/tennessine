@@ -3,6 +3,8 @@
 # A tab stays in the container its WebContents starts in, so these hooks only create tabs there:
 # - TabImpl.java: a tab Java creates without a WebContents gets one from Containers, which picks
 #   its opener's container for a link, or Settings' container for a new tab.
+# - ChromeTabCreator.java: such a tab doesn't take the spare tab custom tabs warm up, which is
+#   outside containers.
 # - web_contents_state.cc: a tab restores in its container after a restart.
 # - android_live_tab_context.cc, session_restore_android.cc: a closed tab reopens in it.
 # - chrome/android/BUILD.gn, chrome_java_ext_sources.gni: our Java and its JNI.
@@ -56,6 +58,27 @@
          }
  
          assert webContents != null;
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
+@@ -24,6 +24,7 @@
+ import org.chromium.chrome.browser.app.tab_activity_glue.ReparentingDelegateFactory;
+ import org.chromium.chrome.browser.app.tab_activity_glue.ReparentingTask;
+ import org.chromium.chrome.browser.compositor.CompositorViewHolder;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.flags.ChromeFeatureList;
+ import org.chromium.chrome.browser.incognito.IncognitoUtils;
+ import org.chromium.chrome.browser.prefetch.settings.PreloadPagesSettingsBridge;
+@@ -407,7 +408,9 @@
+                 // from disk correctly since we're passing targetsNetwork = false. Investigate and
+                 // consider what should be done about this.
+             } else if (WarmupManager.getInstance()
+-                    .hasSpareTab(getProfile(), /* targetsNetwork= */ false)) {
++                            .hasSpareTab(getProfile(), /* targetsNetwork= */ false)
++                    // tennessine: the spare tab isn't in a container.
++                    && !Containers.goesInContainer(parent, type, getProfile())) {
+                 // Load URL using spare tab if available. This occurs only if a spare tab has been
+                 // created beforehand. The creation of a spare tab is a costly operation that should
+                 // not be performed without testing. Spare tab is only used for navigations in the
 --- a/chrome/app/generated_resources.grd
 +++ b/chrome/app/generated_resources.grd
 @@ -322,6 +322,7 @@ are declared in tools/grit/grit_args.gni.
