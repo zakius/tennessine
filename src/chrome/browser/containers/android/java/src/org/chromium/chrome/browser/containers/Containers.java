@@ -66,6 +66,9 @@ public final class Containers {
             case TabLaunchType.FROM_LONGPRESS_BACKGROUND:
             case TabLaunchType.FROM_LONGPRESS_FOREGROUND_IN_GROUP:
             case TabLaunchType.FROM_LONGPRESS_BACKGROUND_IN_GROUP:
+            case TabLaunchType.FROM_LINK_CREATING_NEW_WINDOW:
+            case TabLaunchType.FROM_HISTORY_NAVIGATION_FOREGROUND:
+            case TabLaunchType.FROM_HISTORY_NAVIGATION_BACKGROUND:
                 Tab parent = TabWindowManagerSingleton.getInstance().getTabById(tab.getParentId());
                 WebContents source = parent != null ? parent.getWebContents() : null;
                 return source != null ? ContainersBridge.containerOf(source) : "";
