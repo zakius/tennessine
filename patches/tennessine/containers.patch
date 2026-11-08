@@ -86,14 +86,23 @@
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/ui/android/tab_model/tab_model.h"
  #include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-@@ -66,6 +67,10 @@ content::WebContents* SessionRestore::RestoreForeignSessionTab(
+@@ -59,13 +60,18 @@
+   Profile* profile = Profile::FromBrowserContext(context);
+   TabModel* tab_model = TabModelList::GetTabModelForWebContents(web_contents);
+   DCHECK(tab_model);
++  // tennessine: a closed tab reopens in its container.
++  scoped_refptr<content::SiteInstance> site_instance =
++      containers::SiteInstanceToRestore(
++          context, session_tab.navigations,
++          session_tab.normalized_navigation_index());
+   std::vector<std::unique_ptr<content::NavigationEntry>> entries =
+       sessions::ContentSerializedNavigationBuilder::ToNavigationEntries(
+           session_tab.navigations, profile);
+ 
    bool is_background_tab =
        disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB;
-   content::WebContents::CreateParams create_params(context);
-+  // tennessine: a closed tab reopens in its container.
-+  create_params.site_instance = containers::SiteInstanceToRestore(
-+      context, session_tab.navigations,
-+      session_tab.normalized_navigation_index());
+-  content::WebContents::CreateParams create_params(context);
++  content::WebContents::CreateParams create_params(context, site_instance);
    if (is_background_tab && skip_renderer_creation) {
      create_params.initially_hidden = true;
      create_params.desired_renderer_state =
@@ -107,13 +116,20 @@
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/common/webui_url_constants.h"
  #include "components/sessions/content/content_serialized_navigation_builder.h"
-@@ -319,6 +320,9 @@ std::unique_ptr<WebContents> WebContentsState::RestoreContentsFromByteBuffer(
+@@ -314,11 +315,15 @@
+     return nullptr;
+   }
+ 
++  // tennessine: a tab restores in its container.
++  scoped_refptr<content::SiteInstance> site_instance =
++      containers::SiteInstanceToRestore(browser_context, navigations,
++                                        current_entry_index);
+   std::vector<std::unique_ptr<content::NavigationEntry>> entries =
+       sessions::ContentSerializedNavigationBuilder::ToNavigationEntries(
            navigations, browser_context);
  
-   WebContents::CreateParams params(browser_context);
-+  // tennessine: a tab restores in its container.
-+  params.site_instance = containers::SiteInstanceToRestore(
-+      browser_context, navigations, current_entry_index);
+-  WebContents::CreateParams params(browser_context);
++  WebContents::CreateParams params(browser_context, site_instance);
  
    params.initially_hidden = initially_hidden;
    if (no_renderer) {
@@ -139,13 +155,23 @@
  #include "chrome/browser/glic/glic_tab_restore_helper.h"
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/sessions/session_restore.h"
-@@ -206,6 +207,9 @@ sessions::LiveTab* AndroidLiveTabContext::AddRestoredTab(
+@@ -198,6 +199,10 @@
+     sessions::tab_restore::Type original_session_type) {
+   Profile* profile = tab_model_->GetProfile();
+ 
++  // tennessine: a closed tab reopens in its container.
++  scoped_refptr<content::SiteInstance> site_instance =
++      containers::SiteInstanceToRestore(profile, tab.navigations,
++                                        tab.normalized_navigation_index());
+   // Prepare navigation history.
+   std::vector<std::unique_ptr<content::NavigationEntry>> nav_entries =
+       sessions::ContentSerializedNavigationBuilder::ToNavigationEntries(
+@@ -205,7 +210,7 @@
+ 
    // Restore web contents with navigation history. This is used for background
    // restore so start without a renderer.
-   auto params = content::WebContents::CreateParams(profile);
-+  // tennessine: a closed tab reopens in its container.
-+  params.site_instance = containers::SiteInstanceToRestore(
-+      profile, tab.navigations, tab.normalized_navigation_index());
+-  auto params = content::WebContents::CreateParams(profile);
++  auto params = content::WebContents::CreateParams(profile, site_instance);
    params.desired_renderer_state =
        content::WebContents::CreateParams::kNoRendererProcess;
    params.initially_hidden = true;
