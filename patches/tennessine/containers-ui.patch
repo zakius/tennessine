@@ -77,7 +77,7 @@
  
      @Override
      public boolean onItemSelected(int itemId) {
-+        if (itemId == Containers.MENU_ID) {
++        if (mMode == ContextMenuMode.NORMAL && itemId == Containers.MENU_ID) {
 +            Containers.showChooser(mContext, getTab(), mParams.getUrl().getSpec());
 +            return true;
 +        }
