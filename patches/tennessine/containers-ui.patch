@@ -1,5 +1,6 @@
 # Containers' UI, reusing Chromium's (src/chrome/browser/containers/android, docs/containers.md):
-# - ChromeContextMenuPopulator.java: a link's Open in container, a chooser of the containers.
+# - ChromeContextMenuPopulator.java: a link's Open in container, a chooser of the containers;
+#   no Preview page in a container, as the preview would load outside it.
 # - TabGridViewBinder.java: a tab switcher row has a line in its container's color.
 # - main_preferences.xml: Settings → Containers, after Privacy and security.
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
@@ -37,7 +38,7 @@
          android:key="safety_hub"
 --- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
-@@ -47,6 +47,7 @@ import org.chromium.build.annotations.NullMarked;
+@@ -47,6 +47,7 @@
  import org.chromium.build.annotations.Nullable;
  import org.chromium.chrome.R;
  import org.chromium.chrome.browser.bookmarks.BookmarkUtils;
@@ -45,7 +46,7 @@
  import org.chromium.chrome.browser.contextmenu.ChromeContextMenuItem.Item;
  import org.chromium.chrome.browser.contextmenu.ContextMenuCoordinator.ContextMenuItemType;
  import org.chromium.chrome.browser.devtools.DevToolsWindowAndroid;
-@@ -648,6 +649,16 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
+@@ -648,6 +649,16 @@
                              && MultiWindowUtils.isLinkNavigationToIncognitoWindowSupported()) {
                          linkGroup.add(createListItem(Item.OPEN_IN_INCOGNITO_WINDOW));
                      }
@@ -62,7 +63,17 @@
                  } else if (mMode == ContextMenuMode.THIN_WEB_VIEW) {
                      if (mItemDelegate.supportsOpenInNewTab()) {
                          linkGroup.add(createListItem(Item.OPEN_IN_NEW_TAB));
-@@ -995,6 +1006,10 @@ public class ChromeContextMenuPopulator implements ContextMenuPopulator {
+@@ -688,7 +699,8 @@
+                         && EphemeralTabCoordinator.isSupported()) {
+                     boolean isDataUrl =
+                             mParams.getUrl().getScheme().equals(UrlConstants.DATA_SCHEME);
+-                    if (!isDataUrl) {
++                    // tennessine: a preview would load outside the tab's container.
++                    if (!isDataUrl && !Containers.isInContainer(getTab())) {
+                         // Do not show the item if BrApp/CCT opens data: url as it could potentially
+                         // cause a security issue.
+                         linkGroup.add(createListItem(Item.OPEN_IN_EPHEMERAL_TAB));
+@@ -995,6 +1007,10 @@
  
      @Override
      public boolean onItemSelected(int itemId) {

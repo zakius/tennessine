@@ -80,6 +80,12 @@ public final class Containers {
         }
     }
 
+    /** Whether {@code tab}'s page is in a container. */
+    public static boolean isInContainer(@Nullable Tab tab) {
+        @Nullable WebContents contents = tab != null ? tab.getWebContents() : null;
+        return contents != null && !ContainersBridge.containerOf(contents).isEmpty();
+    }
+
     /** The link menu item's title. */
     public static CharSequence getMenuTitle(Context context) {
         return context.getString(R.string.contextmenu_open_in_container);
