@@ -43,9 +43,10 @@ Lines added, includes and comments counted; TabImpl changes 5 more.
 | File | Lines | Why |
 |---|---|---|
 | `chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java` | 7 | Its three `WebContentsFactory.createWebContents()` calls for a new tab go to `Containers.createWebContents()`. |
-| `chrome/browser/tab/web_contents_state.cc` | 4 | A tab restored after a restart gets its SiteInstance. |
-| `chrome/browser/ui/android/tab_model/android_live_tab_context.cc` | 4 | A closed tab reopened in the background. |
-| `chrome/browser/sessions/session_restore_android.cc` | 5 | A closed tab reopened in place of the current one. |
+| `chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java` | 3 | A new tab that goes into a container doesn't take custom tabs' spare tab, which is outside containers. |
+| `chrome/browser/tab/web_contents_state.cc` | 5 | A tab restored after a restart gets its SiteInstance, asked for before its pages are built so they keep their container. |
+| `chrome/browser/ui/android/tab_model/android_live_tab_context.cc` | 5 | A closed tab reopened in the background. |
+| `chrome/browser/sessions/session_restore_android.cc` | 6 | A closed tab reopened in place of the current one. |
 | `chrome/android/BUILD.gn` | 2 | `ContainersBridge.java`'s JNI. |
 | `tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni` | 3 | Our Java in `chrome_java` (Vanadium's list). |
 | `chrome/app/generated_resources.grd`, `.gritdeps` | 2 | dubna's strings (the default containers' names, "Temporary 2"). |
@@ -55,7 +56,7 @@ Lines added, includes and comments counted; TabImpl changes 5 more.
 
 | File | Lines | Why |
 |---|---|---|
-| `chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java` | 15 | The link menu's item and its handler. The item has its own id (`Containers.MENU_ID`), so no upstream list of items changes. |
+| `chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java` | 16 | The link menu's item and its handler. The item has its own id (`Containers.MENU_ID`), so no upstream list of items changes. No Preview page in a container tab: the preview would load outside the container. |
 | `chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java` | 3 | The tab switcher row's color line. |
 | `chrome/android/java/res/xml/main_preferences.xml` | 5 | The Settings entry. |
 
