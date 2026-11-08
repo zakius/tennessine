@@ -1,0 +1,23 @@
+# Copyright 2026 The tennessine Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# dubna's containers_platform.h for tennessine, and the JNI of
+# ContainersBridge.java (../android): new tabs in a container, the tab
+# switcher's color line, the link menu's chooser and Settings → Containers.
+# dubna's containers.patch makes the browser depend on this.
+source_set("platform") {
+  sources = [ "containers_android.cc" ]
+  public_deps = [ "//chrome/browser/containers" ]
+  deps = [
+    "//base",
+    "//chrome/android:chrome_jni_headers",
+    "//chrome/browser/profiles:profile",
+    "//chrome/browser/ui/android/tab_model",
+    "//chrome/common",
+    "//components/prefs",
+    "//content/public/browser",
+    "//ui/base",
+    "//url",
+  ]
+}

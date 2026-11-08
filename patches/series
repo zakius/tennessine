@@ -80,3 +80,6 @@ patches/tennessine/smaller-apk.patch
 patches/tennessine/photo-location.patch
 # Web apps: links out of the app open in the default browser, with per-app scope rules (dubna).
 patches/tennessine/app-links.patch
+# Tab containers, with Traffic Control, from dubna; Android's tabs, menu and Settings are ours.
+dubna/patches/containers.patch
+patches/tennessine/containers.patch
