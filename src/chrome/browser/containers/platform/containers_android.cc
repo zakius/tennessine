@@ -238,12 +238,15 @@ static ScopedJavaLocalRef<jobject> JNI_ContainersBridge_CreateWebContents(
 static std::string JNI_ContainersBridge_ContainerOf(
     JNIEnv* env,
     content::WebContents* contents) {
-  return containers::ContainerIdOf(contents);
+  return contents ? containers::ContainerIdOf(contents) : std::string();
 }
 
 // The color of `contents`' container as ARGB, or 0 outside containers.
 static jint JNI_ContainersBridge_ColorOf(JNIEnv* env,
                                          content::WebContents* contents) {
+  if (!contents) {
+    return 0;
+  }
   std::string id = containers::ContainerIdOf(contents);
   ContainersService* service =
       id.empty() ? nullptr
@@ -264,6 +267,9 @@ static void JNI_ContainersBridge_OpenInNewTab(JNIEnv* env,
                                               const std::string& url,
                                               const std::string& id,
                                               jboolean foreground) {
+  if (!source) {
+    return;
+  }
   containers::OpenInNewTab(source, GURL(url), id, ui::PAGE_TRANSITION_LINK,
                            source->GetPrimaryMainFrame()->GetLastCommittedOrigin(),
                            foreground);

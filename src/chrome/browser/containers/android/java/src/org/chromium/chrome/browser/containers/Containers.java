@@ -108,14 +108,17 @@ public final class Containers {
         }
         new AlertDialog.Builder(context)
                 .setTitle(R.string.contextmenu_open_in_container)
-                .setItems(labels.toArray(new CharSequence[0]), opener(source, profile, ids, url))
+                .setItems(labels.toArray(new CharSequence[0]), opener(tab, profile, ids, url))
                 .show();
     }
 
     /** The chooser's action: opens {@code url} in container {@code ids[which]}. */
     private static DialogInterface.OnClickListener opener(
-            WebContents source, Profile profile, List<String> ids, String url) {
+            Tab tab, Profile profile, List<String> ids, String url) {
         return (dialog, which) -> {
+            // The tab may have closed while the chooser was open.
+            @Nullable WebContents source = tab.isDestroyed() ? null : tab.getWebContents();
+            if (source == null || source.isDestroyed()) return;
             String id = ids.get(which);
             if (id.equals(ContainersBridge.TEMPORARY)) {
                 id = ContainersBridge.createTemporary(profile);
