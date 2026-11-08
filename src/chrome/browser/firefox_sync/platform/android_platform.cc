@@ -147,11 +147,12 @@ class AndroidPlatform : public Platform {
         /*replace=*/false);
   }
 
-  // The profile's tabs in a browser window, not incognito's or archived ones:
-  // the tabs Firefox sees.
+  // The profile's tabs in a browser window, not incognito's or archived ones,
+  // nor an installed web app's or a Custom Tab's: the tabs Firefox sees.
   bool IsMainTabModel(TabModel* model) const {
     return model->GetProfile() == profile_ && !model->IsOffTheRecord() &&
-           model->GetTabModelType() == TabModel::TabModelType::kStandard;
+           model->GetTabModelType() == TabModel::TabModelType::kStandard &&
+           model->activity_type() == chrome::android::ActivityType::kTabbed;
   }
 
   // Null with no window open.
