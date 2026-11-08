@@ -1,13 +1,13 @@
-# Releases tennessine when a push to main changes the browser, or by hand: builds the APK,
-# publishes it to the F-Droid repository, then posts a GitHub release with the APK and notes from
-# the commits since the previous one. It runs on the project's own build machine (runner label
+# Releases tennessine when a release-* tag is pushed, or by hand: builds the APK, publishes it to
+# the F-Droid repository, then posts a GitHub release with the APK and notes from the commits since
+# the previous one. A merge to main releases nothing. The run releases main's tip, which must
+# contain the tagged commit. It runs on the project's own build machine (runner label
 # "tennessine"), in the main checkout, which has the build tree and the publish settings. Pull
 # requests start nothing: a runner on this machine must never run their code.
 name: Release
 on:
   push:
-    branches: [main]
-    paths-ignore: ['docs/**', '**.md', '.github/**']
+    tags: ['release-*']
   workflow_dispatch:
 concurrency:
   group: release
@@ -21,13 +21,18 @@ jobs:
     runs-on: [self-hosted, tennessine]
     timeout-minutes: 1440
     steps:
-      - name: Main checkout at this commit
+      - name: Main checkout at main's tip
         run: |
           : "${MAIN:?must be set in the .env of the runner}" "${BUILDS_LOCK:?must be set in the .env of the runner}"
           cd "$MAIN"
-          git fetch -q origin --tags
-          git merge -q --ff-only "$GITHUB_SHA"
+          git fetch -q origin main --tags
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME is not on main; tag a commit of main"
+            exit 1
+          fi
+          git merge -q --ff-only origin/main
           git submodule update --init -q
+          echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Build
         run: cd "$MAIN" && flock "$BUILDS_LOCK" ./tennessine.py build
       - name: Publish to the F-Droid repository
@@ -50,5 +55,5 @@ jobs:
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" "$asset" --clobber
           else
-            gh release create "$tag" "$asset" --target "$GITHUB_SHA" --title "tennessine $version ($code)" --notes-file "$notes"
+            gh release create "$tag" "$asset" --target "$RELEASE_SHA" --title "tennessine $version ($code)" --notes-file "$notes"
           fi

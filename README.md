@@ -91,7 +91,7 @@ To take shared fixes (Firefox-compatible Sync, no saved history), run `git -C du
 
 ## Releasing
 
-A push to main that changes the browser releases it: `.github/workflows/release.yml` builds, publishes and posts a [GitHub release](https://github.com/zakius/tennessine/releases) with the APK and notes from the commits, on the build machine's runner (dubna's [Releases](https://github.com/zakius/dubna#releases)). It can also be started by hand.
+A merge to main only merges. To release, push a tag whose name starts with `release-` on a commit of main (dubna's [Releases](https://github.com/zakius/dubna#releases) has the command), or start `.github/workflows/release.yml` by hand. The workflow releases main's tip: it builds, publishes and posts a [GitHub release](https://github.com/zakius/tennessine/releases) with the APK and notes from the commits, on the build machine's runner.
 
 `./tennessine.py publish` publishes the APK in the F-Droid repository listed under [Install](#install). The repository's index signing key is in `~/.local/share/tennessine-fdroid`.
 
