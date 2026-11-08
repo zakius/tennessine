@@ -1,0 +1,86 @@
+# Containers' UI, reusing Chromium's (src/chrome/browser/containers/android, docs/containers.md):
+# - ChromeContextMenuPopulator.java: a link's Open in container, a chooser of the containers;
+#   no Preview page in a container, as the preview would load outside it.
+# - TabGridViewBinder.java: a tab switcher row has a line in its container's color.
+# - main_preferences.xml: Settings → Containers, after Privacy and security.
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
+@@ -33,6 +33,7 @@ import org.chromium.base.Callback;
+ import org.chromium.base.ResettersForTesting;
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.tab.TabUtils;
+ import org.chromium.chrome.browser.tab.state.ShoppingPersistedTabData.PriceDrop;
+ import org.chromium.chrome.browser.tab_ui.TabCardThemeUtil;
+@@ -134,6 +135,8 @@ public class TabGridViewBinder {
+             String title = model.get(TabProperties.TITLE);
+             TextView tabTitleView = view.fastFindViewById(R.id.tab_title);
+             if (TabProperties.TITLE == propertyKey) tabTitleView.setText(title);
++            // tennessine: a line in the color of the tab's container (chrome/browser/containers).
++            Containers.markTabRow(view, model.get(TabProperties.TAB_ID));
+             if (TabProperties.ALERT_STATE == propertyKey) {
+                 ((TabGridView) view).setAlertState(model.get(TabProperties.ALERT_STATE));
+             }
+--- a/chrome/android/java/res/xml/main_preferences.xml
++++ b/chrome/android/java/res/xml/main_preferences.xml
+@@ -55,6 +55,11 @@ found in the LICENSE file.
+         android:key="privacy"
+         android:order="8"
+         android:title="@string/prefs_privacy_security"/>
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
++        android:fragment="org.chromium.chrome.browser.containers.ContainersSettings"
++        android:key="containers"
++        android:order="8"
++        android:title="@string/containers_title"/>
+     <org.chromium.components.browser_ui.settings.ChromeBasePreference
+         android:fragment="org.chromium.chrome.browser.safety_hub.SafetyHubFragment"
+         android:key="safety_hub"
+--- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
+@@ -47,6 +47,7 @@
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.chrome.R;
+ import org.chromium.chrome.browser.bookmarks.BookmarkUtils;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.contextmenu.ChromeContextMenuItem.Item;
+ import org.chromium.chrome.browser.contextmenu.ContextMenuCoordinator.ContextMenuItemType;
+ import org.chromium.chrome.browser.devtools.DevToolsWindowAndroid;
+@@ -648,6 +649,16 @@
+                             && MultiWindowUtils.isLinkNavigationToIncognitoWindowSupported()) {
+                         linkGroup.add(createListItem(Item.OPEN_IN_INCOGNITO_WINDOW));
+                     }
++                    // tennessine: Open in container (chrome/browser/containers).
++                    if (!mItemDelegate.isIncognito()) {
++                        linkGroup.add(
++                                new ListItem(
++                                        ListItemType.MENU_ITEM,
++                                        buildListItemModel(
++                                                Containers.getMenuTitle(mContext),
++                                                Containers.MENU_ID,
++                                                /* enabled= */ true)));
++                    }
+                 } else if (mMode == ContextMenuMode.THIN_WEB_VIEW) {
+                     if (mItemDelegate.supportsOpenInNewTab()) {
+                         linkGroup.add(createListItem(Item.OPEN_IN_NEW_TAB));
+@@ -688,7 +699,8 @@
+                         && EphemeralTabCoordinator.isSupported()) {
+                     boolean isDataUrl =
+                             mParams.getUrl().getScheme().equals(UrlConstants.DATA_SCHEME);
+-                    if (!isDataUrl) {
++                    // tennessine: a preview would load outside the tab's container.
++                    if (!isDataUrl && !Containers.isInContainer(getTab())) {
+                         // Do not show the item if BrApp/CCT opens data: url as it could potentially
+                         // cause a security issue.
+                         linkGroup.add(createListItem(Item.OPEN_IN_EPHEMERAL_TAB));
+@@ -995,6 +1007,10 @@
+ 
+     @Override
+     public boolean onItemSelected(int itemId) {
++        if (mMode == ContextMenuMode.NORMAL && itemId == Containers.MENU_ID) {
++            Containers.showChooser(mContext, getTab(), mParams.getUrl().getSpec());
++            return true;
++        }
+         if (ChromeFeatureList.sCctContextualMenuItems.isEnabled()
+                 && mCustomActionMap.get(itemId) != null) {
+             final CustomContentAction action = mCustomActionMap.get(itemId);

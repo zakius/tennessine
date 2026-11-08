@@ -1,0 +1,231 @@
+# Tab containers from dubna (dubna/src/chrome/browser/containers, dubna/patches/containers.patch);
+# the Android side is src/chrome/browser/containers/platform and android/ (docs/containers.md).
+# A tab stays in the container its WebContents starts in, so these hooks only create tabs there:
+# - TabImpl.java: a tab Java creates without a WebContents gets one from Containers, which picks
+#   its opener's container for a link, or Settings' container for a new tab.
+# - ChromeTabCreator.java: such a tab doesn't take the spare tab custom tabs warm up, which is
+#   outside containers.
+# - web_contents_state.cc: a tab restores in its container after a restart.
+# - android_live_tab_context.cc, session_restore_android.cc: a closed tab reopens in it.
+# - chrome/android/BUILD.gn, chrome_java_ext_sources.gni: our Java and its JNI.
+# - generated_resources.grd: dubna's strings. The Android ones are ours, with Polish.
+--- a/chrome/android/BUILD.gn
++++ b/chrome/android/BUILD.gn
+@@ -3209,6 +3209,8 @@ if (_is_default_toolchain) {
+ 
+     # tennessine: links out of installed web apps (chrome/browser/app_links).
+     sources += [ "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/AppLinksBridge.java" ]
++    # tennessine: tab containers (chrome/browser/containers).
++    sources += [ "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/ContainersBridge.java" ]
+   }
+ 
+   source_set("chrome_test_util") {
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
+@@ -69,6 +69,8 @@ import org.chromium.chrome.browser.compositor.CompositorViewHolder;
+ import org.chromium.chrome.browser.compositor.CompositorViewHolderSupplier;
+ import org.chromium.chrome.browser.content.ContentUtils;
+ import org.chromium.chrome.browser.content.WebContentsFactory;
++// tennessine: a new tab's WebContents starts in its container (chrome/browser/containers).
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.desktop_site.DesktopSiteUtils;
+ import org.chromium.chrome.browser.flags.ChromeFeatureList;
+ import org.chromium.chrome.browser.native_page.NativePageAssassin;
+@@ -1230,8 +1232,8 @@ class TabImpl implements Tab, TabInternal {
+         if (mPendingLoadParams != null) {
+             if (mWebContents == null) {
+                 WebContents webContents =
+-                        WebContentsFactory.createWebContents(
+-                                mProfile, isHidden(), /* initializeRenderer= */ false);
++                        Containers.createWebContents(
++                                this, mProfile, isHidden(), /* initializeRenderer= */ false);
+                 initWebContents(webContents);
+             }
+             loadUrl(mPendingLoadParams);
+@@ -1854,12 +1856,12 @@ class TabImpl implements Tab, TabInternal {
+                 return;
+             }
+             webContents =
+-                    WebContentsFactory.createWebContents(mProfile, isHidden(), initializeRenderer);
++                    Containers.createWebContents(this, mProfile, isHidden(), initializeRenderer);
+         } else if (webContents == null) {
+             // Eager live tab creation without a caller-supplied WebContents.
+             webContents =
+-                    WebContentsFactory.createWebContents(
+-                            mProfile, initiallyHidden, initializeRenderer);
++                    Containers.createWebContents(
++                            this, mProfile, initiallyHidden, initializeRenderer);
+         }
+ 
+         assert webContents != null;
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
+@@ -24,6 +24,7 @@
+ import org.chromium.chrome.browser.app.tab_activity_glue.ReparentingDelegateFactory;
+ import org.chromium.chrome.browser.app.tab_activity_glue.ReparentingTask;
+ import org.chromium.chrome.browser.compositor.CompositorViewHolder;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.flags.ChromeFeatureList;
+ import org.chromium.chrome.browser.incognito.IncognitoUtils;
+ import org.chromium.chrome.browser.prefetch.settings.PreloadPagesSettingsBridge;
+@@ -407,7 +408,9 @@
+                 // from disk correctly since we're passing targetsNetwork = false. Investigate and
+                 // consider what should be done about this.
+             } else if (WarmupManager.getInstance()
+-                    .hasSpareTab(getProfile(), /* targetsNetwork= */ false)) {
++                            .hasSpareTab(getProfile(), /* targetsNetwork= */ false)
++                    // tennessine: the spare tab isn't in a container.
++                    && !Containers.goesInContainer(parent, type, getProfile())) {
+                 // Load URL using spare tab if available. This occurs only if a spare tab has been
+                 // created beforehand. The creation of a spare tab is a costly operation that should
+                 // not be performed without testing. Spare tab is only used for navigations in the
+--- a/chrome/app/generated_resources.grd
++++ b/chrome/app/generated_resources.grd
+@@ -322,6 +322,7 @@ are declared in tools/grit/grit_args.gni.
+       <!-- Settings specific strings -->
+       <part file="settings_strings.grdp" />
+       <part file="oganesson_firefox_sync_strings.grdp" />
++      <part file="oganesson_containers_strings.grdp" />
+       <if expr="not is_android">
+         <part file="shared_settings_strings.grdp"/>
+       </if>
+--- a/chrome/app/generated_resources.grd.gritdeps
++++ b/chrome/app/generated_resources.grd.gritdeps
+@@ -14,6 +14,7 @@ chrome/app/media_live_preview_strings.grdp
+ chrome/app/media_router_strings.grdp
+ chrome/app/nearby_share_strings.grdp
+ chrome/app/notebooks_strings.grdp
++chrome/app/oganesson_containers_strings.grdp
+ chrome/app/oganesson_firefox_sync_strings.grdp
+ chrome/app/os_settings_search_tag_strings.grdp
+ chrome/app/os_settings_strings.grdp
+--- a/chrome/browser/sessions/session_restore_android.cc
++++ b/chrome/browser/sessions/session_restore_android.cc
+@@ -8,6 +8,7 @@
+ 
+ #include "base/barrier_callback.h"
+ #include "chrome/browser/android/tab_android.h"
++#include "chrome/browser/containers/containers_tabs.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/android/tab_model/tab_model.h"
+ #include "chrome/browser/ui/android/tab_model/tab_model_list.h"
+@@ -59,13 +60,18 @@
+   Profile* profile = Profile::FromBrowserContext(context);
+   TabModel* tab_model = TabModelList::GetTabModelForWebContents(web_contents);
+   DCHECK(tab_model);
++  // tennessine: a closed tab reopens in its container.
++  scoped_refptr<content::SiteInstance> site_instance =
++      containers::SiteInstanceToRestore(
++          context, session_tab.navigations,
++          session_tab.normalized_navigation_index());
+   std::vector<std::unique_ptr<content::NavigationEntry>> entries =
+       sessions::ContentSerializedNavigationBuilder::ToNavigationEntries(
+           session_tab.navigations, profile);
+ 
+   bool is_background_tab =
+       disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB;
+-  content::WebContents::CreateParams create_params(context);
++  content::WebContents::CreateParams create_params(context, site_instance);
+   if (is_background_tab && skip_renderer_creation) {
+     create_params.initially_hidden = true;
+     create_params.desired_renderer_state =
+--- a/chrome/browser/tab/web_contents_state.cc
++++ b/chrome/browser/tab/web_contents_state.cc
+@@ -21,6 +21,7 @@
+ #include "base/logging.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/pickle.h"
++#include "chrome/browser/containers/containers_tabs.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/common/webui_url_constants.h"
+ #include "components/sessions/content/content_serialized_navigation_builder.h"
+@@ -314,11 +315,15 @@
+     return nullptr;
+   }
+ 
++  // tennessine: a tab restores in its container.
++  scoped_refptr<content::SiteInstance> site_instance =
++      containers::SiteInstanceToRestore(browser_context, navigations,
++                                        current_entry_index);
+   std::vector<std::unique_ptr<content::NavigationEntry>> entries =
+       sessions::ContentSerializedNavigationBuilder::ToNavigationEntries(
+           navigations, browser_context);
+ 
+-  WebContents::CreateParams params(browser_context);
++  WebContents::CreateParams params(browser_context, site_instance);
+ 
+   params.initially_hidden = initially_hidden;
+   if (no_renderer) {
+--- a/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
++++ b/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
+@@ -2150,4 +2150,8 @@ Aby zmienić to ustawienie, <ph name="BEGIN_LINK" />wyczyść dane tennessine na
+ <translation id="99907655649633293"><ph name="TAB_TITLE" />, karta incognito</translation>
+ <translation id="414776566175657792">Karta z urządzenia <ph name="DEVICE" />: <ph name="TITLE" /></translation>
+ <translation id="2321024629479061895">Wysłano na urządzenie <ph name="DEVICE" /></translation>
++<translation id="6017560037265964523">Kontenery</translation>
++<translation id="8670218546624422041">Otwórz w kontenerze</translation>
++<translation id="2796584247246518451">Nowy kontener tymczasowy</translation>
++<translation id="5140474419843357176">Bez kontenera</translation>
+ </translationbundle>
+\ No newline at end of file
+--- a/chrome/browser/ui/android/tab_model/android_live_tab_context.cc
++++ b/chrome/browser/ui/android/tab_model/android_live_tab_context.cc
+@@ -10,6 +10,7 @@
+ #include "base/notimplemented.h"
+ #include "base/uuid.h"
+ #include "chrome/browser/android/tab_android.h"
++#include "chrome/browser/containers/containers_tabs.h"
+ #include "chrome/browser/glic/glic_tab_restore_helper.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/sessions/session_restore.h"
+@@ -198,6 +199,10 @@
+     sessions::tab_restore::Type original_session_type) {
+   Profile* profile = tab_model_->GetProfile();
+ 
++  // tennessine: a closed tab reopens in its container.
++  scoped_refptr<content::SiteInstance> site_instance =
++      containers::SiteInstanceToRestore(profile, tab.navigations,
++                                        tab.normalized_navigation_index());
+   // Prepare navigation history.
+   std::vector<std::unique_ptr<content::NavigationEntry>> nav_entries =
+       sessions::ContentSerializedNavigationBuilder::ToNavigationEntries(
+@@ -205,7 +210,7 @@
+ 
+   // Restore web contents with navigation history. This is used for background
+   // restore so start without a renderer.
+-  auto params = content::WebContents::CreateParams(profile);
++  auto params = content::WebContents::CreateParams(profile, site_instance);
+   params.desired_renderer_state =
+       content::WebContents::CreateParams::kNoRendererProcess;
+   params.initially_hidden = true;
+--- a/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
++++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
+@@ -10,6 +10,9 @@ chrome_java_ext_full_path_sources = [
+   "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/DefaultBrowser.java",
+   "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppLinksSettings.java",
+   "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppsSettings.java",
++  "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/Containers.java",
++  "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/ContainersBridge.java",
++  "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/ContainersSettings.java",
+   "//chrome/android/java/src/org/chromium/chrome/browser/password_manager/settings/PasswordSettings.java",
+ ]
+ # Three lines of code for minimizing conflicts in rebasing changes
+--- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
++++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
+@@ -65,4 +65,16 @@
+   <message name="IDS_FIREFOX_SYNC_TAB_SENT" desc="Toast after choosing the device on the Firefox account to send a tab to">
+     Sent to <ph name="DEVICE">%1$s<ex>Firefox on Laptop</ex></ph>
+   </message>
++  <message name="IDS_CONTAINERS_TITLE" desc="Title of the settings screen of tab containers and its entry in Settings. A container keeps its own cookies and site data, separate from other tabs.">
++    Containers
++  </message>
++  <message name="IDS_CONTEXTMENU_OPEN_IN_CONTAINER" desc="Item in a link's long-press menu that opens the link in a new tab in a container the user picks. A container keeps its own cookies and site data.">
++    Open in container
++  </message>
++  <message name="IDS_CONTAINERS_NEW_TEMPORARY" desc="Choice of a new temporary container, one whose cookies and site data are deleted once its tabs are closed">
++    New temporary container
++  </message>
++  <message name="IDS_CONTAINERS_NONE" desc="Choice of no container: the tab uses the browser's usual cookies and site data">
++    No container
++  </message>
+ </grit-part>
