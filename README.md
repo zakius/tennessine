@@ -1,6 +1,6 @@
 # tennessine
 
-tennessine is Chromium for Android, built on [Vanadium](https://github.com/GrapheneOS/Vanadium) with [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support. It adds a configurable toolbar, uBlock Origin (installed on first run), Chrome extensions, Firefox-compatible Sync, and switches that stop saving history. Its desktop sibling is [oganesson](https://github.com/zakius/oganesson), and the code the two share is in [dubna](https://github.com/zakius/dubna).
+tennessine is Chromium for Android, built on [Vanadium](https://github.com/GrapheneOS/Vanadium) with [Titanium](https://github.com/jqssun/android-titanium-browser)'s extension support. It adds a configurable toolbar, uBlock Origin (installed on first run), Chrome extensions, Firefox-compatible Sync, tab containers, and switches that stop saving history. Its desktop sibling is [oganesson](https://github.com/zakius/oganesson), and the code the two share is in [dubna](https://github.com/zakius/dubna).
 
 > **Highly volatile.** This is a personal project. Features change or disappear without notice, some may misbehave, updates can break things, and development may stop at any moment. Use it knowing that.
 
@@ -14,6 +14,7 @@ Where an extension does the job well, the job stays with the extension. Content 
 - Page zoom that follows Android's font size.
 - A list-mode tab switcher and the full URL in the address bar, as [Cromite](https://github.com/uazo/cromite) has them.
 - Firefox-compatible Sync. It works best with a self-hosted sync server.
+- Containers: separate cookies and site data for the tabs of each container, as Firefox has, with rules that open chosen sites in a container. Shared with oganesson.
 - Switches that stop saving history.
 - Installed web apps send links that leave the app to your default browser, with per-app scope rules in Settings → Web apps, shared with oganesson.
 
@@ -47,7 +48,7 @@ After the store installs the app for the first time, it installs updates in the 
 |---|---|
 | `vanadium/` | Submodule at a Vanadium tag, which sets the Chromium version. Its patches apply as they are, renamed to tennessine, minus `patches/vanadium-drops.txt`. |
 | `titanium/` | Submodule at the Titanium tag that `patches/titanium/` matches. Titanium makes its changes with `sed` in `patch.sh`. Ours are those changes as patches, so a change that no longer applies fails loudly. |
-| `dubna/` | Submodule: [dubna](https://github.com/zakius/dubna), what tennessine shares with oganesson. That is Firefox-compatible Sync (C++, strings, translations, Rust library), no saved history, and the update policy that keeps both browsers on one Chromium milestone. The Android side of it is here: `src/chrome/browser/firefox_sync/platform/` (dubna's `firefox_sync_platform.h`) and `android/` (the settings screen). |
+| `dubna/` | Submodule: [dubna](https://github.com/zakius/dubna), what tennessine shares with oganesson. That is Firefox-compatible Sync (C++, strings, translations, Rust library), no saved history, tab containers, and the update policy that keeps both browsers on one Chromium milestone. The Android side of it is here: `src/chrome/browser/firefox_sync/platform/` (dubna's `firefox_sync_platform.h`) and `android/` (the settings screen), and `src/chrome/browser/containers/platform/` and `android/` for containers. |
 | `patches/series` | Everything applied after Vanadium, in order. Paths are relative to the repo root. |
 | `src/` | New files copied over the tree, after `dubna/src/`. |
 | `tennessine.py` | Every command: `apply`, `check`, `refresh`, `upstream`, `build`, `publish`. Run it without arguments for help. |
@@ -98,7 +99,7 @@ A push to main that changes the browser releases it: `.github/workflows/release.
 
 ## Docs
 
-[Patch decisions](docs/patch-decisions.md): why each patch is in or out.
+[Patch decisions](docs/patch-decisions.md): why each patch is in or out. [Containers](docs/containers.md): how tabs get into containers on Android, and the hooks.
 
 ## License
 
