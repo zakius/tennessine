@@ -188,14 +188,22 @@ using containers::ContainersService;
 
 // A tab that loads no page yet has no WebContents, so it counts as in no
 // container: with Chromium's "load all tabs at startup", which tennessine
-// keeps, only archived tabs are such.
-static void JNI_ContainersBridge_OnTabsRestored(JNIEnv* env,
-                                                jlong request_ptr,
-                                                jboolean restored) {
+// keeps, only archived tabs are such. Tabs waiting for Undo aren't in the
+// tab models, so Java gives their containers.
+static void JNI_ContainersBridge_OnTabsRestored(
+    JNIEnv* env,
+    jlong request_ptr,
+    jboolean restored,
+    const std::vector<std::string>& closing_tab_containers) {
   std::unique_ptr<containers::InUseRequest> request(
       reinterpret_cast<containers::InUseRequest*>(request_ptr));
   std::set<std::string> ids;
   if (restored) {
+    for (const std::string& id : closing_tab_containers) {
+      if (!id.empty()) {
+        ids.insert(id);
+      }
+    }
     for (TabModel* model : containers::ModelsOf(request->profile)) {
       for (int i = 0; i < model->GetTabCount(); ++i) {
         content::WebContents* contents = model->GetWebContentsAt(i);

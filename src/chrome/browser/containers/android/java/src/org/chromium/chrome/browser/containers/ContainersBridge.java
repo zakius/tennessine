@@ -21,8 +21,11 @@ import org.chromium.build.annotations.NullMarked;
 import org.chromium.chrome.browser.app.tabwindow.TabWindowManagerSingleton;
 import org.chromium.chrome.browser.document.ChromeLauncherActivity;
 import org.chromium.chrome.browser.profiles.Profile;
+import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tabmodel.TabList;
+import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelSelector;
-import org.chromium.chrome.browser.tabmodel.TabModelUtils;
+import org.chromium.chrome.browser.tabmodel.TabModelSelectorObserver;
 import org.chromium.content_public.browser.WebContents;
 
 import java.util.ArrayList;
@@ -188,23 +191,72 @@ public final class ContainersBridge {
     }
 
     /**
-     * Calls back native {@code request} once the tabs of the open windows are restored, or at once,
-     * with {@code restored} false, when no window is open.
+     * Calls back native {@code request} once the tabs of the open windows are restored, with the
+     * containers of the tabs waiting for Undo, which the native tab models leave out. Calls back at
+     * once, with {@code restored} false, when no window is open, and so it does when a window
+     * closes before its tabs are restored.
      */
     @CalledByNative
     private static void whenTabsRestored(long request) {
+        List<TabModelSelector> selectors = openSelectors();
+        if (selectors.isEmpty()) {
+            ContainersBridgeJni.get().onTabsRestored(request, false, new String[0]);
+            return;
+        }
+        whenRestored(request, selectors, 0);
+    }
+
+    private static List<TabModelSelector> openSelectors() {
         List<TabModelSelector> selectors = new ArrayList<>();
         for (TabModelSelector selector :
                 TabWindowManagerSingleton.getInstance().getAllTabModelSelectors()) {
             if (selector != null) selectors.add(selector);
         }
-        if (selectors.isEmpty()) {
-            ContainersBridgeJni.get().onTabsRestored(request, false);
+        return selectors;
+    }
+
+    /** Waits for {@code selectors} from {@code index} on, one after the other. */
+    private static void whenRestored(long request, List<TabModelSelector> selectors, int index) {
+        if (index == selectors.size()) {
+            ContainersBridgeJni.get().onTabsRestored(request, true, closingTabContainers());
             return;
         }
-        TabModelUtils.runOnTabStateInitialized(
-                () -> ContainersBridgeJni.get().onTabsRestored(request, true),
-                selectors.toArray(new TabModelSelector[0]));
+        TabModelSelector selector = selectors.get(index);
+        if (selector.isTabStateInitialized()) {
+            whenRestored(request, selectors, index + 1);
+            return;
+        }
+        selector.addObserver(
+                new TabModelSelectorObserver() {
+                    @Override
+                    public void onTabStateInitialized() {
+                        selector.removeObserver(this);
+                        whenRestored(request, selectors, index + 1);
+                    }
+
+                    @Override
+                    public void onDestroyed() {
+                        selector.removeObserver(this);
+                        ContainersBridgeJni.get().onTabsRestored(request, false, new String[0]);
+                    }
+                });
+    }
+
+    /** The containers of the tabs waiting for Undo after they were closed. */
+    private static String[] closingTabContainers() {
+        List<String> ids = new ArrayList<>();
+        for (TabModelSelector selector : openSelectors()) {
+            for (TabModel model : selector.getModels()) {
+                TabList tabs = model.getComprehensiveModel();
+                for (int i = 0; i < tabs.getCount(); i++) {
+                    Tab tab = tabs.getTabAt(i);
+                    if (tab == null || !model.isClosurePending(tab.getId())) continue;
+                    WebContents contents = tab.getWebContents();
+                    if (contents != null) ids.add(containerOf(contents));
+                }
+            }
+        }
+        return ids.toArray(new String[0]);
     }
 
     /** Opens {@code url} in a new tab of the browser, out of a custom tab or a web app. */
@@ -262,6 +314,9 @@ public final class ContainersBridge {
         @JniType("std::string")
         String createTemporary(@JniType("Profile*") Profile profile);
 
-        void onTabsRestored(long request, boolean restored);
+        void onTabsRestored(
+                long request,
+                boolean restored,
+                @JniType("std::vector<std::string>") String[] closingTabContainers);
     }
 }

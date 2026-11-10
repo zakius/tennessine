@@ -31,7 +31,7 @@ A tab stays in the storage partition its WebContents is created in (dubna's `con
 | A tab restored after a restart | `WebContentsState::RestoreContentsFromByteBuffer()` asks `SiteInstanceToRestore()`: the tab state saves each page's container as the page's extended info, as desktop sessions do. |
 | A closed tab reopened (Recent tabs) | `AndroidLiveTabContext::AddRestoredTab()` and `SessionRestore::RestoreForeignSessionTab()` ask `SiteInstanceToRestore()`. |
 
-dubna checks which containers are in use before it deletes a container's data. On Android, the saved session is the open tabs themselves, restored by Java after the browser starts. So `GetContainersInUse()` waits until the windows' tabs are restored (`TabModelUtils.runOnTabStateInitialized()`) and answers with their containers. With no window, as when a background task starts the browser, it counts every container as in use, so nothing is deleted then.
+dubna checks which containers are in use before it deletes a container's data. On Android, the saved session is the open tabs themselves, restored by Java after the browser starts. So `GetContainersInUse()` waits until the windows' tabs are restored and answers with their containers, and those of the tabs waiting for Undo after they were closed. With no window, as when a background task starts the browser, or when a window closes before its tabs are restored, it counts every container as in use, so nothing is deleted then.
 
 The containers and the rules are dubna's prefs. Settings reads and writes them through `ContainersBridge` as JSON, and the native side checks each container and rule with dubna's own `FromDict()` and `IsValidUrlFilter()`.
 
