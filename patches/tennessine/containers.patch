@@ -2,7 +2,10 @@
 # the Android side is src/chrome/browser/containers/platform and android/ (docs/containers.md).
 # A tab stays in the container its WebContents starts in, so these hooks only create tabs there:
 # - TabImpl.java: a tab Java creates without a WebContents gets one from Containers, which picks
-#   its opener's container for a link, or Settings' container for a new tab.
+#   its opener's container for a link, or Settings' container for a new tab. So does a tab whose
+#   saved state can't be restored.
+# - browser_navigator_android.cc: a tab Navigate() opens from a container tab stays in it.
+# - TabModelJniBridge.java: a blocked popup allowed later keeps its container tab as parent.
 # - ChromeTabCreator.java: such a tab doesn't take the spare tab custom tabs warm up, which is
 #   outside containers.
 # - web_contents_state.cc: a tab restores in its container after a restart.
@@ -22,16 +25,17 @@
    source_set("chrome_test_util") {
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
-@@ -69,6 +69,8 @@ import org.chromium.chrome.browser.compositor.CompositorViewHolder;
+@@ -68,7 +68,8 @@ import org.chromium.chrome.browser.app.tabwindow.TabWindowManagerSingleton;
+ import org.chromium.chrome.browser.compositor.CompositorViewHolder;
  import org.chromium.chrome.browser.compositor.CompositorViewHolderSupplier;
  import org.chromium.chrome.browser.content.ContentUtils;
- import org.chromium.chrome.browser.content.WebContentsFactory;
+-import org.chromium.chrome.browser.content.WebContentsFactory;
 +// tennessine: a new tab's WebContents starts in its container (chrome/browser/containers).
 +import org.chromium.chrome.browser.containers.Containers;
  import org.chromium.chrome.browser.desktop_site.DesktopSiteUtils;
  import org.chromium.chrome.browser.flags.ChromeFeatureList;
  import org.chromium.chrome.browser.native_page.NativePageAssassin;
-@@ -1230,8 +1232,8 @@ class TabImpl implements Tab, TabInternal {
+@@ -1230,8 +1231,8 @@ class TabImpl implements Tab, TabInternal {
          if (mPendingLoadParams != null) {
              if (mWebContents == null) {
                  WebContents webContents =
@@ -42,7 +46,7 @@
                  initWebContents(webContents);
              }
              loadUrl(mPendingLoadParams);
-@@ -1854,12 +1856,12 @@ class TabImpl implements Tab, TabInternal {
+@@ -1854,12 +1855,12 @@ class TabImpl implements Tab, TabInternal {
                  return;
              }
              webContents =
@@ -58,6 +62,17 @@
          }
  
          assert webContents != null;
+@@ -2863,8 +2864,8 @@ class TabImpl implements Tab, TabInternal {
+                 // State restore failed, just create a new empty web contents as that is the best
+                 // that can be done at this point.
+                 webContents =
+-                        WebContentsFactory.createWebContents(
+-                                mProfile, isHidden(), /* initializeRenderer= */ false);
++                        Containers.createWebContents(
++                                this, mProfile, isHidden(), /* initializeRenderer= */ false);
+                 for (TabObserver observer : mObservers) observer.onRestoreFailed(this);
+                 restored = false;
+                 failedRestoreUrl = resolveFallbackUrlForFailedRestore(mWebContentsState);
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
 @@ -24,6 +24,7 @@
@@ -229,3 +244,47 @@
 +    No container
 +  </message>
  </grit-part>
+--- a/chrome/browser/ui/android/browser_navigator_android.cc
++++ b/chrome/browser/ui/android/browser_navigator_android.cc
+@@ -8,6 +8,7 @@
+ #include "base/notimplemented.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "chrome/browser/android/tab_android.h"
++#include "chrome/browser/containers/containers_tabs.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/tab_list/tab_list_interface.h"
+ #include "chrome/browser/ui/android/tab_model/tab_model.h"
+@@ -380,6 +381,11 @@ tabs::TabInterface* CreateNewTab(NavigateParams* params) {
+   } else {
+     content::WebContents::CreateParams create_params(
+         params->initiating_profile);
++    // tennessine: a tab opened from a container tab stays in its container.
++    if (params->source_contents) {
++      containers::InheritContainer(params->source_contents->GetSiteInstance(),
++                                   params->url, create_params.site_instance);
++    }
+     web_contents = content::WebContents::Create(create_params);
+   }
+ 
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/TabModelJniBridge.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/TabModelJniBridge.java
+@@ -19,6 +19,7 @@ import org.chromium.base.Token;
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.chrome.browser.WarmupManager;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.flags.ActivityType;
+ import org.chromium.chrome.browser.flags.CustomTabProfileType;
+ import org.chromium.chrome.browser.multiwindow.MultiInstanceManager.NewWindowAppSource;
+@@ -407,8 +408,10 @@ public abstract class TabModelJniBridge implements TabModelInternal {
+         loadUrlParams.setPostData(postData);
+         loadUrlParams.setIsRendererInitiated(isRendererInitiated);
+         loadUrlParams.setHasUserGesture(hasUserGesture);
++        // tennessine: a popup from a container tab takes it as parent, to stay in its container.
++        boolean keepParent = persistParentage || Containers.isInContainer(parent);
+         getTabCreator(incognito)
+-                .createNewTab(loadUrlParams, tabLaunchType, persistParentage ? parent : null);
++                .createNewTab(loadUrlParams, tabLaunchType, keepParent ? parent : null);
+     }
+ 
+     /**
