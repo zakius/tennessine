@@ -6,6 +6,7 @@ package org.chromium.chrome.browser.containers;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -16,9 +17,11 @@ import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AlertDialog;
 
+import org.chromium.base.IntentUtils;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.R;
+import org.chromium.chrome.browser.IntentHandler;
 import org.chromium.chrome.browser.app.tabwindow.TabWindowManagerSingleton;
 import org.chromium.chrome.browser.content.WebContentsFactory;
 import org.chromium.chrome.browser.profiles.Profile;
@@ -60,12 +63,50 @@ public final class Containers {
     }
 
     /**
-     * Whether a new tab of launch type {@code type} from {@code parent} goes into a container. Then
-     * it can't take the spare tab custom tabs warm up, which isn't in one.
+     * Whether a new tab of launch type {@code type} from {@code parent}, or from the tab in another
+     * window that {@code intent} names, goes into a container. Then it can't take the spare tab
+     * custom tabs warm up, which isn't in one.
      */
     public static boolean goesInContainer(
-            @Nullable Tab parent, @TabLaunchType int type, Profile profile) {
-        return !profile.isOffTheRecord() && !containerFor(type, parent, profile).isEmpty();
+            @Nullable Tab parent, @TabLaunchType int type, @Nullable Intent intent, Profile profile) {
+        if (profile.isOffTheRecord()) return false;
+        WebContents source = sourceInOtherWindow(intent, parent);
+        String id =
+                source != null
+                        ? ContainersBridge.containerOf(source)
+                        : containerFor(type, parent, profile);
+        return !id.isEmpty();
+    }
+
+    /**
+     * The WebContents for a new tab that a link in another window opens in this one, as Open in
+     * new window and Open in other window do: {@code intent} names the link's tab, which this
+     * window's tab model doesn't have, so the new tab has no {@code parent}. In the link's
+     * container, or outside containers. Null for any other new tab.
+     */
+    public static @Nullable WebContents createForOtherWindow(
+            @Nullable Intent intent, @Nullable Tab parent, Profile profile, boolean initiallyHidden) {
+        WebContents source = sourceInOtherWindow(intent, parent);
+        if (source == null || profile.isOffTheRecord()) return null;
+        String id = ContainersBridge.containerOf(source);
+        if (id.isEmpty()) {
+            return WebContentsFactory.createWebContents(
+                    profile, initiallyHidden, /* initializeRenderer= */ false);
+        }
+        return ContainersBridge.createWebContents(
+                profile, id, initiallyHidden, /* initializeRenderer= */ false);
+    }
+
+    /** The page of the parent tab a trusted {@code intent} names, when it isn't {@code parent}. */
+    private static @Nullable WebContents sourceInOtherWindow(
+            @Nullable Intent intent, @Nullable Tab parent) {
+        if (parent != null || !IntentHandler.wasIntentSenderChrome(intent)) return null;
+        int id =
+                IntentUtils.safeGetIntExtra(
+                        intent, IntentHandler.EXTRA_PARENT_TAB_ID, Tab.INVALID_TAB_ID);
+        if (id == Tab.INVALID_TAB_ID) return null;
+        Tab source = TabWindowManagerSingleton.getInstance().getTabById(id);
+        return source != null ? source.getWebContents() : null;
     }
 
     private static String containerFor(Tab tab, Profile profile) {

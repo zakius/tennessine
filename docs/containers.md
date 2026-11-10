@@ -25,6 +25,7 @@ A tab stays in the storage partition its WebContents is created in (dubna's `con
 | Where a tab's WebContents is made | How it gets its container |
 |---|---|
 | Java, for a tab created without one: a link opened in a new tab, the New tab button | `TabImpl` asks `Containers.createWebContents()` in place of `WebContentsFactory`. A link's tab (`FROM_LINK`, `FROM_LONGPRESS_*`) takes its parent tab's container, a new tab from the browser's UI (`FROM_CHROME_UI`, `FROM_TAB_SWITCHER_UI`) the one Settings names. |
+| A link opened with Open in new window or Open in other window | The new window's tab model doesn't have the link's tab, so `ChromeTabCreator` asks `Containers.createForOtherWindow()`, which finds the tab the intent names in any window and takes its container. |
 | A window a page opens (`target=_blank`, `window.open`) | Content, as on the desktop: the opener's SiteInstance, or dubna's `web_contents_impl.cc` hook without an opener. A blocked popup allowed later is a tab Java creates, with its opener tab as parent. |
 | A tab `Navigate()` opens from another tab (an extension's `tabs.create`) | `browser_navigator_android.cc` gives it the source tab's container (dubna's `InheritContainer()`). |
 | Open in container, Traffic Control | `containers_android.cc` creates the WebContents with `SiteInstanceIn()` and hands it to the tab model (`TabModel::CreateTab()`). |
@@ -46,7 +47,7 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 | `chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java` | 9 | Its four `WebContentsFactory.createWebContents()` calls go to `Containers.createWebContents()`: three for a new tab, and the empty page a tab gets when its saved state can't be restored. |
 | `chrome/browser/ui/android/browser_navigator_android.cc` | 6 | A tab that `Navigate()` opens from a tab (extensions, the browser's own code) takes its container. |
 | `chrome/android/java/src/org/chromium/chrome/browser/tabmodel/TabModelJniBridge.java` | 4 | A blocked popup the user allows later keeps its container tab as parent, also without an opener, so it opens in that container. |
-| `chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java` | 3 | A new tab that goes into a container doesn't take custom tabs' spare tab, which is outside containers. |
+| `chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java` | 7 | A new tab that goes into a container doesn't take custom tabs' spare tab, which is outside containers. A link opened in another window gets its WebContents from `Containers.createForOtherWindow()`. |
 | `chrome/browser/tab/web_contents_state.cc` | 5 | A tab restored after a restart gets its SiteInstance, asked for before its pages are built so they keep their container. |
 | `chrome/browser/ui/android/tab_model/android_live_tab_context.cc` | 5 | A closed tab reopened in the background. |
 | `chrome/browser/sessions/session_restore_android.cc` | 6 | A closed tab reopened in place of the current one. |
