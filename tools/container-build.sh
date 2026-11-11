@@ -10,10 +10,15 @@ apt-get update -qq && apt-get install -y -qq sudo git curl bzip2 xz-utils unzip 
 git config --global user.name tennessine-build
 git config --global user.email build@localhost
 VERSION=$(grep -m1 -o "[0-9]\+\(\.[0-9]\+\)\{3\}" vanadium/args.gn)
+# The files the patches and our src/ write keep their time when their content is the same as at
+# the last build (tools/keep_mtimes.py), so preparing the tree again recompiles only what changed.
+export KEEP_MTIMES="python3 $PWD/tools/keep_mtimes.py" MTIMES=/build/keep-mtimes.json
+export TREES="$PWD/chromium/src $PWD/chromium/src/third_party/devtools-frontend/src"
 # A previous run left the tree patched: back to the Chromium tag it checked out, which build.sh
 # then moves to VERSION. Ignored files (gclient dependencies, out/) stay, so the sync and the
 # compile resume from where they were.
 if [ "$MODE" != resume ] && [ "$MODE" != x64 ] && [ -d chromium/src/.git ]; then
+  $KEEP_MTIMES save $MTIMES $TREES
   git -C chromium/src am --abort 2>/dev/null || true
   git -C chromium/src reset -q --hard
   git -C chromium/src clean -qfd
@@ -30,7 +35,9 @@ set_keys
 [ -d depot_tools ] || git clone -q --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 [ -f depot_tools/python3_bin_reldir.txt ] || (cd depot_tools && ./ensure_bootstrap)
 export PATH="$PWD/depot_tools:$PATH"
+$KEEP_MTIMES save $MTIMES $TREES
 cp -r dubna/src/. src/. chromium/src/
+$KEEP_MTIMES restore $MTIMES $TREES
 cd chromium/src
 OUT=out/Default ABI=arm64-v8a LIB=tennessine/sync_lib CPU=arm64
 [ "$MODE" = x64 ] && OUT=out/x64 ABI=x86_64 LIB=tennessine/sync_lib/x64 CPU=x64

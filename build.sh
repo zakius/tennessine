@@ -24,6 +24,8 @@ gclient runhooks || exit 1
 ./build/install-build-deps.sh --no-prompt
 
 source $SCRIPT_DIR/post-sync.sh
+# tools/container-build.sh: unchanged files keep the time they had at the last build.
+[ -z "$KEEP_MTIMES" ] || $KEEP_MTIMES restore $MTIMES $TREES
 cp $SCRIPT_DIR/args.gn out/Default/args.gn
 set_version_code out/Default/args.gn
 gn gen out/Default # gn args out/Default; echo 'treat_warnings_as_errors = false' >> out/Default/args.gn
