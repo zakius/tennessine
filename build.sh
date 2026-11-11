@@ -26,17 +26,21 @@ gclient runhooks || exit 1
 source $SCRIPT_DIR/post-sync.sh
 # tools/container-build.sh: unchanged files keep the time they had at the last build.
 [ -z "$KEEP_MTIMES" ] || $KEEP_MTIMES restore $MTIMES $TREES
-cp $SCRIPT_DIR/args.gn out/Default/args.gn
-set_version_code out/Default/args.gn
-gn gen out/Default # gn args out/Default; echo 'treat_warnings_as_errors = false' >> out/Default/args.gn
+# MODE=x64 (tools/container-build.sh): the emulator's x86_64 APK, in its own tree.
+OUT=out/Default ABI=arm64-v8a LIB=tennessine/sync_lib CPU=arm64
+[ "$MODE" = x64 ] && OUT=out/x64 ABI=x86_64 LIB=tennessine/sync_lib/x64 CPU=x64
+mkdir -p $OUT
+sed "s/^target_cpu = .*/target_cpu = \"$CPU\"/" $SCRIPT_DIR/args.gn > $OUT/args.gn
+set_version_code $OUT/args.gn
+gn gen $OUT # gn args $OUT; echo 'treat_warnings_as_errors = false' >> $OUT/args.gn
 rm -rf out/tmp out/release && mkdir -p out/tmp out/release
 
-$SCRIPT_DIR/tools/build-sync-lib.sh tennessine/sync_lib $SCRIPT_DIR/../sync-cache || exit 1
-build_ours out/Default || exit 1
-autoninja ${JOBS:+-j $JOBS} -C out/Default chrome_public_apk || exit 1
-mv $(find out/Default/apks -name 'Chrome*.apk') out/tmp/$VERSION-arm64-v8a.apk
+$SCRIPT_DIR/tools/build-sync-lib.sh $LIB $SCRIPT_DIR/../sync-cache $CPU || exit 1
+build_ours $OUT || exit 1
+autoninja ${JOBS:+-j $JOBS} -C $OUT chrome_public_apk || exit 1
+mv $(find $OUT/apks -name 'Chrome*.apk') out/tmp/$VERSION-$ABI.apk
 
 export PATH=$PWD/third_party/jdk/current/bin/:$PATH
 export ANDROID_HOME=$PWD/third_party/android_sdk/public
-sign_apk out/tmp/$VERSION-arm64-v8a.apk out/release/$VERSION-arm64-v8a.apk
+sign_apk out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk
 rm -rf $SCRIPT_DIR/keys

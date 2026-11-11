@@ -31,8 +31,9 @@ build [resume|x64]   arm64 APK in a rootless Ubuntu container on a scratch copy 
                      ~/.local/share/tennessine-signing.
                      Output: work/build/tennessine/chromium/src/out/release/*.apk.
                      resume: copies src/ over the prepared tree, then compiles and signs;
-                     enough when only src/ changed. x64: the same for an x86_64 APK in
-                     out/x64, for the emulator, whose ARM translation crashes arm64 Chromium.
+                     enough when only src/ changed. x64: a full build of the x86_64 APK for
+                     the emulator, whose ARM translation crashes arm64 Chromium, in its own
+                     tree, work/build-x64; output in its out/release.
 publish [APK]        puts the APK (default: the local build's arm64 one) in the F-Droid
                      repository, https://packages.zakius.xyz/fdroid/repo.
 
@@ -226,18 +227,29 @@ def upstream():
 
 def build(mode):
     work = ROOT / 'work'
-    (work / 'build/tennessine').mkdir(parents=True, exist_ok=True)
+    # A tree per platform, each moved forward to the next Chromium: work/build for the arm64
+    # APK, work/build-x64 for the emulator's. The x64 tree starts as a reflink copy of the
+    # arm64 one (nearly free on btrfs), so it starts prepared, with its out/x64.
+    build_dir = work / ('build-x64' if mode == 'x64' else 'build')
+    if mode == 'x64' and not build_dir.exists() and (work / 'build').is_dir():
+        # Files the container made can belong to subordinate IDs: podman unshare copies them.
+        run('podman', 'unshare', 'cp', '-a', '--reflink=auto', str(work / 'build'), str(build_dir))
+        # Each tree keeps its own out/ folder only: the other's would take space as they part.
+        out = 'tennessine/chromium/src/out'
+        run('podman', 'unshare', 'rm', '-rf', str(build_dir / out / 'Default'),
+            str(work / 'build' / out / 'x64'))
+    (build_dir / 'tennessine').mkdir(parents=True, exist_ok=True)
     if not all((KEYS / f).is_file() for f in ('test.jks', 'local.properties')):
         sys.exit(f'tennessine: no APK signing key (test.jks, local.properties) in {KEYS}')
     # No .git: in a git worktree it is a file naming a gitdir outside the container, and with
     # it every git command in the copy fails. H, not exclude, so --delete drops an old one.
     run('rsync', '-a', '--delete', '--filter=H .git', '--exclude=/work', '--exclude=/dubna/rust/oganesson_sync/target',
         '--exclude=/chromium', '--exclude=/keys', '--exclude=/depot_tools', f'{ROOT}/',
-        f'{work}/build/tennessine/')
+        f'{build_dir}/tennessine/')
     # --name: one build at a time in the shared tree.
     os.execvp('podman', ['podman', 'run', '--rm', '-i', '--pids-limit=-1',
                          '--name', 'tennessine-build',
-                         '-v', f'{work}/build:/build', '-v', f'{KEYS}:/keys',
+                         '-v', f'{build_dir}:/build', '-v', f'{KEYS}:/keys',
                          '-w', '/build/tennessine', '-e', f'MODE={mode}',
                          # A job per CPU of the machine: the system limits the containers'
                          # CPUs by the time of day, and a build that starts under the

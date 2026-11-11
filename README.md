@@ -64,6 +64,8 @@ After the store installs the app for the first time, it installs updates in the 
 
 `build.sh`, `common.sh` and `post-sync.sh` come from Titanium and run inside the container.
 
+Builds stay incremental. Each platform has its own tree, moved forward to each new Chromium: `work/build` for the arm64 APK, `work/build-x64` for the emulator's x86_64 one (`./tennessine.py build x64`, which starts as a reflink copy of the arm64 tree). Preparing a tree again gives each file whose content is what its last build compiled its old time back (`tools/keep_mtimes.py`), so a patch edit recompiles only what it changes.
+
 Each build's versionCode is 10^9 plus the minutes since 2026-01-01 (`set_version_code` in `common.sh`). A rebuild on the same Chromium version is therefore still an update.
 
 ## Updating
