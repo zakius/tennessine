@@ -7,6 +7,9 @@ package org.chromium.chrome.browser.containers;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -41,8 +44,8 @@ import java.util.List;
 
 /**
  * Tabs in containers: the container a new tab starts in, the link menu's "Open in container", the
- * tab switcher button menu's "New tab in container", a tab menu's "Reopen in container" and the
- * tab switcher's color line. A tab stays in the container its WebContents is created in
+ * tab switcher button menu's "New tab in container", a tab menu's "Reopen in container", the
+ * tab switcher's color line and the toolbar's dot. A tab stays in the container its WebContents is created in
  * (dubna's containers_tabs.h), so these only pick that container.
  */
 @NullMarked
@@ -341,5 +344,42 @@ public final class Containers {
         }
         line.setBackgroundColor(argb);
         line.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Puts a dot in the color of {@code tab}'s container at the corner of the tab switcher button's
+     * icon in {@code toolbar}, and its name in the button's state for screen readers; nothing for a
+     * tab outside containers.
+     */
+    public static void markToolbar(View toolbar, @Nullable Tab tab) {
+        View button = toolbar.findViewById(R.id.tab_switcher_button);
+        if (button == null) return;
+        @Nullable WebContents contents = tab != null ? tab.getWebContents() : null;
+        String id = contents != null ? ContainersBridge.containerOf(contents) : "";
+        ContainersBridge.@Nullable Container container = null;
+        if (tab != null && !id.isEmpty()) {
+            for (ContainersBridge.Container c : ContainersBridge.getContainers(tab.getProfile())) {
+                if (c.id.equals(id)) container = c;
+            }
+        }
+        if (container == null) {
+            button.setForeground(null);
+            button.setStateDescription(null);
+            return;
+        }
+        float density = button.getResources().getDisplayMetrics().density;
+        GradientDrawable dot = new GradientDrawable();
+        dot.setShape(GradientDrawable.OVAL);
+        dot.setColor(container.argb);
+        int size = Math.round(9 * density);
+        dot.setSize(size, size);
+        LayerDrawable layer = new LayerDrawable(new Drawable[] {dot});
+        // Centered, then moved up and to the end by half the 24dp icon.
+        int offset = Math.round(24 * density);
+        layer.setLayerGravity(0, Gravity.CENTER);
+        layer.setLayerInsetRelative(0, offset, 0, 0, offset);
+        button.setForeground(layer);
+        button.setStateDescription(
+                button.getContext().getString(R.string.containers_current, container.name));
     }
 }

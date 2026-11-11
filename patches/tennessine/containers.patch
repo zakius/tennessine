@@ -184,7 +184,7 @@
    if (no_renderer) {
 --- a/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
 +++ b/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
-@@ -2150,4 +2150,10 @@ Aby zmienić to ustawienie, <ph name="BEGIN_LINK" />wyczyść dane tennessine na
+@@ -2150,4 +2150,11 @@ Aby zmienić to ustawienie, <ph name="BEGIN_LINK" />wyczyść dane tennessine na
  <translation id="99907655649633293"><ph name="TAB_TITLE" />, karta incognito</translation>
  <translation id="414776566175657792">Karta z urządzenia <ph name="DEVICE" />: <ph name="TITLE" /></translation>
  <translation id="2321024629479061895">Wysłano na urządzenie <ph name="DEVICE" /></translation>
@@ -194,6 +194,7 @@
 +<translation id="5140474419843357176">Bez kontenera</translation>
 +<translation id="3622340734407862083">Nowa karta w kontenerze</translation>
 +<translation id="9173282463479903396">Otwórz ponownie w kontenerze</translation>
++<translation id="7667128004050248225">W kontenerze <ph name="CONTAINER" /></translation>
  </translationbundle>
 \ No newline at end of file
 --- a/chrome/browser/ui/android/tab_model/android_live_tab_context.cc
@@ -240,7 +241,7 @@
  # Three lines of code for minimizing conflicts in rebasing changes
 --- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
 +++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
-@@ -65,4 +65,22 @@
+@@ -65,4 +65,25 @@
    <message name="IDS_FIREFOX_SYNC_TAB_SENT" desc="Toast after choosing the device on the Firefox account to send a tab to">
      Sent to <ph name="DEVICE">%1$s<ex>Firefox on Laptop</ex></ph>
    </message>
@@ -261,6 +262,9 @@
 +  </message>
 +  <message name="IDS_CONTAINERS_REOPEN" desc="Item in a tab's menu in the tab switcher that reopens the tab's page in a container the user picks, in place of the tab">
 +    Reopen in container
++  </message>
++  <message name="IDS_CONTAINERS_CURRENT" desc="Spoken by screen readers on the tab switcher button when the current tab is in a container. The placeholder is the container's name.">
++    In container <ph name="CONTAINER">%1$s<ex>Work</ex></ph>
 +  </message>
  </grit-part>
 --- a/chrome/browser/ui/android/browser_navigator_android.cc
