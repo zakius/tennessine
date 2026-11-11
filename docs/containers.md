@@ -54,6 +54,7 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 | `chrome/browser/tab/web_contents_state.cc` | 5 | A tab restored after a restart gets its SiteInstance, asked for before its pages are built so they keep their container. |
 | `chrome/browser/ui/android/tab_model/android_live_tab_context.cc` | 5 | A closed tab reopened in the background. |
 | `chrome/browser/sessions/session_restore_android.cc` | 6 | A closed tab reopened in place of the current one. |
+| `content/browser/browsing_instance.cc` | 5 | A SiteInstance in a container always gets a site, as a guest's does, so it keeps the container's partition. Android's native New tab page (`chrome-native:`) left one without a site, which reported the default partition, and the tab's next navigation crashed the browser on a CHECK. |
 | `chrome/android/BUILD.gn` | 2 | `ContainersBridge.java`'s JNI. |
 | `tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni` | 3 | Our Java in `chrome_java` (Vanadium's list). |
 | `chrome/app/generated_resources.grd`, `.gritdeps` | 2 | dubna's strings (the default containers' names, "Temporary 2"). |
