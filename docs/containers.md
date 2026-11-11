@@ -18,6 +18,8 @@ The first version is minimal, as goals.md planned:
 
 A link a container tab opens stays in the container: in the same tab, with Open in new tab, or with `target=_blank` and `window.open`, with or without an opener.
 
+Sites in a container can show notifications, and a tap on one goes to the container's page or service worker. They can't subscribe to push messages: Chromium delivers those to the site outside containers, so the subscription fails with "push service not available" (dubna's `containers.patch`).
+
 Deleting a container closes its tabs, without undo, and forgets its closed tabs. Its cookies and site data are deleted then. A temporary container's data is deleted once no tab or closed tab uses it, checked at each start and after a container is deleted.
 
 Traffic Control: sites that match a rule open in its container, whichever tab they start in. A navigation that a rule sends elsewhere stops, and its page opens in a new tab beside its tab in the rule's container; the tab it started in closes when it was an empty new tab. In a custom tab or a web app, which have no tabs beside them, the page opens in the browser, where the rule moves it again.
