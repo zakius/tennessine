@@ -6,6 +6,8 @@
 # - TabSwitcherActionMenuCoordinator.java, ToolbarManager.java: New tab in container, after New tab
 #   in the tab switcher button's long-press menu; the button's dot in the current tab's container color.
 # - TabGridContextMenuCoordinator.java: Reopen in container, in a tab's menu in the tab switcher.
+# - HubToolbarCoordinator.java, TabSwitcherPane.java: a long press on the tab switcher's New tab
+#   button opens a new tab in a container.
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
 @@ -33,6 +33,7 @@ import org.chromium.base.Callback;
@@ -194,3 +196,57 @@
          }
          if (supportedMixedWindows || isCurrentModelIncognito) {
              itemList.add(buildListItemByMenuItemType(MenuItemType.NEW_INCOGNITO_TAB));
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabSwitcherPane.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabSwitcherPane.java
+@@ -28,6 +28,7 @@
+ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.chrome.browser.compositor.CompositorViewHolder;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.feature_engagement.TrackerFactory;
+ import org.chromium.chrome.browser.flags.ChromeFeatureList;
+ import org.chromium.chrome.browser.hub.PaneHubController;
+@@ -66,7 +67,8 @@
+ 
+ /** A {@link Pane} representing the regular tab switcher. */
+ @NullMarked
+-public class TabSwitcherPane extends TabSwitcherPaneBase implements TabSwitcherDrawable.Observer {
++public class TabSwitcherPane extends TabSwitcherPaneBase
++        implements TabSwitcherDrawable.Observer, View.OnLongClickListener {
+     private static final int ON_CREATION_IPH_DELAY = 100;
+ 
+     private final TabModelObserver mTabModelObserver =
+@@ -287,6 +289,17 @@
+         }
+     }
+ 
++    /** tennessine: a long press on the New tab button opens a new tab in a container. */
++    @Override
++    public boolean onLongClick(View view) {
++        if (mProfileProvider == null) return false;
++        Containers.chooseNewTab(
++                view.getContext(),
++                mProfileProvider.getOriginalProfile(),
++                () -> onNewTabButtonClicked(null));
++        return true;
++    }
++
+     private void onProfileProviderAvailable(ProfileProvider profileProvider) {
+         mProfileProvider = profileProvider;
+         Profile profile = profileProvider.getOriginalProfile();
+--- a/chrome/browser/hub/internal/android/java/src/org/chromium/chrome/browser/hub/HubToolbarCoordinator.java
++++ b/chrome/browser/hub/internal/android/java/src/org/chromium/chrome/browser/hub/HubToolbarCoordinator.java
+@@ -80,6 +80,13 @@
+         mActionButtonCoordinator =
+                 new HubActionButtonCoordinator(
+                         hubActionButton, hubToolbarView, paneManager, hubColorMixer);
++        // tennessine: a long press goes to the focused pane when it takes one (TabSwitcherPane:
++        // New tab in container); else the button's tooltip shows, as before.
++        hubActionButton.setOnLongClickListener(
++                view ->
++                        paneManager.getFocusedPaneSupplier().get()
++                                        instanceof View.OnLongClickListener pane
++                                && pane.onLongClick(view));
+ 
+         mModel =
+                 new PropertyModel.Builder(HubToolbarProperties.ALL_KEYS)
