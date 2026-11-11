@@ -5,7 +5,9 @@
 #   it, the top suggestion nearest;
 # - the tab switcher's toolbar sits below the tab list, its buttons nearest the edge;
 # - the tab list sits on that toolbar, the newest tab nearest it, however few tabs there are;
-#   snackbars (Undo) show over the toolbar, not over the tabs.
+#   snackbars (Undo) show over the toolbar, not over the tabs;
+# - with no tabs, the empty state starts at the pane's top, not at that list's top, which is then
+#   the bottom edge (TabListEmptyCoordinator.java).
 --- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 +++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 @@ -339,6 +339,13 @@
@@ -278,3 +280,40 @@
              mPaneHairline = layout.findViewById(R.id.pane_hairline);
  
              // TODO(crbug.com/436614730): Inline the view construction once feature is launched.
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListEmptyCoordinator.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabListEmptyCoordinator.java
+@@ -12,7 +12,9 @@
+ import android.view.LayoutInflater;
+ import android.view.View;
+ import android.view.View.OnLayoutChangeListener;
++import android.view.Gravity;
+ import android.view.ViewGroup;
++import android.widget.FrameLayout;
+ import android.widget.ImageView;
+ import android.widget.TextView;
+ 
+@@ -150,13 +152,23 @@
+ 
+             // Empty view should only begin after message card.
+             params.topMargin += msgCard.getMeasuredHeight() + msgCard.getTop();
+-        } else {
++        } else if (!isListAtBottom()) {
+             // Account for hub UI elements, such as the search box.
+             params.topMargin += mRecyclerView.getTop();
+         }
+         mEmptyView.setLayoutParams(params);
+     }
+ 
++    /**
++     * tennessine: whether the tab list sits at the bottom, as tall as its tabs, with the address
++     * bar at the bottom (layout-follows-address-bar). Its top is then where its last tab ends, at
++     * the bottom edge when there are none, so the empty state starts at the pane's top.
++     */
++    private boolean isListAtBottom() {
++        return mRecyclerView.getLayoutParams() instanceof FrameLayout.LayoutParams params
++                && params.gravity == Gravity.BOTTOM;
++    }
++
+     public void setIsTabSwitcherShowing(boolean isShowing) {
+         mIsTabSwitcherShowing = isShowing;
+         if (mIsTabSwitcherShowing) {
