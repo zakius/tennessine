@@ -10,7 +10,7 @@ The first version is minimal, as goals.md planned:
 
 - **Open in container**, in a link's long-press menu: a list of the containers, **New temporary container**, and **No container** when the page is in a container. The link opens in a new tab beside the page.
 - In the tab switcher, a container tab's row has a line in the container's color along its bottom, as Firefox draws one under the tab.
-- **Settings → Containers**, after Privacy and security: add a container, change its name or color, or delete it; **Open new tabs in** (no container, a container, or a new temporary container each time); and Traffic Control's rules. A new profile has Firefox's four containers: Personal, Work, Banking and Shopping.
+- **Settings → Containers**, after Privacy and security: add a container, change its name or color, or delete it; **Open new tabs in** (no container, a container, or a new temporary container each time); and Traffic Control's rules. A new profile has Firefox's four containers: Personal, Work, Banking and Shopping. Each rule change applies to the rules as they are then, so changes sync made while the screen was open stay; a rule whose container was deleted (by sync) shows Deleted container and keeps it until you pick another.
 
 A link a container tab opens stays in the container: in the same tab, with Open in new tab, or with `target=_blank` and `window.open`, with or without an opener.
 

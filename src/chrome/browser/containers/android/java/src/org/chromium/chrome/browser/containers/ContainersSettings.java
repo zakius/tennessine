@@ -47,6 +47,13 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         "blue", "turquoise", "green", "yellow", "orange", "red", "pink", "purple", "toolbar"
     };
 
+    /** A rule's container that no longer exists, as after a sync deleted it. */
+    private static final String DELETED_CONTAINER = "Deleted container";
+
+    /** Shown when sync changed or removed a rule while its dialog was open. */
+    private static final String RULE_CHANGED =
+            "This rule was changed by sync meanwhile. The list now shows the current rules.";
+
     private final SettableMonotonicObservableSupplier<String> mPageTitle =
             ObservableSuppliers.createMonotonic();
 
@@ -136,7 +143,7 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
                     targetName(rule.container, containers) + (rule.enabled ? "" : " (off)"));
             pref.setOnPreferenceClickListener(
                     p -> {
-                        editRule(rules, index, containers);
+                        editRule(rule, index, containers);
                         return true;
                     });
             traffic.addPreference(pref);
@@ -145,7 +152,7 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         addRule.setTitle("Add rule");
         addRule.setOnPreferenceClickListener(
                 p -> {
-                    editRule(rules, -1, containers);
+                    editRule(null, -1, containers);
                     return true;
                 });
         traffic.addPreference(addRule);
@@ -160,7 +167,33 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         for (Container container : containers) {
             if (container.id.equals(id)) return container.name;
         }
-        return getString(R.string.containers_none);
+        return DELETED_CONTAINER;
+    }
+
+    /**
+     * Where {@code shown}, rule {@code index} when this screen was built, is in the rules now:
+     * sync may have changed them since. -1 when it is gone or changed.
+     */
+    private int findRule(Rule shown, int index) {
+        List<Rule> rules = ContainersBridge.getRules(getProfile());
+        if (index < rules.size() && sameRule(rules.get(index), shown)) return index;
+        for (int i = 0; i < rules.size(); i++) {
+            if (sameRule(rules.get(i), shown)) return i;
+        }
+        return -1;
+    }
+
+    private static boolean sameRule(Rule a, Rule b) {
+        return a.urlFilter.equals(b.urlFilter)
+                && a.container.equals(b.container)
+                && a.enabled == b.enabled;
+    }
+
+    private void showError(String error) {
+        new AlertDialog.Builder(getStyledContext())
+                .setMessage(error)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     /** A rule's patterns: its lines without blank ones and # comments. */
@@ -309,10 +342,14 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
                 .show();
     }
 
-    /** A dialog with rule {@code index} of {@code rules}, or a new rule when it is -1. */
-    private void editRule(List<Rule> rules, int index, List<Container> containers) {
+    /**
+     * A dialog with {@code shown}, rule {@code index} when this screen was built, or a new rule
+     * when it is null. Each change applies to the rules as they are then, which sync may have
+     * changed meanwhile.
+     */
+    private void editRule(@Nullable Rule shown, int index, List<Container> containers) {
         Context context = getStyledContext();
-        Rule rule = index >= 0 ? rules.get(index) : new Rule("", "", true);
+        Rule rule = shown != null ? shown : new Rule("", "", true);
         int padding = Math.round(20 * getResources().getDisplayMetrics().density);
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -329,6 +366,11 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         List<String> ids = new ArrayList<>();
         List<CharSequence> labels = new ArrayList<>();
         addTargets(containers, ids, labels);
+        if (!ids.contains(rule.container)) {
+            // Kept as it is unless the user picks another one.
+            ids.add(rule.container);
+            labels.add(DELETED_CONTAINER);
+        }
         RadioGroup targets = new RadioGroup(context);
         for (int i = 0; i < labels.size(); i++) {
             RadioButton button = new RadioButton(context);
@@ -347,7 +389,7 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
 
         AlertDialog.Builder builder =
                 new AlertDialog.Builder(context)
-                        .setTitle(index >= 0 ? "Edit rule" : "Add rule")
+                        .setTitle(shown != null ? "Edit rule" : "Add rule")
                         .setMessage(
                                 "Sites, one per line: example.com, or a URL pattern such as"
                                         + " https://*.example.org/path. Lines that start with #"
@@ -355,14 +397,21 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
                         .setView(scroll)
                         .setPositiveButton("Save", null)
                         .setNegativeButton(android.R.string.cancel, null);
-        if (index >= 0) {
+        if (shown != null) {
             builder.setNeutralButton(
                     "Delete",
                     (d, w) -> {
-                        List<Rule> kept = new ArrayList<>(rules);
-                        kept.remove(index);
-                        ContainersBridge.setRules(getProfile(), kept);
+                        int current = findRule(shown, index);
+                        if (current < 0) {
+                            rebuild();
+                            showError(RULE_CHANGED);
+                            return;
+                        }
+                        List<Rule> kept = ContainersBridge.getRules(getProfile());
+                        kept.remove(current);
+                        String error = ContainersBridge.setRules(getProfile(), kept);
                         rebuild();
+                        if (!error.isEmpty()) showError("The rule wasn't deleted: " + error);
                     });
         }
         AlertDialog dialog = builder.create();
@@ -371,7 +420,16 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                                 .setOnClickListener(
                                         v -> {
-                                            List<Rule> saved = new ArrayList<>(rules);
+                                            int current =
+                                                    shown != null ? findRule(shown, index) : -1;
+                                            if (shown != null && current < 0) {
+                                                dialog.dismiss();
+                                                rebuild();
+                                                showError(RULE_CHANGED);
+                                                return;
+                                            }
+                                            List<Rule> saved =
+                                                    ContainersBridge.getRules(getProfile());
                                             Rule changed =
                                                     new Rule(
                                                             filter.getText().toString(),
@@ -380,8 +438,8 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
                                                                                     .getCheckedRadioButtonId()
                                                                             - 1),
                                                             enabled.isChecked());
-                                            if (index >= 0) {
-                                                saved.set(index, changed);
+                                            if (current >= 0) {
+                                                saved.set(current, changed);
                                             } else {
                                                 saved.add(changed);
                                             }
