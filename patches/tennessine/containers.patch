@@ -231,10 +231,11 @@
    params.initially_hidden = true;
 --- a/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
 +++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
-@@ -10,6 +10,9 @@ chrome_java_ext_full_path_sources = [
+@@ -10,6 +10,10 @@ chrome_java_ext_full_path_sources = [
    "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/DefaultBrowser.java",
    "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppLinksSettings.java",
    "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppsSettings.java",
++  "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/ContainerIcons.java",
 +  "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/Containers.java",
 +  "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/ContainersBridge.java",
 +  "//chrome/browser/containers/android/java/src/org/chromium/chrome/browser/containers/ContainersSettings.java",

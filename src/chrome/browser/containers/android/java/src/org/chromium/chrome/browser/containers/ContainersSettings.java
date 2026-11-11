@@ -5,16 +5,19 @@
 package org.chromium.chrome.browser.containers;
 
 import android.content.Context;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.preference.Preference;
@@ -37,8 +40,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Settings → Containers: the containers (add, rename, recolor, delete), where new tabs open, and
- * Traffic Control's rules, as oganesson's Settings page has them.
+ * Settings → Containers: the containers (add, rename, recolor, change the icon, delete), where new
+ * tabs open, and Traffic Control's rules, as oganesson's Settings page has them.
  */
 @NullMarked
 public class ContainersSettings extends ChromeBaseSettingsFragment {
@@ -46,6 +49,9 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
     private static final String[] COLORS = {
         "blue", "turquoise", "green", "yellow", "orange", "red", "pink", "purple", "toolbar"
     };
+
+    /** The icon choices' view ids, after the colors' (1 to 9). */
+    private static final int ICON_ID_BASE = 100;
 
     /** A rule's container that no longer exists, as after a sync deleted it. */
     private static final String DELETED_CONTAINER = "Deleted container";
@@ -97,7 +103,11 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         for (Container container : containers) {
             Preference pref = new Preference(context);
             pref.setTitle(container.name);
-            pref.setIcon(dot(container.argb));
+            pref.setIcon(
+                    ContainerIcons.drawable(
+                            container.icon,
+                            container.argb,
+                            Math.round(24 * getResources().getDisplayMetrics().density)));
             pref.setOnPreferenceClickListener(
                     p -> {
                         editContainer(container);
@@ -206,13 +216,11 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         return patterns;
     }
 
-    private GradientDrawable dot(int argb) {
-        GradientDrawable dot = new GradientDrawable();
-        dot.setShape(GradientDrawable.OVAL);
-        dot.setColor(argb);
-        int size = Math.round(20 * getResources().getDisplayMetrics().density);
-        dot.setSize(size, size);
-        return dot;
+    /** {@code name} after a dot in color {@code argb}. */
+    private static CharSequence withDot(String name, int argb) {
+        SpannableString text = new SpannableString("●  " + name);
+        text.setSpan(new ForegroundColorSpan(argb), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return text;
     }
 
     /** The choices of a rule's or the new tab setting's container: id and label. */
@@ -222,7 +230,9 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         labels.add(getString(R.string.containers_none));
         for (Container container : containers) {
             ids.add(container.id);
-            labels.add(Containers.withDot(container.name, container.argb));
+            labels.add(
+                    ContainerIcons.withIcon(
+                            getStyledContext(), container.name, container.icon, container.argb));
         }
         ids.add(ContainersBridge.TEMPORARY);
         labels.add(getString(R.string.containers_new_temporary));
@@ -246,7 +256,10 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
                 .show();
     }
 
-    /** A dialog with a container's name and color; a new container when {@code edited} is null. */
+    /**
+     * A dialog with a container's name, color and icon; a new container when {@code edited} is
+     * null.
+     */
     private void editContainer(@Nullable Container edited) {
         Context context = getStyledContext();
         int padding = Math.round(20 * getResources().getDisplayMetrics().density);
@@ -261,10 +274,25 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         for (int i = 0; i < COLORS.length; i++) {
             RadioButton button = new RadioButton(context);
             button.setId(i + 1);
-            button.setText(Containers.withDot(COLORS[i], ContainersBridge.colorValue(COLORS[i])));
+            button.setText(withDot(COLORS[i], ContainersBridge.colorValue(COLORS[i])));
             colors.addView(button);
         }
         layout.addView(colors);
+        TextView iconTitle = new TextView(context);
+        iconTitle.setText("Icon");
+        iconTitle.setPadding(0, padding / 2, 0, 0);
+        layout.addView(iconTitle);
+        // In the container's color as the dialog opens.
+        String[] icons = ContainerIcons.names();
+        int iconArgb = edited != null ? edited.argb : ContainersBridge.colorValue(COLORS[0]);
+        RadioGroup iconGroup = new RadioGroup(context);
+        for (int i = 0; i < icons.length; i++) {
+            RadioButton button = new RadioButton(context);
+            button.setId(ICON_ID_BASE + i);
+            button.setText(ContainerIcons.withIcon(context, icons[i], icons[i], iconArgb));
+            iconGroup.addView(button);
+        }
+        layout.addView(iconGroup);
         ScrollView scroll = new ScrollView(context);
         scroll.addView(layout);
 
@@ -274,6 +302,12 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
             if (COLORS[i].equals(color)) checked = i;
         }
         colors.check(checked + 1);
+        String icon = edited != null ? edited.icon : "circle";
+        int checkedIcon = 0;
+        for (int i = 0; i < icons.length; i++) {
+            if (icons[i].equals(icon)) checkedIcon = i;
+        }
+        iconGroup.check(ICON_ID_BASE + checkedIcon);
         if (edited != null) name.setText(edited.name);
 
         AlertDialog.Builder builder =
@@ -296,7 +330,11 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
                                             }
                                             String newColor =
                                                     COLORS[colors.getCheckedRadioButtonId() - 1];
-                                            saveContainer(edited, text, newColor);
+                                            int iconIndex =
+                                                    iconGroup.getCheckedRadioButtonId()
+                                                            - ICON_ID_BASE;
+                                            saveContainer(
+                                                    edited, text, newColor, icons[iconIndex]);
                                             dialog.dismiss();
                                         }));
         dialog.show();
@@ -306,16 +344,18 @@ public class ContainersSettings extends ChromeBaseSettingsFragment {
         builder.setNeutralButton("Delete", (d, w) -> confirmDelete(edited));
     }
 
-    private void saveContainer(@Nullable Container edited, String name, String color) {
+    private void saveContainer(
+            @Nullable Container edited, String name, String color, String icon) {
         List<Container> containers = ContainersBridge.getContainers(getProfile());
         if (edited == null) {
             containers.add(
-                    new Container(UUID.randomUUID().toString(), name, "circle", color, 0));
+                    new Container(UUID.randomUUID().toString(), name, icon, color, 0));
         } else {
             for (Container container : containers) {
                 if (container.id.equals(edited.id)) {
                     container.name = name;
                     container.color = color;
+                    container.icon = icon;
                 }
             }
         }

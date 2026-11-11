@@ -11,9 +11,10 @@ The first version is minimal, as goals.md planned:
 - **Open in container**, in a link's long-press menu: a list of the containers, **New temporary container**, and **No container** when the page is in a container. The link opens in a new tab beside the page.
 - **New tab in container**, after New tab in the tab switcher button's long-press menu, and a long press on the tab switcher's own New tab button: the containers, **New temporary container** and **No container**.
 - **Reopen in container**, in a tab's menu in the tab switcher (long-press the tab): the containers but the tab's own, **New temporary container**, and **No container** when the tab is in one. The page opens in a new tab beside the tab, which closes.
+- Each container shows with its icon, in its color, in these menus and in Settings: Firefox's icons (fingerprint, briefcase, dollar, cart, circle, gift, vacation, pet, chill, fence), drawn from the Chromium vector icons oganesson uses for them (`ContainerIcons.java`).
 - In the tab switcher, a container tab's row has a line in the container's color along its bottom, as Firefox draws one under the tab.
-- The tab switcher button has a dot in the color of the current tab's container, at the corner of its icon, so you see where you are before you sign in somewhere. Screen readers say "In container Work".
-- **Settings → Containers**, after Privacy and security: add a container, change its name or color, or delete it; **Open new tabs in** (no container, a container, or a new temporary container each time); and Traffic Control's rules. A new profile has Firefox's four containers: Personal, Work, Banking and Shopping. Each rule change applies to the rules as they are then, so changes sync made while the screen was open stay; a rule whose container was deleted (by sync) shows Deleted container and keeps it until you pick another.
+- The tab switcher button has the current tab's container's icon, in its color, at the corner of its own icon, so you see where you are before you sign in somewhere. Screen readers say "In container Work".
+- **Settings → Containers**, after Privacy and security: add a container, change its name, color or icon, or delete it; **Open new tabs in** (no container, a container, or a new temporary container each time); and Traffic Control's rules. A new profile has Firefox's four containers: Personal, Work, Banking and Shopping. Each rule change applies to the rules as they are then, so changes sync made while the screen was open stay; a rule whose container was deleted (by sync) shows Deleted container and keeps it until you pick another.
 
 A link a container tab opens stays in the container: in the same tab, with Open in new tab, or with `target=_blank` and `window.open`, with or without an opener.
 
@@ -56,7 +57,7 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 | `chrome/browser/sessions/session_restore_android.cc` | 6 | A closed tab reopened in place of the current one. |
 | `content/browser/browsing_instance.cc` | 5 | A SiteInstance in a container always gets a site, as a guest's does, so it keeps the container's partition. Android's native New tab page (`chrome-native:`) left one without a site, which reported the default partition, and the tab's next navigation crashed the browser on a CHECK. |
 | `chrome/android/BUILD.gn` | 2 | `ContainersBridge.java`'s JNI. |
-| `tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni` | 3 | Our Java in `chrome_java` (Vanadium's list). |
+| `tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni` | 4 | Our Java in `chrome_java` (Vanadium's list). |
 | `chrome/app/generated_resources.grd`, `.gritdeps` | 2 | dubna's strings (the default containers' names, "Temporary 2"). |
 | `android_chrome_ext_strings.grdp`, `android_chrome_strings_pl.xtb` | 16 | The menu item, the Settings title and the chooser's two choices, in English and Polish. Settings' other text is English only, as in Web apps. |
 
@@ -77,4 +78,3 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 
 - The tab strip on tablets shows no color: it is drawn by the compositor (`StripLayoutTab`), which needs a new property and its drawing code.
 - New tab in container on the tablet tab strip's New tab button.
-- Firefox's container icons: a container has a color only. The icon stays in the prefs, so oganesson still shows it.

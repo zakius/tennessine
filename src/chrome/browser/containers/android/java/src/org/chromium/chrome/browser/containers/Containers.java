@@ -8,11 +8,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.style.ForegroundColorSpan;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,8 +41,8 @@ import java.util.List;
 /**
  * Tabs in containers: the container a new tab starts in, the link menu's "Open in container", the
  * tab switcher button menu's "New tab in container", a tab menu's "Reopen in container", the
- * tab switcher's color line and the toolbar's dot. A tab stays in the container its WebContents is created in
- * (dubna's containers_tabs.h), so these only pick that container.
+ * tab switcher's color line and the toolbar's icon. A tab stays in the container its WebContents is
+ * created in (dubna's containers_tabs.h), so these only pick that container.
  */
 @NullMarked
 public final class Containers {
@@ -281,7 +277,9 @@ public final class Containers {
         for (ContainersBridge.Container container : ContainersBridge.getContainers(profile)) {
             if (container.id.equals(skipped)) continue;
             ids.add(container.id);
-            labels.add(withDot(container.name, container.argb));
+            labels.add(
+                    ContainerIcons.withIcon(
+                            context, container.name, container.icon, container.argb));
         }
         ids.add(ContainersBridge.TEMPORARY);
         labels.add(context.getString(R.string.containers_new_temporary));
@@ -301,13 +299,6 @@ public final class Containers {
                             onChosen.onResult(id);
                         })
                 .show();
-    }
-
-    /** {@code name} after a dot in color {@code argb}. */
-    static CharSequence withDot(String name, int argb) {
-        SpannableString text = new SpannableString("●  " + name);
-        text.setSpan(new ForegroundColorSpan(argb), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        return text;
     }
 
     /**
@@ -347,7 +338,7 @@ public final class Containers {
     }
 
     /**
-     * Puts a dot in the color of {@code tab}'s container at the corner of the tab switcher button's
+     * Puts {@code tab}'s container's icon, in its color, at the corner of the tab switcher button's
      * icon in {@code toolbar}, and its name in the button's state for screen readers; nothing for a
      * tab outside containers.
      */
@@ -368,12 +359,10 @@ public final class Containers {
             return;
         }
         float density = button.getResources().getDisplayMetrics().density;
-        GradientDrawable dot = new GradientDrawable();
-        dot.setShape(GradientDrawable.OVAL);
-        dot.setColor(container.argb);
-        int size = Math.round(9 * density);
-        dot.setSize(size, size);
-        LayerDrawable layer = new LayerDrawable(new Drawable[] {dot});
+        Drawable icon =
+                ContainerIcons.drawable(
+                        container.icon, container.argb, Math.round(12 * density));
+        LayerDrawable layer = new LayerDrawable(new Drawable[] {icon});
         // Centered, then moved up and to the end by half the 24dp icon.
         int offset = Math.round(24 * density);
         layer.setLayerGravity(0, Gravity.CENTER);

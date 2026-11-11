@@ -51,7 +51,7 @@ public final class ContainersBridge {
     public static final class Container {
         public final String id;
         public String name;
-        public final String icon;
+        public String icon;
         public String color;
         public final int argb;
 
