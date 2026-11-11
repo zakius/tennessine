@@ -8,6 +8,8 @@
 #   snackbars (Undo) show over the toolbar, not over the tabs;
 # - with no tabs, the empty state starts at the pane's top, not at that list's top, which is then
 #   the bottom edge (TabListEmptyCoordinator.java).
+# - closing a tab moves the rows above it down, not every row first: the list keeps its height
+#   while the animation runs (src/chrome/browser/address_bar_layout, chrome_java_ext_deps.gni).
 --- a/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 +++ b/chrome/browser/ui/android/appmenu/internal/java/src/org/chromium/chrome/browser/ui/appmenu/AppMenuHandlerImpl.java
 @@ -339,6 +339,13 @@
@@ -249,15 +251,16 @@
  import android.view.LayoutInflater;
  import android.view.View;
  import android.view.ViewGroup;
-@@ -91,6 +92,7 @@
+@@ -91,6 +92,8 @@
  import org.chromium.chrome.browser.tasks.tab_management.labels.SendTabToSelfTabLabeller;
  import org.chromium.chrome.browser.tasks.tab_management.labels.TabGroupLabeller;
  import org.chromium.chrome.browser.tasks.tab_management.pinned_tabs.PinnedTabStripCoordinator;
 +import org.chromium.chrome.browser.toolbar.settings.AddressBarPreference;
++import org.chromium.chrome.browser.address_bar_layout.BottomTabList;
  import org.chromium.chrome.browser.ui.edge_to_edge.EdgeToEdgeController;
  import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
  import org.chromium.chrome.browser.undo_tab_close_snackbar.UndoBarThrottle;
-@@ -482,7 +484,21 @@
+@@ -482,7 +485,23 @@
              parentView.addView(layout);
  
              FrameLayout tabListContainer = layout.findViewById(R.id.tab_list_container);
@@ -274,6 +277,8 @@
 +                                ViewGroup.LayoutParams.MATCH_PARENT,
 +                                ViewGroup.LayoutParams.WRAP_CONTENT,
 +                                Gravity.BOTTOM));
++                // The closing of a tab moves the rows above it, not every row.
++                BottomTabList.smoothRemovals(recyclerView);
 +            } else {
 +                tabListContainer.addView(recyclerView);
 +            }
@@ -317,3 +322,13 @@
      public void setIsTabSwitcherShowing(boolean isShowing) {
          mIsTabSwitcherShowing = isShowing;
          if (mIsTabSwitcherShowing) {
+--- a/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
++++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
+@@ -10,6 +10,7 @@
+   "//chrome/browser/crash_log/android:java",
+   "//chrome/browser/toolbar_items/android:java",
+   "//chrome/browser/password_manager/android:java",
++  "//chrome/browser/address_bar_layout/android:java",
+   "//tennessine/android_config/parser:config_app_parser_java",
+   "//tennessine/android_config/proto:config_proto_java",
+   "//tennessine/chromium_src/base/settings/android:base_settings_java",

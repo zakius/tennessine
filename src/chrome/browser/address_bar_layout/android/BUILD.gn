@@ -1,0 +1,17 @@
+# Copyright 2026 The tennessine Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# The layout that follows the address bar at the bottom
+# (tennessine/layout-follows-address-bar.patch). Joins chrome_java through
+# Vanadium's chrome_java_ext_deps.gni.
+
+import("//build/config/android/rules.gni")
+
+android_library("java") {
+  sources = [ "java/src/org/chromium/chrome/browser/address_bar_layout/BottomTabList.java" ]
+  deps = [
+    "//build/android:build_java",
+    "//third_party/androidx:androidx_recyclerview_recyclerview_java",
+  ]
+}
