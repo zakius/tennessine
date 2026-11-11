@@ -9,6 +9,8 @@ The containers, their storage and Traffic Control are dubna's code, shared with 
 The first version is minimal, as goals.md planned:
 
 - **Open in container**, in a link's long-press menu: a list of the containers, **New temporary container**, and **No container** when the page is in a container. The link opens in a new tab beside the page.
+- **New tab in container**, after New tab in the tab switcher button's long-press menu: the containers, **New temporary container** and **No container**.
+- **Reopen in container**, in a tab's menu in the tab switcher (long-press the tab): the containers but the tab's own, **New temporary container**, and **No container** when the tab is in one. The page opens in a new tab beside the tab, which closes.
 - In the tab switcher, a container tab's row has a line in the container's color along its bottom, as Firefox draws one under the tab.
 - **Settings → Containers**, after Privacy and security: add a container, change its name or color, or delete it; **Open new tabs in** (no container, a container, or a new temporary container each time); and Traffic Control's rules. A new profile has Firefox's four containers: Personal, Work, Banking and Shopping. Each rule change applies to the rules as they are then, so changes sync made while the screen was open stay; a rule whose container was deleted (by sync) shows Deleted container and keeps it until you pick another.
 
@@ -63,12 +65,15 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 | `chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java` | 16 | The link menu's item and its handler. The item has its own id (`Containers.MENU_ID`), so no upstream list of items changes. No Preview page in a container tab: the preview would load outside the container. |
 | `chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java` | 3 | The tab switcher row's color line. |
 | `chrome/android/java/res/xml/main_preferences.xml` | 5 | The Settings entry. |
+| `chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/TabSwitcherActionMenuCoordinator.java` | 6 | A slot after New tab in the tab switcher button's menu, which ToolbarManager fills with New tab in container (the toolbar module can't see our Java). |
+| `chrome/android/java/src/org/chromium/chrome/browser/toolbar/ToolbarManager.java` | 14 | Fills that slot and handles the item: the chooser, then the menu's own New tab, whose tab takes the chosen container. |
+| `chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridContextMenuCoordinator.java` | 7 | Reopen in container in a tab's menu, and its handler. |
 
 ## Not done
 
 - The tab strip on tablets shows no color: it is drawn by the compositor (`StripLayoutTab`), which needs a new property and its drawing code.
 - A tab's container doesn't show in the toolbar.
-- New tab in container and Reopen in container: the menus of the New tab button and of a tab, as oganesson has.
+- New tab in container on the tablet tab strip's New tab button, and on the tab switcher's own New tab button, which has no long-press menu on phones.
 - Firefox's container icons: a container has a color only. The icon stays in the prefs, so oganesson still shows it.
 - Archived tabs (Chromium's inactive tabs) have no WebContents until they are restored, so they don't count as using their container. A temporary container whose only tab is archived loses its data.
 - Tabs of a window that isn't open (Android's multi-instance windows) don't count either, the same way.

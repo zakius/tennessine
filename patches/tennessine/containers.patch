@@ -184,7 +184,7 @@
    if (no_renderer) {
 --- a/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
 +++ b/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
-@@ -2150,4 +2150,8 @@ Aby zmienić to ustawienie, <ph name="BEGIN_LINK" />wyczyść dane tennessine na
+@@ -2150,4 +2150,10 @@ Aby zmienić to ustawienie, <ph name="BEGIN_LINK" />wyczyść dane tennessine na
  <translation id="99907655649633293"><ph name="TAB_TITLE" />, karta incognito</translation>
  <translation id="414776566175657792">Karta z urządzenia <ph name="DEVICE" />: <ph name="TITLE" /></translation>
  <translation id="2321024629479061895">Wysłano na urządzenie <ph name="DEVICE" /></translation>
@@ -192,6 +192,8 @@
 +<translation id="8670218546624422041">Otwórz w kontenerze</translation>
 +<translation id="2796584247246518451">Nowy kontener tymczasowy</translation>
 +<translation id="5140474419843357176">Bez kontenera</translation>
++<translation id="3622340734407862083">Nowa karta w kontenerze</translation>
++<translation id="9173282463479903396">Otwórz ponownie w kontenerze</translation>
  </translationbundle>
 \ No newline at end of file
 --- a/chrome/browser/ui/android/tab_model/android_live_tab_context.cc
@@ -238,7 +240,7 @@
  # Three lines of code for minimizing conflicts in rebasing changes
 --- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
 +++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
-@@ -65,4 +65,16 @@
+@@ -65,4 +65,22 @@
    <message name="IDS_FIREFOX_SYNC_TAB_SENT" desc="Toast after choosing the device on the Firefox account to send a tab to">
      Sent to <ph name="DEVICE">%1$s<ex>Firefox on Laptop</ex></ph>
    </message>
@@ -253,6 +255,12 @@
 +  </message>
 +  <message name="IDS_CONTAINERS_NONE" desc="Choice of no container: the tab uses the browser's usual cookies and site data">
 +    No container
++  </message>
++  <message name="IDS_CONTAINERS_NEW_TAB_IN" desc="Item in the tab switcher button's long-press menu, after New tab, that opens a new tab in a container the user picks">
++    New tab in container
++  </message>
++  <message name="IDS_CONTAINERS_REOPEN" desc="Item in a tab's menu in the tab switcher that reopens the tab's page in a container the user picks, in place of the tab">
++    Reopen in container
 +  </message>
  </grit-part>
 --- a/chrome/browser/ui/android/browser_navigator_android.cc

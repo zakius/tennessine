@@ -4,8 +4,8 @@
 
 package org.chromium.chrome.browser.containers;
 
+import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -15,8 +15,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
 
+import org.chromium.base.Callback;
 import org.chromium.base.IntentUtils;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.build.annotations.Nullable;
@@ -27,14 +29,20 @@ import org.chromium.chrome.browser.content.WebContentsFactory;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabLaunchType;
+import org.chromium.chrome.browser.tabmodel.TabClosureParams;
+import org.chromium.chrome.browser.tabmodel.TabModel;
+import org.chromium.components.browser_ui.widget.ListItemBuilder;
 import org.chromium.content_public.browser.WebContents;
+import org.chromium.ui.base.WindowAndroid;
+import org.chromium.ui.modelutil.MVCListAdapter.ListItem;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tabs in containers: the container a new tab starts in, the link menu's "Open in container" and
- * the tab switcher's color line. A tab stays in the container its WebContents is created in
+ * Tabs in containers: the container a new tab starts in, the link menu's "Open in container", the
+ * tab switcher button menu's "New tab in container", a tab menu's "Reopen in container" and the
+ * tab switcher's color line. A tab stays in the container its WebContents is created in
  * (dubna's containers_tabs.h), so these only pick that container.
  */
 @NullMarked
@@ -43,6 +51,15 @@ public final class Containers {
 
     /** The link menu item's id: one no resource has (generated ids stay below 0x01000000). */
     public static final int MENU_ID = View.generateViewId();
+
+    /** The tab switcher button menu's New tab in container. */
+    public static final int NEW_TAB_MENU_ID = View.generateViewId();
+
+    /** The tab switcher's tab menu's Reopen in container. */
+    public static final int REOPEN_MENU_ID = View.generateViewId();
+
+    /** The container New tab in container opens its tab in, while it opens it. */
+    private static @Nullable String sNewTabContainer;
 
     private static final Object LINE_TAG = new Object();
 
@@ -129,6 +146,7 @@ public final class Containers {
                 return source != null ? ContainersBridge.containerOf(source) : "";
             case TabLaunchType.FROM_CHROME_UI:
             case TabLaunchType.FROM_TAB_SWITCHER_UI:
+                if (sNewTabContainer != null) return sNewTabContainer;
                 return ContainersBridge.newTabContainer(profile);
             default:
                 return "";
@@ -154,38 +172,132 @@ public final class Containers {
         if (tab == null) return;
         WebContents source = tab.getWebContents();
         if (source == null) return;
-        Profile profile = tab.getProfile();
+        boolean inContainer = !ContainersBridge.containerOf(source).isEmpty();
+        choose(
+                context,
+                tab.getProfile(),
+                R.string.contextmenu_open_in_container,
+                /* skipped= */ null,
+                inContainer,
+                id -> {
+                    // The tab may have closed while the chooser was open.
+                    @Nullable WebContents current = tab.isDestroyed() ? null : tab.getWebContents();
+                    if (current == null || current.isDestroyed()) return;
+                    ContainersBridge.openInNewTab(current, url, id);
+                });
+    }
+
+    /**
+     * The tab switcher button menu's New tab in container, after its New tab; null in incognito,
+     * which has no containers.
+     */
+    public static @Nullable ListItem newTabMenuItem(Profile profile) {
+        if (profile.isOffTheRecord()) return null;
+        return new ListItemBuilder()
+                .withTitleRes(R.string.containers_new_tab_in)
+                .withMenuId(NEW_TAB_MENU_ID)
+                .withStartIconRes(R.drawable.new_tab_icon)
+                .build();
+    }
+
+    /**
+     * New tab in container's chooser: the user's containers, a new temporary container and no
+     * container. {@code openNewTab} then opens the new tab, as the menu's New tab does.
+     */
+    public static void chooseNewTab(Context context, Profile profile, Runnable openNewTab) {
+        choose(
+                context,
+                profile.getOriginalProfile(),
+                R.string.containers_new_tab_in,
+                /* skipped= */ null,
+                /* withNone= */ true,
+                id -> {
+                    sNewTabContainer = id;
+                    try {
+                        openNewTab.run();
+                    } finally {
+                        sNewTabContainer = null;
+                    }
+                });
+    }
+
+    /** A tab menu's Reopen in container; null for an incognito tab. */
+    public static @Nullable ListItem reopenMenuItem(Tab tab) {
+        if (tab.isIncognitoBranded()) return null;
+        return new ListItemBuilder()
+                .withTitleRes(R.string.containers_reopen)
+                .withMenuId(REOPEN_MENU_ID)
+                .withStartIconRes(R.drawable.ic_refresh_24dp)
+                .build();
+    }
+
+    /**
+     * Handles a tab menu's item {@code menuId} when it is Reopen in container, and returns whether
+     * it was. Its chooser has the containers but {@code tab}'s own; the page opens in the one
+     * picked beside {@code tab}, which closes.
+     */
+    public static boolean onTabMenuItem(int menuId, Tab tab, TabModel model) {
+        if (menuId != REOPEN_MENU_ID) return false;
+        WebContents source = tab.getWebContents();
+        @Nullable WindowAndroid window = tab.getWindowAndroid();
+        @Nullable Activity activity = window != null ? window.getActivity().get() : null;
+        if (source == null || activity == null) return true;
+        String current = ContainersBridge.containerOf(source);
+        choose(
+                activity,
+                tab.getProfile(),
+                R.string.containers_reopen,
+                current,
+                !current.isEmpty(),
+                id -> {
+                    @Nullable WebContents contents = tab.isDestroyed() ? null : tab.getWebContents();
+                    if (contents == null || contents.isDestroyed()) return;
+                    ContainersBridge.openInNewTab(contents, tab.getUrl().getSpec(), id);
+                    model.getTabRemover()
+                            .closeTabs(
+                                    TabClosureParams.closeTab(tab).allowUndo(false).build(),
+                                    /* allowDialog= */ false);
+                });
+        return true;
+    }
+
+    /**
+     * Asks which container to use: the user's containers but {@code skipped}, a new temporary
+     * container, and no container when {@code withNone}. {@code onChosen} gets the id picked, a
+     * new temporary container's for that choice, or "" for no container.
+     */
+    private static void choose(
+            Context context,
+            Profile profile,
+            @StringRes int title,
+            @Nullable String skipped,
+            boolean withNone,
+            Callback<String> onChosen) {
         List<String> ids = new ArrayList<>();
         List<CharSequence> labels = new ArrayList<>();
         for (ContainersBridge.Container container : ContainersBridge.getContainers(profile)) {
+            if (container.id.equals(skipped)) continue;
             ids.add(container.id);
             labels.add(withDot(container.name, container.argb));
         }
         ids.add(ContainersBridge.TEMPORARY);
         labels.add(context.getString(R.string.containers_new_temporary));
-        if (!ContainersBridge.containerOf(source).isEmpty()) {
+        if (withNone) {
             ids.add("");
             labels.add(context.getString(R.string.containers_none));
         }
         new AlertDialog.Builder(context)
-                .setTitle(R.string.contextmenu_open_in_container)
-                .setItems(labels.toArray(new CharSequence[0]), opener(tab, profile, ids, url))
+                .setTitle(title)
+                .setItems(
+                        labels.toArray(new CharSequence[0]),
+                        (dialog, which) -> {
+                            String id = ids.get(which);
+                            if (id.equals(ContainersBridge.TEMPORARY)) {
+                                id = ContainersBridge.createTemporary(profile);
+                            }
+                            onChosen.onResult(id);
+                        })
                 .show();
-    }
-
-    /** The chooser's action: opens {@code url} in container {@code ids[which]}. */
-    private static DialogInterface.OnClickListener opener(
-            Tab tab, Profile profile, List<String> ids, String url) {
-        return (dialog, which) -> {
-            // The tab may have closed while the chooser was open.
-            @Nullable WebContents source = tab.isDestroyed() ? null : tab.getWebContents();
-            if (source == null || source.isDestroyed()) return;
-            String id = ids.get(which);
-            if (id.equals(ContainersBridge.TEMPORARY)) {
-                id = ContainersBridge.createTemporary(profile);
-            }
-            ContainersBridge.openInNewTab(source, url, id);
-        };
     }
 
     /** {@code name} after a dot in color {@code argb}. */

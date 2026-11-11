@@ -3,6 +3,9 @@
 #   no Preview page in a container, as the preview would load outside it.
 # - TabGridViewBinder.java: a tab switcher row has a line in its container's color.
 # - main_preferences.xml: Settings → Containers, after Privacy and security.
+# - TabSwitcherActionMenuCoordinator.java, ToolbarManager.java: New tab in container, after New tab
+#   in the tab switcher button's long-press menu.
+# - TabGridContextMenuCoordinator.java: Reopen in container, in a tab's menu in the tab switcher.
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
 @@ -33,6 +33,7 @@ import org.chromium.base.Callback;
@@ -84,3 +87,94 @@
          if (ChromeFeatureList.sCctContextualMenuItems.isEnabled()
                  && mCustomActionMap.get(itemId) != null) {
              final CustomContentAction action = mCustomActionMap.get(itemId);
+--- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridContextMenuCoordinator.java
++++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridContextMenuCoordinator.java
+@@ -21,6 +21,7 @@
+ import org.chromium.chrome.browser.bookmarks.BookmarkModel;
+ import org.chromium.chrome.browser.bookmarks.TabBookmarker;
+ import org.chromium.chrome.browser.collaboration.CollaborationServiceFactory;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.flags.ChromeFeatureList;
+ import org.chromium.chrome.browser.profiles.Profile;
+ import org.chromium.chrome.browser.share.ShareDelegate;
+@@ -184,6 +185,8 @@
+             TabBookmarker tabBookmarker = assumeNonNull(tabBookmarkerSupplier.get());
+             @Nullable Tab tab = getTabById(() -> tabModel, tabId);
+             if (tab == null) return;
++            // tennessine: Reopen in container (chrome/browser/containers).
++            if (Containers.onTabMenuItem(menuId, tab, tabModel)) return;
+ 
+             if (menuId == R.id.share_tab) {
+                 assumeNonNull(shareDelegateSupplier.get())
+@@ -320,6 +323,10 @@
+ 
+         itemList.add(buildMuteUnmuteSiteItem(tab, isIncognito));
+ 
++        // tennessine: Reopen in container (chrome/browser/containers).
++        ListItem reopen = Containers.reopenMenuItem(tab);
++        if (reopen != null) itemList.add(reopen);
++
+         itemList.add(
+                 new ListItemBuilder()
+                         .withTitleRes(R.string.select_tab)
+--- a/chrome/android/java/src/org/chromium/chrome/browser/toolbar/ToolbarManager.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/toolbar/ToolbarManager.java
+@@ -89,6 +89,7 @@
+ import org.chromium.chrome.browser.compositor.CompositorViewHolder;
+ import org.chromium.chrome.browser.compositor.layouts.LayoutManagerImpl;
+ import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutHelperManager;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.customtabs.features.toolbar.CustomTabToolbar;
+ import org.chromium.chrome.browser.data_sharing.DataSharingTabManager;
+ import org.chromium.chrome.browser.dom_distiller.DomDistillerTabUtils;
+@@ -4125,8 +4126,20 @@
+             return null;
+         }
+         assert openGridTabSwitcherHandler != null;
++        // tennessine: New tab in container (chrome/browser/containers).
++        TabSwitcherActionMenuCoordinator.sAfterNewTab = Containers::newTabMenuItem;
+         return TabSwitcherActionMenuCoordinator.createOnLongClickListener(
+-                menuItemId -> mAppMenuDelegate.onOptionsItemSelected(menuItemId, null),
++                menuItemId -> {
++                    if (menuItemId == Containers.NEW_TAB_MENU_ID) {
++                        int newTab = R.id.new_tab_menu_id;
++                        Containers.chooseNewTab(
++                                mActivity,
++                                profile,
++                                () -> mAppMenuDelegate.onOptionsItemSelected(newTab, null));
++                        return;
++                    }
++                    mAppMenuDelegate.onOptionsItemSelected(menuItemId, null);
++                },
+                 profile,
+                 mTabModelSelectorSupplier,
+                 TabWindowManagerSingleton.getInstance());
+--- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/TabSwitcherActionMenuCoordinator.java
++++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/TabSwitcherActionMenuCoordinator.java
+@@ -48,6 +48,7 @@
+ import java.lang.annotation.RetentionPolicy;
+ import java.util.Collection;
+ import java.util.Collections;
++import java.util.function.Function;
+ 
+ /**
+  * The main coordinator for the Tab Switcher Action Menu, responsible for creating the popup menu
+@@ -133,6 +134,9 @@
+         }
+     }
+ 
++    /** tennessine: an item after New tab, New tab in container (chrome/browser/containers). */
++    public static @Nullable Function<Profile, @Nullable ListItem> sAfterNewTab;
++
+     private final MonotonicObservableSupplier<TabModelSelector> mTabModelSelectorSupplier;
+     private final Profile mProfile;
+     private final TabWindowManager mTabWindowManager;
+@@ -219,6 +223,8 @@
+         itemList.add(buildListItemByMenuItemType(MenuItemType.DIVIDER));
+         if (supportedMixedWindows || !isCurrentModelIncognito) {
+             itemList.add(buildListItemByMenuItemType(MenuItemType.NEW_TAB));
++            ListItem extra = sAfterNewTab != null ? sAfterNewTab.apply(mProfile) : null;
++            if (extra != null) itemList.add(extra);
+         }
+         if (supportedMixedWindows || isCurrentModelIncognito) {
+             itemList.add(buildListItemByMenuItemType(MenuItemType.NEW_INCOGNITO_TAB));
