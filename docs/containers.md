@@ -35,7 +35,7 @@ A tab stays in the storage partition its WebContents is created in (dubna's `con
 | A tab restored after a restart | `WebContentsState::RestoreContentsFromByteBuffer()` asks `SiteInstanceToRestore()`: the tab state saves each page's container as the page's extended info, as desktop sessions do. |
 | A closed tab reopened (Recent tabs) | `AndroidLiveTabContext::AddRestoredTab()` and `SessionRestore::RestoreForeignSessionTab()` ask `SiteInstanceToRestore()`. |
 
-dubna checks which containers are in use before it deletes a container's data. On Android, the saved session is the open tabs themselves, restored by Java after the browser starts. So `GetContainersInUse()` waits until the windows' tabs are restored and answers with their containers, and those of the tabs waiting for Undo after they were closed. With no window, as when a background task starts the browser, or when a window closes before its tabs are restored, it counts every container as in use, so nothing is deleted then.
+dubna checks which containers are in use before it deletes a container's data. On Android, the saved session is the tabs themselves, restored by Java after the browser starts. So `GetContainersInUse()` waits until every tab is loaded: the open windows' first, then, after startup, the archived tabs and the tabs of windows that aren't open, which Chromium loads without a window (`TabWindowManager.isAllTabStateInitialized()`). It answers with the containers of all of them, the tabs waiting for Undo included. A tab without a WebContents (archived, or in a window that isn't open) tells its containers from its saved state (`WebContentsState`). With no window, as when a background task starts the browser, when a window closes before its tabs are restored, or when a tab without a WebContents has no saved state, it counts every container as in use, so nothing is deleted then.
 
 The containers and the rules are dubna's prefs. Settings reads and writes them through `ContainersBridge` as JSON, and the native side checks each container and rule with dubna's own `FromDict()` and `IsValidUrlFilter()`.
 
@@ -78,5 +78,3 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 - The tab strip on tablets shows no color: it is drawn by the compositor (`StripLayoutTab`), which needs a new property and its drawing code.
 - New tab in container on the tablet tab strip's New tab button.
 - Firefox's container icons: a container has a color only. The icon stays in the prefs, so oganesson still shows it.
-- Archived tabs (Chromium's inactive tabs) have no WebContents until they are restored, so they don't count as using their container. A temporary container whose only tab is archived loses its data.
-- Tabs of a window that isn't open (Android's multi-instance windows) don't count either, the same way.

@@ -18,18 +18,25 @@ import org.json.JSONObject;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.IntentUtils;
 import org.chromium.build.annotations.NullMarked;
+import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.browser.app.tabwindow.TabWindowManagerSingleton;
 import org.chromium.chrome.browser.document.ChromeLauncherActivity;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tab.WebContentsState;
 import org.chromium.chrome.browser.tabmodel.TabList;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelSelector;
 import org.chromium.chrome.browser.tabmodel.TabModelSelectorObserver;
+import org.chromium.chrome.browser.tabwindow.TabWindowManager;
 import org.chromium.content_public.browser.WebContents;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * dubna's containers (chrome/browser/containers) on Android: what containers_android.cc does
@@ -191,10 +198,11 @@ public final class ContainersBridge {
     }
 
     /**
-     * Calls back native {@code request} once the tabs of the open windows are restored, with the
-     * containers of the tabs waiting for Undo, which the native tab models leave out. Calls back at
-     * once, with {@code restored} false, when no window is open, and so it does when a window
-     * closes before its tabs are restored.
+     * Calls back native {@code request} once every tab is loaded, with the containers of all of
+     * them: the open windows' tabs, the tabs of windows that aren't open, which Chromium loads
+     * without a window after startup, the archived tabs and the tabs waiting for Undo. Calls back
+     * at once, with {@code restored} false, when no window is open, and so it does when a window
+     * closes before its tabs are restored or a tab's pages are unknown.
      */
     @CalledByNative
     private static void whenTabsRestored(long request) {
@@ -218,7 +226,7 @@ public final class ContainersBridge {
     /** Waits for {@code selectors} from {@code index} on, one after the other. */
     private static void whenRestored(long request, List<TabModelSelector> selectors, int index) {
         if (index == selectors.size()) {
-            ContainersBridgeJni.get().onTabsRestored(request, true, closingTabContainers());
+            whenAllRestored(request);
             return;
         }
         TabModelSelector selector = selectors.get(index);
@@ -242,18 +250,52 @@ public final class ContainersBridge {
                 });
     }
 
-    /** The containers of the tabs waiting for Undo after they were closed. */
-    private static String[] closingTabContainers() {
-        List<String> ids = new ArrayList<>();
-        for (TabModelSelector selector : openSelectors()) {
-            for (TabModel model : selector.getModels()) {
-                TabList tabs = model.getComprehensiveModel();
-                for (int i = 0; i < tabs.getCount(); i++) {
-                    Tab tab = tabs.getTabAt(i);
-                    if (tab == null || !model.isClosurePending(tab.getId())) continue;
-                    WebContents contents = tab.getWebContents();
-                    if (contents != null) ids.add(containerOf(contents));
+    /** Waits for the archived tabs and the tabs of the windows that aren't open. */
+    private static void whenAllRestored(long request) {
+        TabWindowManager manager = TabWindowManagerSingleton.getInstance();
+        if (manager.isAllTabStateInitialized()) {
+            String[] ids = tabContainers();
+            ContainersBridgeJni.get()
+                    .onTabsRestored(request, ids != null, ids != null ? ids : new String[0]);
+            return;
+        }
+        manager.addObserver(
+                new TabWindowManager.Observer() {
+                    @Override
+                    public void onAllTabModelStateInitialized() {
+                        manager.removeObserver(this);
+                        whenAllRestored(request);
+                    }
+                });
+    }
+
+    /**
+     * The containers of every tab, those waiting for Undo included, or null when a tab that isn't
+     * loaded has no saved pages to tell.
+     */
+    private static String @Nullable [] tabContainers() {
+        List<TabModelSelector> selectors = openSelectors();
+        TabModelSelector archived =
+                TabWindowManagerSingleton.getInstance().getArchivedTabModelSelector();
+        if (archived != null) selectors.add(archived);
+        Set<String> ids = new HashSet<>();
+        for (TabModelSelector selector : selectors) {
+            TabModel model = selector.getModel(/* incognito= */ false);
+            TabList tabs = model.getComprehensiveModel();
+            for (int i = 0; i < tabs.getCount(); i++) {
+                Tab tab = tabs.getTabAt(i);
+                if (tab == null || tab.isDestroyed()) continue;
+                WebContents contents = tab.getWebContents();
+                if (contents != null) {
+                    ids.add(containerOf(contents));
+                    continue;
                 }
+                WebContentsState state = tab.getWebContentsState();
+                if (state == null) return null;
+                Collections.addAll(
+                        ids,
+                        ContainersBridgeJni.get()
+                                .containersOfState(state.buffer(), state.version()));
             }
         }
         return ids.toArray(new String[0]);
@@ -317,6 +359,9 @@ public final class ContainersBridge {
         void onTabsRestored(
                 long request,
                 boolean restored,
-                @JniType("std::vector<std::string>") String[] closingTabContainers);
+                @JniType("std::vector<std::string>") String[] tabContainers);
+
+        @JniType("std::vector<std::string>")
+        String[] containersOfState(ByteBuffer state, int version);
     }
 }

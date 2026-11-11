@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "base/android/jni_android.h"
+#include "base/android/jni_bytebuffer.h"
 #include "base/functional/callback.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
@@ -28,10 +29,12 @@
 #include "chrome/browser/containers/containers_tabs.h"
 #include "chrome/browser/containers/traffic_control.h"
 #include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/tab/web_contents_state.h"
 #include "chrome/browser/ui/android/tab_model/tab_model.h"
 #include "chrome/browser/ui/android/tab_model/tab_model_list.h"
 #include "chrome/common/webui_url_constants.h"
 #include "components/prefs/pref_service.h"
+#include "components/sessions/core/serialized_navigation_entry.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/site_instance.h"
@@ -160,9 +163,9 @@ void ReopenNavigation(content::WebContents* source,
   }
 }
 
-// Java answers once the windows' tabs are restored (OnTabsRestored()). With
-// no window, as when a background task started the browser, the tabs are
-// unknown and every container counts as in use.
+// Java answers once every tab is loaded (OnTabsRestored()). With no window,
+// as when a background task started the browser, the tabs are unknown and
+// every container counts as in use.
 void GetContainersInUse(Profile* profile, InUseCallback callback) {
   auto* request = new InUseRequest{profile, std::move(callback)};
   Java_ContainersBridge_whenTabsRestored(AttachCurrentThread(),
@@ -186,32 +189,21 @@ void CloseTabsInContainer(Profile* profile, const std::string& id) {
 using containers::Container;
 using containers::ContainersService;
 
-// A tab that loads no page yet has no WebContents, so it counts as in no
-// container: with Chromium's "load all tabs at startup", which tennessine
-// keeps, only archived tabs are such. Tabs waiting for Undo aren't in the
-// tab models, so Java gives their containers.
+// Java gives the containers of every tab once all are loaded: those of the
+// open windows, of the windows that aren't open, the archived ones and the
+// ones waiting for Undo. When it can't, every container counts as in use.
 static void JNI_ContainersBridge_OnTabsRestored(
     JNIEnv* env,
     jlong request_ptr,
     jboolean restored,
-    const std::vector<std::string>& closing_tab_containers) {
+    const std::vector<std::string>& tab_containers) {
   std::unique_ptr<containers::InUseRequest> request(
       reinterpret_cast<containers::InUseRequest*>(request_ptr));
   std::set<std::string> ids;
   if (restored) {
-    for (const std::string& id : closing_tab_containers) {
+    for (const std::string& id : tab_containers) {
       if (!id.empty()) {
         ids.insert(id);
-      }
-    }
-    for (TabModel* model : containers::ModelsOf(request->profile)) {
-      for (int i = 0; i < model->GetTabCount(); ++i) {
-        content::WebContents* contents = model->GetWebContentsAt(i);
-        std::string id =
-            contents ? containers::ContainerIdOf(contents) : std::string();
-        if (!id.empty()) {
-          ids.insert(std::move(id));
-        }
       }
     }
   } else {
@@ -221,6 +213,24 @@ static void JNI_ContainersBridge_OnTabsRestored(
     }
   }
   std::move(request->callback).Run(std::move(ids));
+}
+
+// The containers of the pages in a saved tab state, as a tab that isn't
+// loaded (archived, or of a window that isn't open) keeps it.
+static std::vector<std::string> JNI_ContainersBridge_ContainersOfState(
+    JNIEnv* env,
+    const base::android::JavaRef<jobject>& state,
+    int32_t version) {
+  bool is_off_the_record = false;
+  int current_entry_index = 0;
+  std::vector<sessions::SerializedNavigationEntry> navigations;
+  std::set<std::string> ids;
+  if (WebContentsState::ExtractNavigationEntries(
+          base::android::JavaByteBufferToSpan(env, state), version,
+          &is_off_the_record, &current_entry_index, &navigations)) {
+    containers::AddContainerIds(navigations, ids);
+  }
+  return std::vector<std::string>(ids.begin(), ids.end());
 }
 
 // A new tab's WebContents, in container `id`, or outside containers when
