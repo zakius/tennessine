@@ -225,6 +225,26 @@ def upstream():
     return new
 
 
+IMAGE = 'localhost/tennessine-build'
+
+
+def build_image(build_dir):
+    """The build container's image (tools/Containerfile), with Chromium's build dependencies as
+    the tree in `build_dir` lists them. podman's layer cache makes this nearly free when nothing
+    changed."""
+    context = ROOT / 'work/build-image'
+    shutil.rmtree(context, ignore_errors=True)
+    context.mkdir(parents=True)
+    shutil.copy(ROOT / 'tools/Containerfile', context)
+    # COPY needs a file to match when the tree isn't there yet.
+    (context / 'install-build-deps.none').write_text('')
+    for name in ('install-build-deps.sh', 'install-build-deps.py'):
+        script = build_dir / 'tennessine/chromium/src/build' / name
+        if script.is_file():
+            shutil.copy(script, context)
+    run('podman', 'build', '-q', '-t', IMAGE, str(context))
+
+
 def build(mode):
     work = ROOT / 'work'
     # A tree per platform, each moved forward to the next Chromium: work/build for the arm64
@@ -239,6 +259,7 @@ def build(mode):
         run('podman', 'unshare', 'rm', '-rf', str(build_dir / out / 'Default'),
             str(work / 'build' / out / 'x64'))
     (build_dir / 'tennessine').mkdir(parents=True, exist_ok=True)
+    build_image(build_dir)
     if not all((KEYS / f).is_file() for f in ('test.jks', 'local.properties')):
         sys.exit(f'tennessine: no APK signing key (test.jks, local.properties) in {KEYS}')
     # No .git: in a git worktree it is a file naming a gitdir outside the container, and with
@@ -258,7 +279,7 @@ def build(mode):
                          # The container's first process ignores SIGTERM unless it traps it:
                          # this one exits on it, which ends the whole build, so stopping podman
                          # stops the build too.
-                         'docker.io/library/ubuntu:24.04', 'sh', '-c',
+                         IMAGE, 'sh', '-c',
                          'trap "exit 143" TERM; bash tools/container-build.sh & wait $!'])
 
 
