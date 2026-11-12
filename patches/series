@@ -88,3 +88,5 @@ patches/tennessine/containers.patch
 patches/tennessine/containers-ui.patch
 # Firefox add-ons' APIs that Chromium lacks, from dubna (dubna/webextensions/README.md).
 dubna/patches/firefox-add-ons.patch
+# Settings > App icon: the launcher icon, one of several activity-aliases.
+patches/tennessine/app-icon.patch

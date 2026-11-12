@@ -26,6 +26,8 @@ tennessine is not privacy-paranoid. It keeps features that some privacy-focused 
 
 Tennessine (Ts, element 117) was picked only because it is the neighbour of oganesson (118), the element its desktop sibling [oganesson](https://github.com/zakius/oganesson) is named after. Tennessine is named after Tennessee. It was first made in 2010 at the Joint Institute for Nuclear Research in Dubna, with Oak Ridge National Laboratory and other American labs. Oganesson was first made there too, in 2002, with Lawrence Livermore National Laboratory. That is a coincidence, and it gave the shared repo, [dubna](https://github.com/zakius/dubna), its name.
 
+The icon is tennessine's outer electron shell: 7 electrons, with room for an 8th. oganesson, the next element, fills it. `tools/app_icon.py` draws it. Settings → App icon has other colours and 1-bit black and white versions.
+
 ## Install
 
 Add this F-Droid repository in F-Droid or Obtainium:

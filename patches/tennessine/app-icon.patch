@@ -1,0 +1,147 @@
+# Settings > App icon (src/chrome/browser/app_icon): the launcher icon is one of several
+# activity-aliases of ChromeTabbedActivity, each with its own icon, and only the chosen one is
+# enabled. .Main keeps its other categories but is no longer the launcher entry, so Chromium's
+# checks for .Main accept the aliases too.
+--- a/chrome/android/java/AndroidManifest.xml
++++ b/chrome/android/java/AndroidManifest.xml
+@@ -688,18 +688,34 @@
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+                 <category android:name="android.intent.category.DEFAULT" />
+-                <category android:name="android.intent.category.LAUNCHER" />
+                 <category android:name="android.intent.category.BROWSABLE" />
+                 <category android:name="android.intent.category.APP_BROWSER" />
+                 {% if channel in ['dev', 'canary', 'default'] %}
+                 <category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+                 {% endif %}
+             </intent-filter>
+-            <meta-data android:name="android.app.shortcuts"
+-                android:resource="@xml/launchershortcuts" />
+             {{ self.supports_vr() }}
+             {{ self.extra_web_rendering_activity_definitions() }}
+         </activity-alias>
++        <!-- tennessine: the launcher entry, one alias per icon in Settings > App icon
++             (org.chromium.chrome.browser.app_icon.AppIcons); only the chosen one is enabled. -->
++        {% for icon in ['Indigo', 'Teal', 'Crimson', 'Black', 'White'] %}
++        <activity-alias android:name="org.chromium.chrome.browser.app_icon.{{ icon }}"
++            android:targetActivity="org.chromium.chrome.browser.ChromeTabbedActivity"
++            android:enabled="{{ 'true' if loop.first else 'false' }}"
++            android:exported="true"
++            android:icon="@drawable/app_icon_{{ icon|lower }}"
++            android:roundIcon="@drawable/app_icon_{{ icon|lower }}">
++            <property android:name="android.window.PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI"
++                android:value="true" />
++            <intent-filter>
++                <action android:name="android.intent.action.MAIN" />
++                <category android:name="android.intent.category.LAUNCHER" />
++            </intent-filter>
++            <meta-data android:name="android.app.shortcuts"
++                android:resource="@xml/launchershortcuts" />
++        </activity-alias>
++        {% endfor %}
+         <activity android:name="org.chromium.chrome.browser.ChromeTabbedActivity2"
+             android:theme="@style/Theme.Chromium.TabbedMode"
+             android:exported="false"
+--- a/chrome/android/java/res/xml/main_preferences.xml
++++ b/chrome/android/java/res/xml/main_preferences.xml
+@@ -51,6 +51,11 @@
+         android:order="7"
+         android:title="@string/toolbar_items_title"/>
+     <org.chromium.components.browser_ui.settings.ChromeBasePreference
++        android:fragment="org.chromium.chrome.browser.app_icon.AppIconSettings"
++        android:key="app_icon"
++        android:order="7"
++        android:title="@string/app_icon_title"/>
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
+         android:fragment="org.chromium.chrome.browser.privacy.settings.PrivacySettings"
+         android:key="privacy"
+         android:order="8"
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ActivityUtils.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ActivityUtils.java
+@@ -76,9 +76,7 @@
+             return;
+         }
+         if (component.getClassName() != null
+-                && TextUtils.equals(
+-                        component.getClassName(),
+-                        ChromeTabbedActivity.MAIN_LAUNCHER_ACTIVITY_NAME)) {
++                && ChromeTabbedActivity.isMainLauncherAlias(component.getClassName())) {
+             // Keep in sync with the activities that the .Main alias points to in
+             // AndroidManifest.xml.
+             intent.setClass(appContext, ChromeTabbedActivity.class);
+--- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
+@@ -451,12 +451,19 @@
+     // Name of the ChromeTabbedActivity alias that handles MAIN intents.
+     public static final String MAIN_LAUNCHER_ACTIVITY_NAME = "com.google.android.apps.chrome.Main";
+ 
++    // tennessine: the launcher opens this activity through the App icon aliases, too.
+     public static final Set<String> TABBED_MODE_COMPONENT_NAMES =
+-            Set.of(
++            org.chromium.chrome.browser.app_icon.AppIcons.withAliases(
+                     ChromeTabbedActivity.class.getName(),
+                     ChromeTabbedActivity2.class.getName(),
+                     MAIN_LAUNCHER_ACTIVITY_NAME);
+ 
++    /** tennessine: whether {@code name} is .Main or an App icon alias of this activity. */
++    public static boolean isMainLauncherAlias(@Nullable String name) {
++        return MAIN_LAUNCHER_ACTIVITY_NAME.equals(name)
++                || org.chromium.chrome.browser.app_icon.AppIcons.isAlias(name);
++    }
++
+     public static final String HISTOGRAM_DRAGGED_TAB_OPENED_NEW_WINDOW =
+             "Android.MultiWindowMode.DraggedTabOpenedNewWindow";
+ 
+--- a/chrome/android/java/src/org/chromium/chrome/browser/multiwindow/MultiInstanceManagerApi31.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/multiwindow/MultiInstanceManagerApi31.java
+@@ -641,7 +641,6 @@
+                 (ActivityManager)
+                         ContextUtils.getApplicationContext()
+                                 .getSystemService(Context.ACTIVITY_SERVICE);
+-        String launchActivityName = ChromeTabbedActivity.MAIN_LAUNCHER_ACTIVITY_NAME;
+         if (activityManager != null) {
+             sState =
+                     MultiInstanceState.maybeCreate(
+@@ -650,7 +649,8 @@
+                                     TextUtils.equals(
+                                                     activityName,
+                                                     ChromeTabbedActivity.class.getName())
+-                                            || TextUtils.equals(activityName, launchActivityName));
++                                            || ChromeTabbedActivity.isMainLauncherAlias(
++                                                    activityName));
+             sState.addObserver(mOnMultiInstanceStateChanged);
+         }
+         ApplicationStatus.registerStateListenerForActivity(this, mActivity);
+--- a/chrome/android/java/src/org/chromium/chrome/browser/multiwindow/MultiWindowUtils.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/multiwindow/MultiWindowUtils.java
+@@ -711,7 +711,7 @@
+         // Contrary to the documentation taskInfo.baseActivity for the .LauncherMain
+         // activity alias is the alias itself, and not the implementation. Filed b/66729258;
+         // for now translate the alias manually.
+-        if (TextUtils.equals(baseActivity, ChromeTabbedActivity.MAIN_LAUNCHER_ACTIVITY_NAME)) {
++        if (ChromeTabbedActivity.isMainLauncherAlias(baseActivity)) {
+             baseActivity = ChromeTabbedActivity.class.getName();
+         }
+         return baseActivity;
+--- a/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
++++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_deps.gni
+@@ -7,6 +7,7 @@
+ # Three lines of code for minimizing conflicts in rebasing changes
+ chrome_java_ext_full_path_deps = [
+   "//chrome/browser/firefox_sync/android:java",
++  "//chrome/browser/app_icon/android:java",
+   "//chrome/browser/history_saving/android:java",
+   "//chrome/browser/crash_log/android:java",
+   "//chrome/browser/toolbar_items/android:java",
+--- a/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
++++ b/tennessine/chromium_src/chrome/browser/ui/android/strings/android_chrome_ext_strings.grdp
+@@ -3,6 +3,9 @@
+  Use of this source code is governed by a GPLv2 only-style license that can be
+  found in the LICENSE file. -->
+ <grit-part>
++  <message name="IDS_APP_ICON_TITLE" desc="Title of the setting and screen that choose the browser's icon in the launcher">
++    App icon
++  </message>
+   <message name="IDS_CRASH_LOG_TITLE" desc="Title of the setting and screen that show the stack trace of the browser's last crash">
+     Last crash
+   </message>
