@@ -5,9 +5,11 @@
 package org.chromium.chrome.browser.app_icon;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceScreen;
 
@@ -19,13 +21,14 @@ import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.lifetime.ApplicationLifetime;
 import org.chromium.chrome.browser.settings.ChromeBaseSettingsFragment;
+import org.chromium.components.browser_ui.styles.SemanticColorUtils;
 
 /** Settings → App icon: which of the icons in {@link AppIcons} the launcher shows. */
 @NullMarked
 public class AppIconSettings extends ChromeBaseSettingsFragment {
     // In the order of AppIcons.NAMES.
     private static final String[] LABELS = {
-        "Indigo", "Teal", "Crimson", "Black", "White",
+        "Indigo", "Teal", "Crimson", "Black", "White", "No background, white", "No background, black",
     };
     private static final int[] ICONS = {
         R.drawable.app_icon_indigo,
@@ -33,6 +36,8 @@ public class AppIconSettings extends ChromeBaseSettingsFragment {
         R.drawable.app_icon_crimson,
         R.drawable.app_icon_black,
         R.drawable.app_icon_white,
+        R.drawable.app_icon_clear,
+        R.drawable.app_icon_clearblack,
     };
 
     private final SettableMonotonicObservableSupplier<String> mPageTitle =
@@ -51,7 +56,13 @@ public class AppIconSettings extends ChromeBaseSettingsFragment {
             String label = LABELS[i];
             Preference option = new Preference(context);
             option.setTitle(label);
-            option.setIcon(ICONS[i]);
+            Drawable icon = AppCompatResources.getDrawable(context, ICONS[i]);
+            // A glyph alone could vanish against this screen: shown in the icon colour.
+            if (name.startsWith("Clear") && icon != null) {
+                icon = icon.mutate();
+                icon.setTint(SemanticColorUtils.getDefaultIconColor(context));
+            }
+            option.setIcon(icon);
             if (name.equals(current)) {
                 option.setSummary("In use");
             } else {
@@ -66,7 +77,9 @@ public class AppIconSettings extends ChromeBaseSettingsFragment {
 
         Preference note = new Preference(context);
         note.setSummary(
-                "Black and White are 1-bit. With themed icons on, Android draws the icon in your"
+                "Black, White and No background are 1-bit. No background is the icon alone:"
+                        + " launchers that put every icon on a plate, like Pixel's, show it on a"
+                        + " white one. With themed icons on, Android draws the icon in your"
                         + " wallpaper's colours instead.");
         note.setSelectable(false);
         screen.addPreference(note);
