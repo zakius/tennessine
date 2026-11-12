@@ -71,6 +71,8 @@ patches/tennessine/full-url.patch
 
 # Web apps: Open in <default browser> in the link menu, launched behind the web app.
 patches/tennessine/webapp-open-in-default-browser.patch
+# Web apps: in dark mode, a light splash screen is darkened as auto dark mode darkens pages.
+patches/tennessine/webapp-splash-dark-mode.patch
 # Privacy: switches for no saved history. Last: it edits the lists the patches above add to.
 patches/tennessine/history-saving-settings.patch
 # Autofill services: the built-in option is tennessine's, not Google's.

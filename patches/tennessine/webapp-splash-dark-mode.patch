@@ -1,0 +1,64 @@
+# Web apps: in dark mode, a light splash screen is darkened with Blink's auto dark mode formula,
+# so a site whose manifest asks for white (x.com) opens on #121212.
+--- a/chrome/android/java/src/org/chromium/chrome/browser/browserservices/ui/splashscreen/webapps/WebappSplashController.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/browserservices/ui/splashscreen/webapps/WebappSplashController.java
+@@ -7,6 +7,7 @@
+ import android.app.Activity;
+ import android.content.Context;
+ import android.graphics.Bitmap;
++import android.graphics.Color;
+ import android.net.Uri;
+ import android.os.Build;
+ import android.view.View;
+@@ -15,6 +16,7 @@
+ import android.widget.FrameLayout;
+ import android.widget.ImageView;
+ 
++import androidx.annotation.ColorInt;
+ import androidx.core.graphics.Insets;
+ import androidx.core.view.ViewCompat;
+ import androidx.core.view.WindowInsetsCompat;
+@@ -72,6 +74,11 @@
+         Context appContext = ContextUtils.getApplicationContext();
+         int backgroundColor =
+                 ColorUtils.getOpaqueColor(mWebappInfo.backgroundColorFallbackToDefault());
++        // tennessine: in dark mode, a light splash is darkened the way auto dark mode darkens
++        // a page's background. No manifest can give a dark color: Blink doesn't parse one.
++        if (ColorUtils.inNightMode(mActivity)) {
++            backgroundColor = darkenLikeAutoDarkMode(backgroundColor);
++        }
+         if (mWebappInfo.isSplashProvidedByWebApk()) {
+             return buildSplashWithWebApkProvidedScreenshot(appContext, backgroundColor);
+         }
+@@ -93,6 +100,31 @@
+                 && mWebApkNetworkErrorObserver.isNetworkErrorDialogVisible();
+     }
+ 
++    /**
++     * tennessine: Blink's auto dark mode for a background (dark_mode_color_classifier.cc and
++     * dark_mode_color_filter.cc). Only a color brighter than 205 of 255 changes: its CIELAB
++     * lightness L becomes min(110 - L, 100), and a gray that ends up between 18 and 32 becomes
++     * 18. White becomes #121212.
++     */
++    private static @ColorInt int darkenLikeAutoDarkMode(@ColorInt int color) {
++        int red = Color.red(color);
++        int green = Color.green(color);
++        int blue = Color.blue(color);
++        int brightness = (red * 299 + green * 587 + blue * 114) / 1000;
++        if (brightness <= 205) {
++            return color;
++        }
++        double[] lab = new double[3];
++        androidx.core.graphics.ColorUtils.colorToLAB(color, lab);
++        double lightness = Math.min(110 - lab[0], 100);
++        int dark = androidx.core.graphics.ColorUtils.LABToColor(lightness, lab[1], lab[2]);
++        int gray = Color.red(dark);
++        if (gray == Color.green(dark) && gray == Color.blue(dark) && gray > 18 && gray < 32) {
++            return Color.rgb(18, 18, 18);
++        }
++        return dark;
++    }
++
+     /** Builds splash screen from WebApkInfo. */
+     private View buildSplashFromWebApkInfo(Context appContext, int backgroundColor) {
+         ViewGroup splashScreen = new FrameLayout(appContext);
