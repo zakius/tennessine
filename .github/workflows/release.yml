@@ -34,7 +34,7 @@ jobs:
           git submodule update --init -q
           echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
       - name: Build
-        run: cd "$MAIN" && flock "$BUILDS_LOCK" ./tennessine.py build
+        run: cd "$MAIN" && flock "$BUILDS_LOCK" ./tennessine.py build --release
       - name: Publish to the F-Droid repository
         run: cd "$MAIN" && ./tennessine.py publish
       - name: GitHub release

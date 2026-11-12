@@ -1,58 +1,88 @@
 #!/bin/bash
-# Runs inside the build container (tennessine.py build), in the scratch copy. MODE is empty for a
-# full build, x64 for a full build of the emulator's APK in its own tree, or resume (see
-# tennessine.py). /keys holds the signing key.
+# Runs inside the build container (tennessine.py build), in the scratch copy /build/tennessine.
+# One Chromium tree for both APKs: out/Default for arm64, out/x64 (MODE=x64) for the emulator's
+# x86_64. PREPARE=1 when the tree isn't prepared for these inputs (tennessine.py compares them
+# with the tree's .tennessine-prepared.json); otherwise tennessine.py has copied in any changed
+# src/ file.
+# VERSION_CODE is the APK's versionCode, RELEASE=1 compresses it with Zopfli. /keys holds the
+# signing key.
 set -e
-export DEBIAN_FRONTEND=noninteractive
-# tools/Containerfile's image has the packages.
-[ -f /etc/tennessine-build-image ] ||
-  { apt-get update -qq && apt-get install -y -qq sudo git curl bzip2 xz-utils unzip zstd lsb-release file python3 pigz openjdk-21-jdk-headless >/dev/null; }
 # The published APKs' signing key (tennessine.py mounts it): a new one would make every
 # installed copy refuse the update.
 [ -f /keys/test.jks ] && [ -f /keys/local.properties ] || { echo "no signing key in /keys" >&2; exit 1; }
 git config --global user.name tennessine-build
 git config --global user.email build@localhost
-VERSION=$(grep -m1 -o "[0-9]\+\(\.[0-9]\+\)\{3\}" vanadium/args.gn)
-# The files the patches and our src/ write keep their time when their content is the same as at
-# the last build (tools/keep_mtimes.py), so preparing the tree again recompiles only what changed.
-export KEEP_MTIMES="python3 $PWD/tools/keep_mtimes.py" MTIMES=/build/keep-mtimes.json
-export TREES="$PWD/chromium/src $PWD/chromium/src/third_party/devtools-frontend/src"
-# A previous run left the tree patched: back to the Chromium tag it checked out, which build.sh
-# then moves to VERSION. Ignored files (gclient dependencies, out/) stay, so the sync and the
-# compile resume from where they were.
-if [ "$MODE" != resume ] && [ -d chromium/src/.git ]; then
-  $KEEP_MTIMES save $MTIMES $TREES
-  git -C chromium/src am --abort 2>/dev/null || true
-  git -C chromium/src reset -q --hard
-  git -C chromium/src clean -qfd
-  # post-sync.sh edits this gclient dependency, which the reset above doesn't reach: left
-  # edited, the next sync refuses to move it to a new Chromium's revision.
-  git -C chromium/src/third_party/devtools-frontend/src checkout -q -- . 2>/dev/null || true
-fi
-export LOCAL_TEST_JKS=$(base64 -w0 /keys/local.properties) STORE_TEST_JKS=$(base64 -w0 /keys/test.jks)
-if [ "$MODE" != resume ]; then exec ./build.sh; fi
 source common.sh
-# common.sh takes SCRIPT_DIR from $0, which is in tools/ here.
 SCRIPT_DIR=$PWD
-set_keys
+VERSION=$(grep -m1 -o "[0-9]\+\(\.[0-9]\+\)\{3\}" vanadium/args.gn)
 [ -d depot_tools ] || git clone -q --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 [ -f depot_tools/python3_bin_reldir.txt ] || (cd depot_tools && ./ensure_bootstrap)
 export PATH="$PWD/depot_tools:$PATH"
-$KEEP_MTIMES save $MTIMES $TREES
-cp -r dubna/src/. src/. chromium/src/
-$KEEP_MTIMES restore $MTIMES $TREES
+
+# Back to the Chromium tag (a previous prepare left the tree patched), the patches, gclient's
+# dependencies and hooks, and post-sync.sh. Ignored files (gclient dependencies, out/) stay, so
+# the sync and the compile resume from where they were. Files whose content comes out as at the
+# last prepare get their old time back (tools/keep_mtimes.py), so only what changed recompiles.
+prepare() {
+  local keep="python3 $SCRIPT_DIR/tools/keep_mtimes.py" state=/build/keep-mtimes.json
+  local trees="$PWD/chromium/src $PWD/chromium/src/third_party/devtools-frontend/src"
+  mkdir -p chromium/src
+  cd chromium/src
+  if [ -d .git ]; then
+    $keep save $state $trees
+    git am --abort 2>/dev/null || true
+    git reset -q --hard
+    git clean -qfd
+    # post-sync.sh edits this gclient dependency, which the reset above doesn't reach: left
+    # edited, the next sync refuses to move it to a new Chromium's revision.
+    git -C third_party/devtools-frontend/src checkout -q -- . 2>/dev/null || true
+  else
+    git init -q
+    git remote add origin https://chromium.googlesource.com/chromium/src.git
+  fi
+  git fetch -q --depth 1 origin +refs/tags/$VERSION:chromium_$VERSION
+  git checkout -q $VERSION
+  cp $SCRIPT_DIR/.gclient ../.gclient
+  python3 $SCRIPT_DIR/tennessine.py apply
+  # gclient sync only when what it reads changed: an unchanged sync takes a minute, and moving
+  # the dependencies back makes the hooks apply Vanadium's v8 and search engine patches again,
+  # which recompiles hundreds of files.
+  local synced
+  synced=$(find $SCRIPT_DIR/vanadium/subprojects_patches -type f | sort |
+    xargs cat $SCRIPT_DIR/.gclient DEPS | sha256sum | cut -d' ' -f1)
+  if [ "$(cat /build/synced 2>/dev/null)" != "$synced" ]; then
+    rm -f /build/synced
+    gclient sync -D --no-history --nohooks
+    echo "$synced" > /build/synced
+  fi
+  gclient runhooks
+  # The image has the dependencies of the install-build-deps it was made with.
+  cmp -s /tmp/deps/install-build-deps.py build/install-build-deps.py || ./build/install-build-deps.sh --no-prompt
+  source $SCRIPT_DIR/post-sync.sh
+  $keep restore $state $trees
+  mv /build/prepared.json.new .tennessine-prepared.json
+  cd $SCRIPT_DIR
+}
+
+[ -z "$PREPARE" ] || prepare
 cd chromium/src
 OUT=out/Default ABI=arm64-v8a LIB=tennessine/sync_lib CPU=arm64
-# The sync library again when it is missing or dubna/rust/ changed since.
-if [ ! -f $LIB/liboganesson_sync.so ] ||
-   [ -n "$(find $SCRIPT_DIR/dubna/rust -path "*/target" -prune -o -newer $LIB/liboganesson_sync.so -print -quit)" ]; then
-  $SCRIPT_DIR/tools/build-sync-lib.sh $LIB /build/sync-cache $CPU
-fi
-mkdir -p out/tmp out/release && rm -f out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk*
-set_version_code $OUT/args.gn
-build_ours $OUT || exit 1
+[ "$MODE" = x64 ] && OUT=out/x64 ABI=x86_64 LIB=tennessine/sync_lib/x64 CPU=x64
+mkdir -p $OUT out/tmp out/release
+rm -f out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk*
+# args.gn changes only when its content does: a new time alone makes gn and parts of the build
+# run again.
+# args.gn's last line lacks its newline.
+{ sed -e "s/^target_cpu = .*/target_cpu = \"$CPU\"/" -e '$a\' $SCRIPT_DIR/args.gn
+  echo "android_override_version_code = \"$VERSION_CODE\""; } > $OUT/args.gn.new
+if cmp -s $OUT/args.gn.new $OUT/args.gn; then rm $OUT/args.gn.new; else mv $OUT/args.gn.new $OUT/args.gn; fi
+gn gen $OUT
+$SCRIPT_DIR/tools/build-sync-lib.sh $LIB /build/sync-cache $CPU
+build_ours $OUT
 autoninja ${JOBS:+-j $JOBS} -C $OUT chrome_public_apk
-mv $(find $OUT/apks -name "Chrome*.apk") out/tmp/$VERSION-$ABI.apk
+mv $(find $OUT/apks -name 'Chrome*.apk') out/tmp/$VERSION-$ABI.apk
 export PATH=$PWD/third_party/jdk/current/bin/:$PATH ANDROID_HOME=$PWD/third_party/android_sdk/public
-sign_apk out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk
+export LOCAL_TEST_JKS=$(base64 -w0 /keys/local.properties) STORE_TEST_JKS=$(base64 -w0 /keys/test.jks)
+set_keys
+sign_apk out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk ${RELEASE:+11}
 rm -rf $SCRIPT_DIR/keys

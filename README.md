@@ -60,15 +60,16 @@ After the store installs the app for the first time, it installs updates in the 
 `./tennessine.py build` builds an arm64 APK in a rootless Ubuntu container (podman, `tools/container-build.sh`). It checks out and syncs Chromium, applies the patches, compiles, and signs the APK with the key in `~/.local/share/tennessine-signing`. Every update must be signed with that key.
 
 ```sh
-./tennessine.py build           # full build
-./tennessine.py build resume    # recompile after a change to src/ only
+./tennessine.py build             # the arm64 APK
+./tennessine.py build x64         # the emulator's x86_64 APK
+./tennessine.py build --release   # the arm64 APK compressed with Zopfli, as the release workflow builds it
 ```
 
-`build.sh`, `common.sh` and `post-sync.sh` come from Titanium and run inside the container.
+The APKs go to `work/build/tennessine/chromium/src/out/release/`. `common.sh` and `post-sync.sh` come from Titanium and run inside the container.
 
-Builds stay incremental. Each platform has its own tree, moved forward to each new Chromium: `work/build` for the arm64 APK, `work/build-x64` for the emulator's x86_64 one (`./tennessine.py build x64`, which starts as a reflink copy of the arm64 tree). Preparing a tree again gives each file whose content is what its last build compiled its old time back (`tools/keep_mtimes.py`), so a patch edit recompiles only what it changes.
+Builds stay incremental, in one tree for both APKs (`work/build`), moved forward to each new Chromium: arm64 compiles in `out/Default`, x86_64 in `out/x64`. The tree is prepared again only when something preparing reads has changed (`build_inputs` in `tennessine.py`, recorded in `work/build/prepared.json`); a change to `src/` alone is copied into the tree. gclient syncs again only when the Chromium version, `DEPS` or Vanadium's subproject patches change. Preparing the tree again gives each file whose content is what its last build compiled its old time back (`tools/keep_mtimes.py`), so a patch edit recompiles only what it changes.
 
-Each build's versionCode is 10^9 plus the minutes since 2026-01-01 (`set_version_code` in `common.sh`). A rebuild on the same Chromium version is therefore still an update.
+Each build's versionCode is 10^9 plus the minutes from 2026-01-01 to its commit's time (`version_code` in `tennessine.py`). Each commit's APK therefore updates the last one, and the release of a commit already built for development compiles nothing again.
 
 ## Updating
 

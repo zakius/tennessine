@@ -1,11 +1,11 @@
 # The build container's image (tennessine.py build): the packages tools/container-build.sh and
-# build.sh need, and Chromium's build dependencies, installed once instead of at each build.
+# tools/build-sync-lib.sh need, and Chromium's build dependencies, installed once instead of at each build.
 # podman's layer cache rebuilds it only when this file or install-build-deps changes.
 FROM docker.io/library/ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN dpkg --add-architecture i386 && apt-get update -qq && apt-get install -y -qq \
     sudo git curl bzip2 xz-utils unzip zstd lsb-release file nano pigz python3 python3-pillow \
-    imagemagick librsvg2-bin openjdk-21-jdk-headless libgcc-s1:i386 >/dev/null
+    imagemagick librsvg2-bin openjdk-21-jdk-headless libgcc-s1:i386 gyp ninja-build make gcc >/dev/null
 # Chromium's install-build-deps, from the tree of the last build (tennessine.py copies it here).
 COPY install-build-deps.* /tmp/deps/
 RUN [ ! -f /tmp/deps/install-build-deps.sh ] || /tmp/deps/install-build-deps.sh --no-prompt >/dev/null

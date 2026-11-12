@@ -1,6 +1,6 @@
 #!/bin/bash
 # Builds dubna/rust/oganesson_sync (Firefox Sync over application-services, shared with desktop) for Android (arm64, or x64 for the emulator) into
-# OUT/liboganesson_sync.so (build.sh: tennessine/sync_lib in the Chromium tree), which
+# OUT/liboganesson_sync.so (tools/container-build.sh: tennessine/sync_lib in the Chromium tree), which
 # patches/tennessine/firefox-sync-native-lib.patch packages with the APK. Runs in the build container (tennessine.py build).
 #
 # Chromium on Android has no NSS, so NSS is built from source with application-services' own
@@ -26,8 +26,6 @@ ndk_version=r30
 ndk_sha1=5107f898313790e449e87eee2183d9a20602dee9
 rust_version=1.94.0
 as_rev=$(grep -m1 -o 'application-services", rev = "[0-9a-f]*' "$crate/Cargo.toml" | grep -o '[0-9a-f]*$')
-
-sudo apt-get install -y -qq gyp ninja-build make gcc python3 >/dev/null
 
 # NDK
 ndk=$cache/android-ndk-$ndk_version
