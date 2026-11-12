@@ -12,7 +12,7 @@ The first version is minimal, as goals.md planned:
 - **New tab in container**, after New tab in the tab switcher button's long-press menu, and a long press on the tab switcher's own New tab button: the containers, **New temporary container** and **No container**.
 - **Reopen in container**, in a tab's menu in the tab switcher (long-press the tab): the containers but the tab's own, **New temporary container**, and **No container** when the tab is in one. The page opens in a new tab beside the tab, which closes.
 - Each container shows with its icon, in its color, in these menus and in Settings: Firefox's icons (fingerprint, briefcase, dollar, cart, circle, gift, vacation, pet, chill, fence), drawn from the Chromium vector icons oganesson uses for them (`ContainerIcons.java`).
-- In the tab switcher, a container tab's row has a line in the container's color along its bottom, as Firefox draws one under the tab.
+- In the tab switcher, a container tab's row has a line in the container's color along its bottom, as Firefox draws one under the tab. On a tablet's tab strip, the tab has the same line, in Chromium's tab underline. A tab not loaded since the browser started shows its line once it loads.
 - The tab switcher button has the current tab's container's icon, in its color, at the corner of its own icon, so you see where you are before you sign in somewhere. Screen readers say "In container Work".
 - **Settings → Containers**, after Privacy and security: add a container, change its name, color or icon, or delete it; **Open new tabs in** (no container, a container, or a new temporary container each time); and Traffic Control's rules. A new profile has Firefox's four containers: Personal, Work, Banking and Shopping. Each rule change applies to the rules as they are then, so changes sync made while the screen was open stay; a rule whose container was deleted (by sync) shows Deleted container and keeps it until you pick another.
 
@@ -69,6 +69,7 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 |---|---|---|
 | `chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java` | 16 | The link menu's item and its handler. The item has its own id (`Containers.MENU_ID`), so no upstream list of items changes. No Preview page in a container tab: the preview would load outside the container. |
 | `chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java` | 3 | The tab switcher row's color line. |
+| `chrome/android/java/src/org/chromium/chrome/browser/compositor/scene_layer/TabStripSceneLayer.java` | 8 | The tablet tab strip's color line: the tab's underline, which Chromium has for Glic, in the container's color while Glic doesn't use it. |
 | `chrome/android/java/res/xml/main_preferences.xml` | 5 | The Settings entry. |
 | `chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/TabSwitcherActionMenuCoordinator.java` | 6 | A slot after New tab in the tab switcher button's menu, which ToolbarManager fills with New tab in container (the toolbar module can't see our Java). |
 | `chrome/android/java/src/org/chromium/chrome/browser/toolbar/ToolbarManager.java` | 16 | Fills that slot and handles the item: the chooser, then the menu's own New tab, whose tab takes the chosen container. Marks the tab switcher button when the current tab or its page changes. |
@@ -78,5 +79,4 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 
 ## Not done
 
-- The tab strip on tablets shows no color: it is drawn by the compositor (`StripLayoutTab`), which needs a new property and its drawing code.
 - New tab in container on the tablet tab strip's New tab button.

@@ -2,6 +2,7 @@
 # - ChromeContextMenuPopulator.java: a link's Open in container, a chooser of the containers;
 #   no Preview page in a container, as the preview would load outside it.
 # - TabGridViewBinder.java: a tab switcher row has a line in its container's color.
+# - TabStripSceneLayer.java: so has a tab on the tablet tab strip, in Chromium's tab underline.
 # - main_preferences.xml: Settings → Containers, after Privacy and security.
 # - TabSwitcherActionMenuCoordinator.java, ToolbarManager.java: New tab in container, after New tab
 #   in the tab switcher button's long-press menu; the button's dot in the current tab's container color.
@@ -250,3 +251,38 @@
  
          mModel =
                  new PropertyModel.Builder(HubToolbarProperties.ALL_KEYS)
+--- a/chrome/android/java/src/org/chromium/chrome/browser/compositor/scene_layer/TabStripSceneLayer.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/compositor/scene_layer/TabStripSceneLayer.java
+@@ -28,6 +28,7 @@ import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutHelperMa
+ import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutTab;
+ import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutTrailingButtonsCoordinator;
+ import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutUtils;
++import org.chromium.chrome.browser.containers.Containers;
+ import org.chromium.chrome.browser.layouts.scene_layer.SceneLayer;
+ import org.chromium.chrome.browser.layouts.scene_layer.SceneOverlayLayer;
+ import org.chromium.chrome.browser.tab.TabId;
+@@ -378,6 +379,10 @@ public class TabStripSceneLayer extends SceneOverlayLayer {
+                     (StyleUtils.shouldApplyDesktopDensity() || isPinned)
+                             ? StripLayoutUtils.MIN_TAB_WIDTH_DESKTOP_DP
+                             : 0.f;
++            // tennessine: a line in the color of the tab's container, in Chromium's underline
++            // when the Glic underline doesn't use it (chrome/browser/containers).
++            @ColorInt int containerColor = Containers.colorOfTab(st.getTabId());
++            boolean containerLine = containerColor != 0 && st.getUnderlineOpacity() == 0.f;
+ 
+             TabStripSceneLayerJni.get()
+                     .putStripTabLayer(
+@@ -436,10 +441,10 @@ public class TabStripSceneLayer extends SceneOverlayLayer {
+                             st.getLineWidth(),
+                             Math.round(FOLIO_FOOT_LENGTH_DP * mDpToPx),
+                             isPinned,
+-                            st.getUnderlineOpacity(),
++                            containerLine ? 1.f : st.getUnderlineOpacity(),
+                             st.getUnderlineShimmerOffset(),
+-                            underlineStartColor,
+-                            underlineEndColor,
++                            containerLine ? containerColor : underlineStartColor,
++                            containerLine ? containerColor : underlineEndColor,
+                             Math.round(StripLayoutTab.FAVICON_WIDTH * 2 * mDpToPx));
+         }
+     }

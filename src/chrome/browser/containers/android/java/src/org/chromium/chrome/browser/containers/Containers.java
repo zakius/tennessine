@@ -302,14 +302,23 @@ public final class Containers {
     }
 
     /**
+     * The color of tab {@code tabId}'s container, for the line under it in the tab switcher and on
+     * the tablet tab strip (TabStripSceneLayer); 0 outside containers, or while the tab isn't
+     * loaded.
+     */
+    public static int colorOfTab(int tabId) {
+        Tab tab = TabWindowManagerSingleton.getInstance().getTabById(tabId);
+        WebContents webContents = tab != null ? tab.getWebContents() : null;
+        return webContents != null ? ContainersBridge.colorOf(webContents) : 0;
+    }
+
+    /**
      * Draws a line in the color of tab {@code tabId}'s container along the bottom of its tab
      * switcher row {@code row} (TabGridView), as Firefox draws one under the tab; none outside
      * containers.
      */
     public static void markTabRow(ViewGroup row, int tabId) {
-        Tab tab = TabWindowManagerSingleton.getInstance().getTabById(tabId);
-        WebContents webContents = tab != null ? tab.getWebContents() : null;
-        int argb = webContents != null ? ContainersBridge.colorOf(webContents) : 0;
+        int argb = colorOfTab(tabId);
         View line = row.findViewWithTag(LINE_TAG);
         if (argb == 0) {
             if (line != null) line.setVisibility(View.GONE);
