@@ -22,7 +22,7 @@
          </activity-alias>
 +        <!-- tennessine: the launcher entry, one alias per icon in Settings > App icon
 +             (org.chromium.chrome.browser.app_icon.AppIcons); only the chosen one is enabled. -->
-+        {% for icon in ['Indigo', 'Teal', 'Crimson', 'Black', 'White'] %}
++        {% for icon in ['Indigo', 'Teal', 'Crimson', 'Black', 'White', 'Clear', 'ClearBlack'] %}
 +        <activity-alias android:name="org.chromium.chrome.browser.app_icon.{{ icon }}"
 +            android:targetActivity="org.chromium.chrome.browser.ChromeTabbedActivity"
 +            android:enabled="{{ 'true' if loop.first else 'false' }}"

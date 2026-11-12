@@ -28,7 +28,7 @@ public final class AppIcons {
 
     /** The aliases' names after PREFIX, in the manifest's order; the first is the default. */
     static final List<String> NAMES =
-            Arrays.asList("Indigo", "Teal", "Crimson", "Black", "White");
+            Arrays.asList("Indigo", "Teal", "Crimson", "Black", "White", "Clear", "ClearBlack");
 
     private AppIcons() {}
 

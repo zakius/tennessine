@@ -318,7 +318,8 @@ def publish(apk):
     (emptied of its APKs first, so it holds only the ones just moved),
     and signs the index. repo/ and archive/ then go to FDROID_TARGET/www (HOST:DIR, from .env), served by nginx
     (tools/fdroid-compose.yaml) behind the host's Traefik. An APK the repository already has is
-    not added again."""
+    not added again. The repository's own icon is dubna's, as icon.png in that folder:
+    fdroid update empties repo/icons and copies it in."""
     out = ROOT / 'work/build/tennessine/chromium/src/out/release'
     apks = [Path(apk)] if apk else sorted(out.glob('*-arm64-v8a.apk'))
     if len(apks) != 1 or not apks[0].is_file():
