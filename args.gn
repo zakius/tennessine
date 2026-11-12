@@ -2,6 +2,10 @@ chrome_public_manifest_package = "io.github.zakius.tennessine"
 is_desktop_android = true
 target_os = "android"
 target_cpu = "arm64"
+# Android 12: LocationRequest.Builder, which Vanadium's coarse location requests use.
+# Native code stays on Chromium's API 29: at 31 its OpenSL ES audio fails on deprecations.
+default_min_sdk_version = 31
+android_ndk_api_level = 29
 is_component_build = false
 is_debug = false
 is_official_build = true
