@@ -16,6 +16,7 @@
 
 #include "base/android/jni_android.h"
 #include "base/android/jni_bytebuffer.h"
+#include "base/containers/span.h"
 #include "base/functional/callback.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
@@ -233,6 +234,32 @@ static std::vector<std::string> JNI_ContainersBridge_ContainersOfState(
   return std::vector<std::string>(ids.begin(), ids.end());
 }
 
+// The container a tab that isn't loaded opens in, from its saved state: its
+// shown page's, else another page's, as SiteInstanceToRestore() picks it.
+static std::string JNI_ContainersBridge_ContainerOfState(
+    JNIEnv* env,
+    const base::android::JavaRef<jobject>& state,
+    int32_t version) {
+  bool is_off_the_record = false;
+  int current_entry_index = 0;
+  std::vector<sessions::SerializedNavigationEntry> navigations;
+  if (!WebContentsState::ExtractNavigationEntries(
+          base::android::JavaByteBufferToSpan(env, state), version,
+          &is_off_the_record, &current_entry_index, &navigations)) {
+    return std::string();
+  }
+  std::set<std::string> ids;
+  if (current_entry_index >= 0 &&
+      static_cast<size_t>(current_entry_index) < navigations.size()) {
+    containers::AddContainerIds(
+        base::span_from_ref(navigations[current_entry_index]), ids);
+  }
+  if (ids.empty()) {
+    containers::AddContainerIds(navigations, ids);
+  }
+  return ids.empty() ? std::string() : *ids.begin();
+}
+
 // A new tab's WebContents, in container `id`, or outside containers when
 // empty. As WebContentsFactory.createWebContents() makes it.
 static ScopedJavaLocalRef<jobject> JNI_ContainersBridge_CreateWebContents(
@@ -259,20 +286,26 @@ static std::string JNI_ContainersBridge_ContainerOf(
   return contents ? containers::ContainerIdOf(contents) : std::string();
 }
 
+// The color of container `id` as ARGB, or 0 when it isn't one of the user's.
+static jint JNI_ContainersBridge_ColorOfContainer(JNIEnv* env,
+                                                  Profile* profile,
+                                                  const std::string& id) {
+  ContainersService* service =
+      id.empty() ? nullptr : containers::ServiceOf(profile);
+  std::optional<Container> container =
+      service ? service->Get(id) : std::nullopt;
+  return container ? static_cast<jint>(container->color_value()) : 0;
+}
+
 // The color of `contents`' container as ARGB, or 0 outside containers.
 static jint JNI_ContainersBridge_ColorOf(JNIEnv* env,
                                          content::WebContents* contents) {
   if (!contents) {
     return 0;
   }
-  std::string id = containers::ContainerIdOf(contents);
-  ContainersService* service =
-      id.empty() ? nullptr
-                 : containers::ServiceOf(Profile::FromBrowserContext(
-                       contents->GetBrowserContext()));
-  std::optional<Container> container =
-      service ? service->Get(id) : std::nullopt;
-  return container ? static_cast<jint>(container->color_value()) : 0;
+  return JNI_ContainersBridge_ColorOfContainer(
+      env, Profile::FromBrowserContext(contents->GetBrowserContext()),
+      containers::ContainerIdOf(contents));
 }
 
 static jint JNI_ContainersBridge_ColorValue(JNIEnv* env,

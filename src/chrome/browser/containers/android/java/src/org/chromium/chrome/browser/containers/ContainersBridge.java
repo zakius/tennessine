@@ -177,6 +177,19 @@ public final class ContainersBridge {
         return ContainersBridgeJni.get().colorOf(webContents);
     }
 
+    /** The color of container {@code id}, or 0 when it isn't one of the user's. */
+    static int colorOfContainer(Profile profile, String id) {
+        return ContainersBridgeJni.get().colorOfContainer(profile, id);
+    }
+
+    /**
+     * The container a tab that isn't loaded opens in, from its saved {@code state}: its shown
+     * page's, else another page's, as SiteInstanceToRestore() picks it; or "".
+     */
+    static String containerOfState(WebContentsState state) {
+        return ContainersBridgeJni.get().containerOfState(state.buffer(), state.version());
+    }
+
     /** The container a new tab opens in now; a new temporary one when the setting says so. */
     static String newTabContainer(Profile profile) {
         return ContainersBridgeJni.get().newTabContainer(profile);
@@ -324,6 +337,9 @@ public final class ContainersBridge {
 
         int colorOf(@JniType("content::WebContents*") WebContents webContents);
 
+        int colorOfContainer(
+                @JniType("Profile*") Profile profile, @JniType("std::string") String id);
+
         int colorValue(@JniType("std::string") String color);
 
         void openInNewTab(
@@ -363,5 +379,8 @@ public final class ContainersBridge {
 
         @JniType("std::vector<std::string>")
         String[] containersOfState(ByteBuffer state, int version);
+
+        @JniType("std::string")
+        String containerOfState(ByteBuffer state, int version);
     }
 }

@@ -28,6 +28,7 @@ import org.chromium.chrome.browser.content.WebContentsFactory;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabLaunchType;
+import org.chromium.chrome.browser.tab.WebContentsState;
 import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.components.browser_ui.widget.ListItemBuilder;
@@ -37,6 +38,8 @@ import org.chromium.ui.modelutil.MVCListAdapter.ListItem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * Tabs in containers: the container a new tab starts in, the link menu's "Open in container", the
@@ -302,14 +305,29 @@ public final class Containers {
     }
 
     /**
+     * The containers of tabs that aren't loaded, from their saved state: decoding it on each of the
+     * tab strip's frames is too slow, and a tab's container doesn't change.
+     */
+    private static final Map<Tab, String> sSavedContainers = new WeakHashMap<>();
+
+    /**
      * The color of tab {@code tabId}'s container, for the line under it in the tab switcher and on
-     * the tablet tab strip (TabStripSceneLayer); 0 outside containers, or while the tab isn't
-     * loaded.
+     * the tablet tab strip (TabStripSceneLayer); 0 outside containers. A tab not loaded since a
+     * restart has no WebContents yet, so its container comes from its saved state.
      */
     public static int colorOfTab(int tabId) {
         Tab tab = TabWindowManagerSingleton.getInstance().getTabById(tabId);
-        WebContents webContents = tab != null ? tab.getWebContents() : null;
-        return webContents != null ? ContainersBridge.colorOf(webContents) : 0;
+        if (tab == null) return 0;
+        WebContents webContents = tab.getWebContents();
+        if (webContents != null) return ContainersBridge.colorOf(webContents);
+        String id = sSavedContainers.get(tab);
+        if (id == null) {
+            WebContentsState state = tab.getWebContentsState();
+            if (state == null) return 0;
+            id = ContainersBridge.containerOfState(state);
+            sSavedContainers.put(tab, id);
+        }
+        return id.isEmpty() ? 0 : ContainersBridge.colorOfContainer(tab.getProfile(), id);
     }
 
     /**
