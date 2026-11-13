@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2026 The tennessine Authors. Use of this source code is governed by a BSD-style
+     license that can be found in the LICENSE file. -->
+<!-- dubna's strings that tennessine uses, for oganesson_strings.grd (dubna/src), whose header is
+     chrome/grit/oganesson_strings.h. A part's file must be in this folder: grit reads it from
+     the .grd's folder. -->
+<grit-part>
+  <part file="oganesson_containers_strings.grdp" />
+  <part file="oganesson_firefox_sync_strings.grdp" />
+</grit-part>

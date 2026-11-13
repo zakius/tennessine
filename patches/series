@@ -41,11 +41,13 @@ patches/titanium/crbug-444024982-api-31.patch
 patches/tennessine/ublock-installer.patch
 patches/tennessine/dns-api.patch
 
+# Our strings in their own .grd, from dubna; src/chrome/app/oganesson_strings.grdp lists its parts.
+dubna/patches/own-strings.patch
+
 # Firefox Sync from dubna (dubna/src/chrome/browser/firefox_sync, dubna/rust/); its Android side
 # is src/chrome/browser/firefox_sync/platform and android/.
 dubna/patches/firefox-sync.patch
 dubna/patches/firefox-sync-remote-tabs.patch
-patches/tennessine/firefox-sync-strings.patch
 patches/tennessine/firefox-sync-native-lib.patch
 patches/tennessine/firefox-sync-android.patch
 patches/tennessine/firefox-sync-send-tabs.patch

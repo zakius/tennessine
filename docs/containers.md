@@ -60,7 +60,6 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 | `content/browser/browsing_instance.cc` | 5 | A SiteInstance in a container always gets a site, as a guest's does, so it keeps the container's partition. Android's native New tab page (`chrome-native:`) left one without a site, which reported the default partition, and the tab's next navigation crashed the browser on a CHECK. |
 | `chrome/android/BUILD.gn` | 2 | `ContainersBridge.java`'s JNI. |
 | `tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni` | 4 | Our Java in `chrome_java` (Vanadium's list). |
-| `chrome/app/generated_resources.grd`, `.gritdeps` | 2 | dubna's strings (the default containers' names, "Temporary 2"). |
 | `android_chrome_ext_strings.grdp`, `android_chrome_strings_pl.xtb` | 16 | The menu item, the Settings title and the chooser's two choices, in English and Polish. Settings' other text is English only, as in Web apps. |
 
 `patches/tennessine/containers-ui.patch`:
