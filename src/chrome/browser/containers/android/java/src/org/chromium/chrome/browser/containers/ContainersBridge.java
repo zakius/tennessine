@@ -4,9 +4,13 @@
 
 package org.chromium.chrome.browser.containers;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.jni_zero.CalledByNative;
 import org.jni_zero.JniType;
@@ -15,6 +19,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import org.chromium.base.ActivityState;
+import org.chromium.base.ApplicationStatus;
 import org.chromium.base.ContextUtils;
 import org.chromium.base.IntentUtils;
 import org.chromium.build.annotations.NullMarked;
@@ -314,6 +320,99 @@ public final class ContainersBridge {
         return ids.toArray(new String[0]);
     }
 
+    /**
+     * Asks whether to delete container {@code id}, which sync deleted (containers_platform.h's
+     * AskToDeleteSyncedContainer). Waits for every tab to be loaded, so the question counts them
+     * all, and for a window to show it on, as at a start. Answers nothing when the user dismisses
+     * the question.
+     */
+    @CalledByNative
+    private static void askToDeleteSyncedContainer(
+            long request,
+            @JniType("std::string") String id,
+            @JniType("std::string") String title,
+            @JniType("std::string") String deleteText,
+            @JniType("std::string") String keepText) {
+        TabWindowManager manager = TabWindowManagerSingleton.getInstance();
+        if (!manager.isAllTabStateInitialized()) {
+            manager.addObserver(
+                    new TabWindowManager.Observer() {
+                        @Override
+                        public void onAllTabModelStateInitialized() {
+                            manager.removeObserver(this);
+                            askToDeleteSyncedContainer(request, id, title, deleteText, keepText);
+                        }
+                    });
+            return;
+        }
+        Activity activity = ApplicationStatus.getLastTrackedFocusedActivity();
+        if (activity instanceof AppCompatActivity && !activity.isFinishing()) {
+            ask(activity, request, id, title, deleteText, keepText);
+            return;
+        }
+        ApplicationStatus.registerStateListenerForAllActivities(
+                new ApplicationStatus.ActivityStateListener() {
+                    @Override
+                    public void onActivityStateChange(Activity shown, int state) {
+                        if (state != ActivityState.RESUMED
+                                || !(shown instanceof AppCompatActivity)) {
+                            return;
+                        }
+                        ApplicationStatus.unregisterActivityStateListener(this);
+                        ask(shown, request, id, title, deleteText, keepText);
+                    }
+                });
+    }
+
+    private static void ask(
+            Activity activity,
+            long request,
+            String id,
+            String title,
+            String deleteText,
+            String keepText) {
+        boolean[] answer = new boolean[2];
+        new AlertDialog.Builder(activity)
+                .setTitle(title)
+                .setMessage(ContainersBridgeJni.get().syncDeletedMessage(tabsInContainer(id)))
+                .setPositiveButton(
+                        deleteText,
+                        (dialog, which) -> {
+                            answer[0] = true;
+                            answer[1] = true;
+                        })
+                .setNegativeButton(keepText, (dialog, which) -> answer[0] = true)
+                .setOnDismissListener(
+                        dialog ->
+                                ContainersBridgeJni.get()
+                                        .onSyncDeletedAnswer(request, answer[0], answer[1]))
+                .show();
+    }
+
+    /** How many tabs are in container {@code id}: of every window and archived, loaded or not. */
+    private static int tabsInContainer(String id) {
+        List<TabModelSelector> selectors = openSelectors();
+        TabModelSelector archived =
+                TabWindowManagerSingleton.getInstance().getArchivedTabModelSelector();
+        if (archived != null) selectors.add(archived);
+        int count = 0;
+        for (TabModelSelector selector : selectors) {
+            TabList tabs = selector.getModel(/* incognito= */ false);
+            for (int i = 0; i < tabs.getCount(); i++) {
+                Tab tab = tabs.getTabAt(i);
+                if (tab == null || tab.isDestroyed()) continue;
+                WebContents contents = tab.getWebContents();
+                WebContentsState state = tab.getWebContentsState();
+                String container =
+                        contents != null
+                                ? containerOf(contents)
+                                : state != null ? containerOfState(state) : "";
+                if (container.equals(id)) count++;
+            }
+        }
+        return count;
+    }
+
     /** Opens {@code url} in a new tab of the browser, out of a custom tab or a web app. */
     @CalledByNative
     private static void openInBrowser(@JniType("std::string") String url) {
@@ -382,5 +481,10 @@ public final class ContainersBridge {
 
         @JniType("std::string")
         String containerOfState(ByteBuffer state, int version);
+
+        @JniType("std::string")
+        String syncDeletedMessage(int tabs);
+
+        void onSyncDeletedAnswer(long request, boolean answered, boolean deleteIt);
     }
 }

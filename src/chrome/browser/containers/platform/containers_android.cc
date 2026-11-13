@@ -21,6 +21,7 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/memory/raw_ptr.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "chrome/browser/android/tab_android.h"
 #include "chrome/browser/containers/container.h"
@@ -34,12 +35,14 @@
 #include "chrome/browser/ui/android/tab_model/tab_model.h"
 #include "chrome/browser/ui/android/tab_model/tab_model_list.h"
 #include "chrome/common/webui_url_constants.h"
+#include "chrome/grit/generated_resources.h"
 #include "components/prefs/pref_service.h"
 #include "components/sessions/core/serialized_navigation_entry.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "url/gurl.h"
 
 // Must come after all headers that specialize FromJniType() / ToJniType().
@@ -173,6 +176,20 @@ void GetContainersInUse(Profile* profile, InUseCallback callback) {
                                          reinterpret_cast<jlong>(request));
 }
 
+// Java waits for the tabs and a window, counts the tabs, loaded or not,
+// and asks (SyncDeletedMessage()).
+void AskToDeleteSyncedContainer(Profile* profile,
+                                const Container& container,
+                                base::OnceCallback<void(bool)> callback) {
+  auto* request = new base::OnceCallback<void(bool)>(std::move(callback));
+  Java_ContainersBridge_askToDeleteSyncedContainer(
+      AttachCurrentThread(), reinterpret_cast<jlong>(request), container.id,
+      l10n_util::GetStringFUTF8(IDS_CONTAINERS_SYNC_DELETED_TITLE,
+                                base::UTF8ToUTF16(container.name)),
+      l10n_util::GetStringUTF8(IDS_CONTAINERS_SYNC_DELETED_DELETE),
+      l10n_util::GetStringUTF8(IDS_CONTAINERS_SYNC_DELETED_KEEP));
+}
+
 void CloseTabsInContainer(Profile* profile, const std::string& id) {
   for (TabModel* model : ModelsOf(profile)) {
     // Backwards: closing a tab moves the ones after it.
@@ -214,6 +231,26 @@ static void JNI_ContainersBridge_OnTabsRestored(
     }
   }
   std::move(request->callback).Run(std::move(ids));
+}
+
+// The text of the question about a container sync deleted, which has
+// `tabs` tabs open.
+static std::string JNI_ContainersBridge_SyncDeletedMessage(JNIEnv* env,
+                                                           jint tabs) {
+  return l10n_util::GetPluralStringFUTF8(IDS_CONTAINERS_SYNC_DELETED_BODY,
+                                         tabs);
+}
+
+// The user's answer to AskToDeleteSyncedContainer(), if they gave one.
+static void JNI_ContainersBridge_OnSyncDeletedAnswer(JNIEnv* env,
+                                                     jlong request_ptr,
+                                                     jboolean answered,
+                                                     jboolean delete_it) {
+  std::unique_ptr<base::OnceCallback<void(bool)>> callback(
+      reinterpret_cast<base::OnceCallback<void(bool)>*>(request_ptr));
+  if (answered) {
+    std::move(*callback).Run(delete_it);
+  }
 }
 
 // The containers of the pages in a saved tab state, as a tab that isn't

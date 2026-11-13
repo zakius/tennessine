@@ -12,6 +12,7 @@ source_set("platform") {
   deps = [
     "//base",
     "//chrome/android:chrome_jni_headers",
+    "//chrome/app:generated_resources",
     "//chrome/browser/profiles:profile",
     "//chrome/browser/tab",
     "//chrome/browser/ui/android/tab_model",
