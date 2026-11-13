@@ -1,6 +1,6 @@
 #!/bin/bash
-# Steps that need gclient's dependencies, sourced by build.sh after the sync. Everything else is
-# in patches/series.
+# Steps that need gclient's dependencies, sourced by tools/container-build.sh after the sync.
+# Everything else is in patches/series.
 
 # App icon: tennessine's (tools/app_icon.py), drawn over Vanadium's PNGs at their sizes. The other
 # icons in Settings > App icon are in src/chrome/browser/app_icon.
