@@ -33,8 +33,11 @@ jobs:
           git merge -q --ff-only origin/main
           git submodule update --init -q
           echo "RELEASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      # A build killed with its runner (a restart of the runner service) leaves its stopped
+      # container, whose name then stops every later build. Under the lock no other build runs,
+      # so a container of that name is such a leftover.
       - name: Build
-        run: cd "$MAIN" && flock "$BUILDS_LOCK" ./tennessine.py build --release
+        run: cd "$MAIN" && flock "$BUILDS_LOCK" sh -c 'podman rm -f --ignore tennessine-build && ./tennessine.py build --release'
       - name: Publish to the F-Droid repository
         run: cd "$MAIN" && ./tennessine.py publish
       - name: GitHub release
