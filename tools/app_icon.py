@@ -240,9 +240,13 @@ def main():
     res = ROOT / 'res/app_icon'
     d512, d108 = path_data(ts, 512), path_data(ts, 108, 18)
     write(res / 'glyph.svg', svg(512, '<path d="%s"/>' % d512))
-    # Chromium's PNGs: the adaptive icon's layers, and the round icon older launchers show.
-    write(res / 'layered_app_icon_background.svg', svg(108, '<rect width="108" height="108" fill="%s"/>' % default_bg))
-    write(res / 'layered_app_icon.svg', svg(108, '<rect width="108" height="108" fill="%s"/>\n<path fill="#fff" d="%s"/>' % (default_bg, d108)))
+    # Chromium's PNGs. Each layered one is the whole icon, glyph included: the application's icon
+    # draws layered_app_icon as its foreground, and its round icon draws layered_app_icon_background
+    # under a transparent foreground. Some phones hand apps such as F-Droid the round one.
+    layered = svg(108, '<rect width="108" height="108" fill="%s"/>\n<path fill="#fff" d="%s"/>' % (default_bg, d108))
+    write(res / 'layered_app_icon_background.svg', layered)
+    write(res / 'layered_app_icon.svg', layered)
+    # The round icon older launchers show.
     write(res / 'app_icon.svg', svg(512, '<circle cx="256" cy="256" r="240" fill="%s"/>\n<path fill="#fff" d="%s"/>'
                                     % (default_bg, path_data(ts, 512, 16))))
 
