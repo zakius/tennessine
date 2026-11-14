@@ -14,6 +14,7 @@ import org.chromium.base.task.PostTask;
 import org.chromium.base.task.TaskTraits;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.build.annotations.Nullable;
+import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.profiles.ProfileManager;
 import org.chromium.components.background_task_scheduler.BackgroundTaskSchedulerFactory;
 import org.chromium.components.background_task_scheduler.NativeBackgroundTask;
@@ -24,7 +25,9 @@ import org.chromium.components.background_task_scheduler.TaskParameters;
 /**
  * Fetches the tabs and close requests other devices sent (FirefoxSyncService::PollCommands) at the
  * receive interval while signed in, with the browser in the background or not running. A running
- * browser also fetches them on the service's own timer and when it comes to the front.
+ * browser also fetches them on the service's own timer and when it comes to the front. Run once
+ * as FIREFOX_SYNC_PUSH_JOB_ID, it fetches them after a push that came while the browser wasn't
+ * running (SunupPush).
  */
 @NullMarked
 public class ReceiveTabsTask extends NativeBackgroundTask {
@@ -71,10 +74,15 @@ public class ReceiveTabsTask extends NativeBackgroundTask {
     @Override
     protected void onStartTaskWithNative(
             Context context, TaskParameters taskParameters, TaskFinishedCallback callback) {
-        FirefoxSyncBridge bridge =
-                new FirefoxSyncBridge(ProfileManager.getLastUsedRegularProfile(), this::poll);
+        Profile profile = ProfileManager.getLastUsedRegularProfile();
+        FirefoxSyncBridge bridge = new FirefoxSyncBridge(profile, this::poll);
         mBridge = bridge;
-        bridge.pollCommands();
+        // A push through Sunup (SunupPush) fetches even right after another fetch.
+        if (taskParameters.getTaskId() == TaskIds.FIREFOX_SYNC_PUSH_JOB_ID) {
+            SunupPush.onPushReceived(profile);
+        } else {
+            bridge.pollCommands();
+        }
         PostTask.postDelayedTask(
                 TaskTraits.UI_DEFAULT,
                 () -> {
@@ -94,7 +102,8 @@ public class ReceiveTabsTask extends NativeBackgroundTask {
 
     @Override
     protected boolean onStopTaskBeforeNativeLoaded(Context context, TaskParameters taskParameters) {
-        // A periodic task runs again at its next interval.
+        // A periodic task runs again at its next interval; what a push announced waits on the
+        // accounts server for the next fetch.
         return false;
     }
 

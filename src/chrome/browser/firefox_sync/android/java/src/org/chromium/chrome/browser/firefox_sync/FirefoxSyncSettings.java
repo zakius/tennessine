@@ -6,6 +6,7 @@ package org.chromium.chrome.browser.firefox_sync;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
@@ -20,6 +21,7 @@ import androidx.preference.PreferenceScreen;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import org.chromium.base.ContextUtils;
 import org.chromium.base.supplier.MonotonicObservableSupplier;
 import org.chromium.base.supplier.ObservableSuppliers;
 import org.chromium.base.supplier.SettableMonotonicObservableSupplier;
@@ -31,8 +33,9 @@ import org.chromium.components.browser_ui.settings.ChromeSwitchPreference;
 
 /**
  * Settings → Firefox Sync: the account, the sync server, how often to check for tabs other devices
- * sent, a switch per data type, and the tabs of other Firefox devices. Mirrors oganesson's settings
- * section; the screen is rebuilt from the service's status whenever it changes.
+ * sent, receiving them at once through Sunup, a switch per data type, and the tabs of other Firefox
+ * devices. Mirrors oganesson's settings section; the screen is rebuilt from the service's status
+ * whenever it changes, and from Sunup's answers.
  */
 @NullMarked
 public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
@@ -43,17 +46,26 @@ public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
     private @Nullable FirefoxSyncBridge mBridge;
     // Sign in was tapped: leave for the sign-in tab once it opens, stay to show an error.
     private boolean mSignInPending;
+    // Held: SharedPreferences keeps its listeners only weakly.
+    private final SharedPreferences.OnSharedPreferenceChangeListener mSunupListener =
+            (prefs, key) -> {
+                if (key != null && key.startsWith(SunupPush.PREF_PREFIX)) render();
+            };
 
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         mPageTitle.set(getString(R.string.firefox_sync_title));
         setPreferenceScreen(getPreferenceManager().createPreferenceScreen(getStyledContext()));
         mBridge = new FirefoxSyncBridge(getProfile(), this::render);
+        ContextUtils.getAppSharedPreferences()
+                .registerOnSharedPreferenceChangeListener(mSunupListener);
         render();
     }
 
     @Override
     public void onDestroy() {
+        ContextUtils.getAppSharedPreferences()
+                .unregisterOnSharedPreferenceChangeListener(mSunupListener);
         if (mBridge != null) {
             mBridge.destroy();
             mBridge = null;
@@ -99,6 +111,7 @@ public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
             screen.addPreference(button(context, "Sync now", bridge::syncNow));
             screen.addPreference(
                     receiveInterval(context, bridge, status.optInt("receiveInterval")));
+            if (SunupPush.isSunupInstalled()) screen.addPreference(instantTabs(context));
             screen.addPreference(
                     button(
                             context,
@@ -261,6 +274,25 @@ public class FirefoxSyncSettings extends ChromeBaseSettingsFragment {
                                         .show());
         if (checked >= 0) pref.setSummary(labels[checked]);
         return pref;
+    }
+
+    /** Tabs at once through Sunup (SunupPush), off by default. */
+    private Preference instantTabs(Context context) {
+        ChromeSwitchPreference toggle = new ChromeSwitchPreference(context);
+        toggle.setTitle("Receive tabs instantly (via Sunup)");
+        String problem = SunupPush.getProblem();
+        toggle.setSummary(
+                problem != null
+                        ? problem
+                        : "Through Mozilla's push server, with Sunup. Without it, tabs arrive when"
+                                + " the browser checks for them.");
+        toggle.setChecked(SunupPush.isEnabled());
+        toggle.setOnPreferenceChangeListener(
+                (pref, value) -> {
+                    SunupPush.setEnabled((Boolean) value);
+                    return true;
+                });
+        return toggle;
     }
 
     private Context getStyledContext() {

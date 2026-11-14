@@ -4,8 +4,9 @@
 
 # Settings → Firefox Sync, tabs to and from other devices (SendTab.java), and
 # the background task that fetches the tabs other devices sent
-# (ReceiveTabsTask.java), which chrome_java's ChromeBackgroundTaskFactory runs
-# (tennessine/firefox-sync-receive-tabs.patch).
+# (ReceiveTabsTask.java), which chrome_java's ChromeBackgroundTaskFactory runs,
+# and receiving them at once through Sunup (SunupPush.java), whose receiver and
+# service are in the manifest (tennessine/firefox-sync-receive-tabs.patch).
 # Joins chrome_java through Vanadium's chrome_java_ext_deps.gni
 # (tennessine/firefox-sync-android.patch); the JNI side,
 # firefox_sync_bridge.cc and android_platform.cc, is in ../platform.
@@ -18,6 +19,9 @@ _sources = [
   "java/src/org/chromium/chrome/browser/firefox_sync/FirefoxSyncSettings.java",
   "java/src/org/chromium/chrome/browser/firefox_sync/ReceiveTabsTask.java",
   "java/src/org/chromium/chrome/browser/firefox_sync/SendTab.java",
+  "java/src/org/chromium/chrome/browser/firefox_sync/SunupPush.java",
+  "java/src/org/chromium/chrome/browser/firefox_sync/SunupRaiseService.java",
+  "java/src/org/chromium/chrome/browser/firefox_sync/SunupReceiver.java",
 ]
 
 generate_jni("jni_headers") {
@@ -25,6 +29,7 @@ generate_jni("jni_headers") {
     "java/src/org/chromium/chrome/browser/firefox_sync/FirefoxSyncBridge.java",
     "java/src/org/chromium/chrome/browser/firefox_sync/ReceiveTabsTask.java",
     "java/src/org/chromium/chrome/browser/firefox_sync/SendTab.java",
+    "java/src/org/chromium/chrome/browser/firefox_sync/SunupPush.java",
   ]
 }
 

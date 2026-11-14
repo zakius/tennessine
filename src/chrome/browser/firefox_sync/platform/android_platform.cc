@@ -4,11 +4,11 @@
 
 // Firefox Sync's Android side (see dubna's firefox_sync_platform.h), the JNI
 // for SendTab.java, which sends tabs to other devices, and the fetches of the
-// tabs other devices sent: when the browser comes to the front, and in
-// ReceiveTabsTask.java's background task. Other devices' tabs need nothing
-// here: dubna's RemoteTabs feeds them to Recent tabs through Chromium's synced
-// sessions. Android has no account picture on the profile, so that stays
-// Platform's no-op.
+// tabs other devices sent: when the browser comes to the front, in
+// ReceiveTabsTask.java's background task, and on a push through Sunup
+// (SunupPush.java). Other devices' tabs need nothing here: dubna's RemoteTabs
+// feeds them to Recent tabs through Chromium's synced sessions. Android has no
+// account picture on the profile, so that stays Platform's no-op.
 
 #include <algorithm>
 #include <memory>
@@ -41,6 +41,7 @@
 // Must come after all headers that specialize FromJniType() / ToJniType().
 #include "chrome/browser/firefox_sync/android/jni_headers/ReceiveTabsTask_jni.h"
 #include "chrome/browser/firefox_sync/android/jni_headers/SendTab_jni.h"
+#include "chrome/browser/firefox_sync/android/jni_headers/SunupPush_jni.h"
 
 namespace firefox_sync {
 
@@ -61,7 +62,7 @@ class AndroidPlatform : public Platform {
     // listener may have missed the browser's start, and a new version's first
     // start has no task scheduled.
     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE, base::BindOnce(&AndroidPlatform::ScheduleReceiveTabs,
+        FROM_HERE, base::BindOnce(&AndroidPlatform::Start,
                                   weak_factory_.GetWeakPtr()));
   }
 
@@ -128,6 +129,16 @@ class AndroidPlatform : public Platform {
     ScheduleReceiveTabs();
   }
 
+  void Start() {
+    ScheduleReceiveTabs();
+    std::string endpoint =
+        Java_SunupPush_start(base::android::AttachCurrentThread());
+    FirefoxSyncService* service = GetService(profile_);
+    if (service && !endpoint.empty()) {
+      service->SetPushEndpoint(endpoint);
+    }
+  }
+
   // The background task runs at the receive interval while signed in. The
   // settings screen replaces it when the interval changes or the account
   // signs out; this one only adds it, and cancels it once signed out.
@@ -187,6 +198,20 @@ static void JNI_SendTab_SendTab(JNIEnv* env,
   }
 }
 
+static void JNI_SunupPush_SetPushEndpoint(JNIEnv* env,
+                                          Profile* profile,
+                                          const std::string& endpoint) {
+  if (auto* service = GetService(profile)) {
+    service->SetPushEndpoint(endpoint);
+  }
+}
+
+static void JNI_SunupPush_OnPushReceived(JNIEnv* env, Profile* profile) {
+  if (auto* service = GetService(profile)) {
+    service->OnPushReceived();
+  }
+}
+
 std::unique_ptr<Platform> CreatePlatform(Profile* profile) {
   return std::make_unique<AndroidPlatform>(profile);
 }
@@ -204,3 +229,4 @@ base::FilePath SyncLibraryPath() {
 
 DEFINE_JNI(ReceiveTabsTask)
 DEFINE_JNI(SendTab)
+DEFINE_JNI(SunupPush)
