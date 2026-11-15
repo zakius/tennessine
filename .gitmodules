@@ -6,4 +6,4 @@
 	url = https://github.com/jqssun/android-titanium-browser.git
 [submodule "dubna"]
 	path = dubna
-	url = git@github.com:zakius/dubna.git
+	url = https://github.com/zakius/dubna.git
