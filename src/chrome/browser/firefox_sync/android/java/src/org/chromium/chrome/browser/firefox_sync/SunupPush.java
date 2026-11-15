@@ -108,6 +108,10 @@ public class SunupPush {
     }
 
     static void onNewEndpoint(String endpoint) {
+        // Sunup answers each start's registration with the endpoint start() already handed over.
+        // Another subscribe_push would race the start's first fetch, whose saved account it could
+        // overwrite with an older one, so that the fetch after gets the same tabs again.
+        if (endpoint.equals(prefs().getString(ENDPOINT_PREF, null))) return;
         String problem =
                 mozillaEndpoint(endpoint).isEmpty()
                         ? "Sunup's push server isn't Mozilla's, and Mozilla accounts take no"
