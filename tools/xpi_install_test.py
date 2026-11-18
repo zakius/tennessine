@@ -122,7 +122,8 @@ def tap_text(pattern):
 
 
 def downloaded():
-    return {name for name in shell(f'ls {DOWNLOADS}').split()
+    # A taken name gets a number: "test (1).xpi".
+    return {name for name in shell(f'ls -1 {DOWNLOADS}').splitlines()
             if name.startswith('test') and name.endswith('.xpi')}
 
 
