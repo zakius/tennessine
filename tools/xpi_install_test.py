@@ -5,7 +5,8 @@ the emulator or an attached device, with the browser installed there.
 A local server, reached through `adb reverse`, serves a page whose link to a
 test .xpi fills the screen. The test taps it, accepts the install prompt, and
 finds the add-on running with the ID its Gecko ID gives (dubna's
-firefox_gecko_id.cc), then uninstalls it. With APK, it first installs that
+firefox_gecko_id.cc), then uninstalls it. Each run after the first downloads
+the .xpi again, while the earlier ones are still in Downloads. With APK, it first installs that
 build over the installed one (an x86_64 build for the emulator: ./tennessine.py
 build x64).
 
@@ -119,7 +120,6 @@ def tap_text(pattern):
 
 def run_once(port, addon_id):
     uninstall(addon_id)
-    shell(f'rm -f {DOWNLOADS}/test*.xpi')
     url = f'http://localhost:{port}/'
     shell(f'am start -a android.intent.action.VIEW -d {url} {PACKAGE}')
     wait_for(lambda: any(t['type'] == 'page' and t['url'] == url for t in targets()),
@@ -155,6 +155,9 @@ def main():
         port = server.server_address[1]
         adb('reverse', f'tcp:{port}', f'tcp:{port}')
         addon_id = extension_id(GECKO_ID)
+        # Once: each later run downloads the .xpi again, over a file of its
+        # name, which takes a new one.
+        shell(f'rm -f {DOWNLOADS}/test*.xpi')
         failures = 0
         try:
             for run in range(1, args.repeat + 1):
