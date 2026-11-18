@@ -172,8 +172,15 @@ def tap_link():
     shell(f'input tap {width // 2} {height // 2}')
 
 
+def tap_url_bar():
+    try:
+        return tap(resource_id='url_bar')
+    except subprocess.CalledProcessError:
+        return False  # uiautomator, killed under a high load: try again
+
+
 def type_url(url):
-    wait_for(lambda: tap(resource_id='url_bar'), 10, 'the address bar')
+    wait_for(tap_url_bar, 30, 'the address bar')
     time.sleep(1)
     shell(f"input text '{url}'")
     shell('input keyevent KEYCODE_ENTER')
