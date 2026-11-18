@@ -184,13 +184,14 @@ def set_up(apk):
     shell(f'pm grant {PACKAGE} android.permission.POST_NOTIFICATIONS')
     shell('cmd uimode night yes')
     # Past the first run once; the command line only for that, as the browser
-    # warns about it while it's there.
+    # warns about it while it's there. A userdebug build reads it from
+    # /data/local/tmp; SELinux keeps apps out of /data/local itself.
     shell('echo "_ --disable-fre --no-default-browser-check --no-first-run"'
-          ' > /data/local/chrome-command-line')
+          ' > /data/local/tmp/chrome-command-line')
     shell(f'am start -a android.intent.action.VIEW -d {WIKI}{PAGES[0]} {PACKAGE}')
     time.sleep(25)  # first run, uBlock Origin's install
     shell(f'am force-stop {PACKAGE}')
-    shell('rm -f /data/local/chrome-command-line')
+    shell('rm -f /data/local/tmp/chrome-command-line')
     # The address bar at the bottom: Local State's pref and the toolbar's own,
     # and the rearranged toolbar.
     uid = shell(f'stat -c %u {DATA}').strip()
