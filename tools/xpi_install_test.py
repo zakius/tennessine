@@ -5,12 +5,15 @@ the emulator or an attached device, with the browser installed there.
 A local server, reached through `adb reverse`, serves a page whose link to a
 test .xpi fills the screen. The test taps it, accepts the install prompt, and
 finds the add-on running with the ID its Gecko ID gives (dubna's
-firefox_gecko_id.cc), then uninstalls it. Each run after the first downloads
-the .xpi again, while the earlier ones are still in Downloads. With APK, it first installs that
+firefox_gecko_id.cc), then uninstalls it. The first run downloads the .xpi
+to a free name; each later one over the file of the run before, where
+Android asks whether to overwrite it. Each checks that its download took a
+new name. With APK, it first installs that
 build over the installed one (an x86_64 build for the emulator: ./tennessine.py
 build x64).
 
 Usage: tools/xpi_install_test.py [--repeat N] [APK]
+  N: the runs, 2 by default, so that one meets a file of the .xpi's name
 """
 import argparse
 import functools
@@ -118,8 +121,15 @@ def tap_text(pattern):
     return False
 
 
-def run_once(port, addon_id):
+def downloaded():
+    return {name for name in shell(f'ls {DOWNLOADS}').split()
+            if name.startswith('test') and name.endswith('.xpi')}
+
+
+def run_once(port, addon_id, again):
     uninstall(addon_id)
+    before = downloaded()
+    assert bool(before) == again, f'earlier downloads: {sorted(before)}'
     url = f'http://localhost:{port}/'
     shell(f'am start -a android.intent.action.VIEW -d {url} {PACKAGE}')
     wait_for(lambda: any(t['type'] == 'page' and t['url'] == url for t in targets()),
@@ -136,13 +146,15 @@ def run_once(port, addon_id):
                                   expression='window.started === true')['result']['value'],
              30, 'its background script')
     session.close()
+    new = downloaded() - before
+    assert len(new) == 1, f'new downloads: {sorted(new)}'
     uninstall(addon_id)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('apk', nargs='?')
-    parser.add_argument('--repeat', type=int, default=1)
+    parser.add_argument('--repeat', type=int, default=2)
     args = parser.parse_args()
     if args.apk:
         adb('install', '-r', args.apk)
@@ -162,7 +174,7 @@ def main():
         try:
             for run in range(1, args.repeat + 1):
                 try:
-                    run_once(port, addon_id)
+                    run_once(port, addon_id, again=run > 1)
                     print(f'{run}/{args.repeat} pass')
                 except AssertionError as error:
                     failures += 1
