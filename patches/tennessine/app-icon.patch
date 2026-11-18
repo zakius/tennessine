@@ -1,7 +1,9 @@
 # Settings > App icon (src/chrome/browser/app_icon): the launcher icon is one of several
 # activity-aliases of ChromeTabbedActivity, each with its own icon, and only the chosen one is
 # enabled. .Main keeps its other categories but is no longer the launcher entry, so Chromium's
-# checks for .Main accept the aliases too.
+# checks for .Main accept the aliases too. Each window also carries the chosen icon in its
+# TaskDescription: Recents shows the task's root activity's icon, and a window from "Open in new
+# window" starts ChromeTabbedActivity itself, not an alias.
 --- a/chrome/android/java/AndroidManifest.xml
 +++ b/chrome/android/java/AndroidManifest.xml
 @@ -688,18 +688,34 @@
@@ -71,7 +73,7 @@
              intent.setClass(appContext, ChromeTabbedActivity.class);
 --- a/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/ChromeTabbedActivity.java
-@@ -451,12 +451,19 @@
+@@ -451,12 +451,30 @@
      // Name of the ChromeTabbedActivity alias that handles MAIN intents.
      public static final String MAIN_LAUNCHER_ACTIVITY_NAME = "com.google.android.apps.chrome.Main";
  
@@ -87,6 +89,17 @@
 +    public static boolean isMainLauncherAlias(@Nullable String name) {
 +        return MAIN_LAUNCHER_ACTIVITY_NAME.equals(name)
 +                || org.chromium.chrome.browser.app_icon.AppIcons.isAlias(name);
++    }
++
++    // tennessine: the chosen App icon in Recents, also for a window that didn't start through
++    // its alias, such as one from "Open in new window".
++    @Override
++    protected void setDefaultTaskDescription() {
++        setTaskDescription(
++                new android.app.ActivityManager.TaskDescription(
++                        null,
++                        org.chromium.chrome.browser.app_icon.AppIcons.currentIcon(this),
++                        getColor(R.color.default_task_description_color)));
 +    }
 +
      public static final String HISTOGRAM_DRAGGED_TAB_OPENED_NEW_WINDOW =

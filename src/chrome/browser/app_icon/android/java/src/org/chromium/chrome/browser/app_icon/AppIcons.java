@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.build.annotations.Nullable;
+import org.chromium.chrome.R;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +30,17 @@ public final class AppIcons {
     /** The aliases' names after PREFIX, in the manifest's order; the first is the default. */
     static final List<String> NAMES =
             Arrays.asList("Indigo", "Teal", "Crimson", "Black", "White", "Clear", "ClearBlack");
+
+    /** The aliases' icons, in the order of NAMES. */
+    static final int[] ICONS = {
+        R.drawable.app_icon_indigo,
+        R.drawable.app_icon_teal,
+        R.drawable.app_icon_crimson,
+        R.drawable.app_icon_black,
+        R.drawable.app_icon_white,
+        R.drawable.app_icon_clear,
+        R.drawable.app_icon_clearblack,
+    };
 
     private AppIcons() {}
 
@@ -54,6 +66,14 @@ public final class AppIcons {
             }
         }
         return NAMES.get(0);
+    }
+
+    /**
+     * The enabled alias's icon. A window that didn't start through the alias, such as one from
+     * "Open in new window", shows it in Recents only when given it in a TaskDescription.
+     */
+    public static int currentIcon(Context context) {
+        return ICONS[NAMES.indexOf(current(context))];
     }
 
     /** Enables {@code chosen}, then disables the rest, so the launcher always has an entry. */
