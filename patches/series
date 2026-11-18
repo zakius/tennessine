@@ -93,3 +93,5 @@ patches/tennessine/containers-ui.patch
 dubna/patches/firefox-add-ons.patch
 # Settings > App icon: the launcher icon, one of several activity-aliases.
 patches/tennessine/app-icon.patch
+# Settings > Tabs: "Open in new window" splits the screen or opens full screen.
+patches/tennessine/new-window-side-by-side.patch

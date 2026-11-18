@@ -30,15 +30,6 @@ public class AppIconSettings extends ChromeBaseSettingsFragment {
     private static final String[] LABELS = {
         "Indigo", "Teal", "Crimson", "Black", "White", "No background, white", "No background, black",
     };
-    private static final int[] ICONS = {
-        R.drawable.app_icon_indigo,
-        R.drawable.app_icon_teal,
-        R.drawable.app_icon_crimson,
-        R.drawable.app_icon_black,
-        R.drawable.app_icon_white,
-        R.drawable.app_icon_clear,
-        R.drawable.app_icon_clearblack,
-    };
 
     private final SettableMonotonicObservableSupplier<String> mPageTitle =
             ObservableSuppliers.createMonotonic();
@@ -56,7 +47,7 @@ public class AppIconSettings extends ChromeBaseSettingsFragment {
             String label = LABELS[i];
             Preference option = new Preference(context);
             option.setTitle(label);
-            Drawable icon = AppCompatResources.getDrawable(context, ICONS[i]);
+            Drawable icon = AppCompatResources.getDrawable(context, AppIcons.ICONS[i]);
             // A glyph alone could vanish against this screen: shown in the icon colour.
             if (name.startsWith("Clear") && icon != null) {
                 icon = icon.mutate();
