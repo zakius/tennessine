@@ -1,0 +1,23 @@
+# screen.width, screen.availWidth and the rest are in the frame's CSS pixels, as Firefox
+# reports them, not in device-independent pixels that ignore page zoom. With page zoom
+# below 100% (page-zoom-follows-font-size), a page that sizes its content from
+# screen.availWidth, as tibia.com's mobile tables do, otherwise stops short of the window.
+--- a/third_party/blink/renderer/core/frame/screen.cc
++++ b/third_party/blink/renderer/core/frame/screen.cc
+@@ -177,10 +177,12 @@
+   gfx::Rect rect = available ? screen_info.available_rect : screen_info.rect;
+   if (frame->GetSettings()->GetReportScreenSizeInPhysicalPixelsQuirk())
+     return gfx::ScaleToRoundedRect(rect, screen_info.device_scale_factor);
+-  if (frame->GetDocument() && frame->GetDocument()->TextScaleMetaTagPresent()) {
+-    return gfx::ScaleToRoundedRect(rect, screen_info.text_scale_multiplier);
+-  }
+-  return rect;
++  // tennessine: in the frame's CSS pixels, as Firefox reports it, so a page sized
++  // from screen.width fills the window at any page zoom. The layout zoom factor
++  // holds the page zoom and, with the text-scale meta tag, leaves out the text
++  // scale, so this is also upstream's text_scale_multiplier there.
++  return gfx::ScaleToRoundedRect(
++      rect, screen_info.device_scale_factor / frame->LayoutZoomFactor());
+ }
+ 
+ const display::ScreenInfo& Screen::GetScreenInfo() const {
