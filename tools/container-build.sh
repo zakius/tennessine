@@ -47,6 +47,13 @@ prepare() {
   fi
   step "prepare: fetch and check out $VERSION"
   git fetch -q --depth 1 origin +refs/tags/$VERSION:chromium_$VERSION
+  # A gclient dependency that the new version keeps in its own tree (Chromium 158's
+  # third_party/libsync/src) is still a checkout of its own here, in the way of the checkout.
+  if git rev-parse -q --verify HEAD > /dev/null; then
+    git ls-tree -r HEAD | awk '$2 == "commit" { print $4 }' | while read -r dep; do
+      if [ "$(git cat-file -t "$VERSION:$dep" 2>/dev/null)" = tree ]; then rm -rf "$dep"; fi
+    done
+  fi
   git checkout -q $VERSION
   cp $SCRIPT_DIR/.gclient ../.gclient
   step "prepare: apply the patches"
