@@ -103,7 +103,8 @@ cd chromium/src
 OUT=out/Default ABI=arm64-v8a LIB=tennessine/sync_lib CPU=arm64
 [ "$MODE" = x64 ] && OUT=out/x64 ABI=x86_64 LIB=tennessine/sync_lib/x64 CPU=x64
 mkdir -p $OUT out/tmp out/release
-rm -f out/tmp/$VERSION-$ABI.apk out/release/$VERSION-$ABI.apk*
+# Every older APK of this ABI too: publish takes the one arm64 APK in out/release.
+rm -f out/tmp/$VERSION-$ABI.apk out/release/*-$ABI.apk*
 # args.gn changes only when its content does: a new time alone makes gn and parts of the build
 # run again.
 # args.gn's last line lacks its newline.
