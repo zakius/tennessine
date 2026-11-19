@@ -63,7 +63,7 @@ public class SendTab {
         String[] names = new String[devices.size()];
         for (int i = 0; i < names.length; i++) names[i] = devices.get(i).optString("name");
         new AlertDialog.Builder(context)
-                .setTitle(R.string.send_tab_to_self_sheet_toolbar)
+                .setTitle(R.string.send_tab_to_self_enhanced_title)
                 .setItems(
                         names,
                         (dialog, which) -> {
