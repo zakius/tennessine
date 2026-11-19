@@ -8,7 +8,9 @@ finds the add-on running with the ID its Gecko ID gives (dubna's
 firefox_gecko_id.cc), then uninstalls it. The first run downloads the .xpi
 to a free name; each later one over the file of the run before, where
 Android asks whether to overwrite it. Each checks that its download took a
-new name. With APK, it first installs that
+new name. Then a .xpi whose manifest has no name, which can't install: the
+test finds the message that says why (zakius/dubna#206). With APK, it first
+installs that
 build over the installed one (an x86_64 build for the emulator: ./tennessine.py
 build x64).
 
@@ -18,10 +20,12 @@ Usage: tools/xpi_install_test.py [--repeat N] [APK]
 import argparse
 import functools
 import hashlib
+import html
 import http.server
 import io
 import json
 import re
+import subprocess
 import sys
 import tempfile
 import threading
@@ -34,6 +38,8 @@ from screenshots import DEVTOOLS_PORT, PACKAGE, Devtools, adb, shell
 
 GECKO_ID = 'xpi-install-test@tennessine.test'
 NAME = 'XPI install test'
+# The manifest error of an add-on without a name (manifest_constants.h).
+BROKEN_ERROR = "Required value 'name' is missing or invalid."
 DOWNLOADS = '/sdcard/Download'
 
 
@@ -43,7 +49,7 @@ def extension_id(gecko_id):
     return digest.translate(str.maketrans('0123456789abcdef', 'abcdefghijklmnop'))
 
 
-def xpi():
+def xpi(broken=False):
     manifest = {
         'manifest_version': 2,
         'name': NAME,
@@ -51,6 +57,8 @@ def xpi():
         'browser_specific_settings': {'gecko': {'id': GECKO_ID}},
         'background': {'scripts': ['background.js']},
     }
+    if broken:
+        del manifest['name']
     data = io.BytesIO()
     with zipfile.ZipFile(data, 'w') as archive:
         archive.writestr('manifest.json', json.dumps(manifest))
@@ -121,17 +129,26 @@ def tap_text(pattern):
     return False
 
 
+def shows_text(text):
+    """Whether a view on screen has TEXT in its text."""
+    try:
+        shell('uiautomator dump /sdcard/ui.xml')
+    except subprocess.CalledProcessError:
+        return False  # uiautomator, killed under a high load: try again
+    xml = shell('cat /sdcard/ui.xml')
+    # The dump escapes quotes: ' is &apos;.
+    return any(text in html.unescape(found)
+               for found in re.findall(r' text="([^"]*)"', xml))
+
+
 def downloaded():
     # A taken name gets a number: "test (1).xpi".
     return {name for name in shell(f'ls -1 {DOWNLOADS}').splitlines()
             if name.startswith('test') and name.endswith('.xpi')}
 
 
-def run_once(port, addon_id, again):
-    uninstall(addon_id)
-    before = downloaded()
-    assert bool(before) == again, f'earlier downloads: {sorted(before)}'
-    url = f'http://localhost:{port}/'
+def tap_link(url):
+    """Opens the page at URL and taps its link, which fills the page."""
     shell(f'am start -a android.intent.action.VIEW -d {url} {PACKAGE}')
     wait_for(lambda: any(t['type'] == 'page' and t['url'] == url for t in targets()),
              30, 'the test page')
@@ -139,6 +156,20 @@ def run_once(port, addon_id, again):
     # The link fills the page, so the middle of the screen is on it.
     width, height = map(int, re.search(r'(\d+)x(\d+)', shell('wm size')).groups())
     shell(f'input tap {width // 2} {height // 2}')
+
+
+def run_broken(port):
+    """A .xpi that can't install says why in a message on the tab. It may wait
+    behind the download's own message."""
+    tap_link(f'http://localhost:{port}/broken.html')
+    wait_for(lambda: shows_text(BROKEN_ERROR), 60, 'the install error')
+
+
+def run_once(port, addon_id, again):
+    uninstall(addon_id)
+    before = downloaded()
+    assert bool(before) == again, f'earlier downloads: {sorted(before)}'
+    tap_link(f'http://localhost:{port}/')
     wait_for(lambda: tap_text(r'Add extension'), 30, 'the install prompt')
     target = wait_for(lambda: background(addon_id), 30, 'the add-on to start')
     # The page is listed before its script runs.
@@ -161,16 +192,19 @@ def main():
         adb('install', '-r', args.apk)
     with tempfile.TemporaryDirectory() as tmp:
         Path(tmp, 'test.xpi').write_bytes(xpi())
-        Path(tmp, 'index.html').write_text(
-            '<!doctype html><meta name="viewport" content="width=device-width">'
-            '<a href="test.xpi" style="position:fixed;inset:0">Install test.xpi</a>')
+        # Not test*.xpi, which downloaded() counts.
+        Path(tmp, 'broken.xpi').write_bytes(xpi(broken=True))
+        for page, link in (('index.html', 'test.xpi'), ('broken.html', 'broken.xpi')):
+            Path(tmp, page).write_text(
+                '<!doctype html><meta name="viewport" content="width=device-width">'
+                f'<a href="{link}" style="position:fixed;inset:0">Install {link}</a>')
         server = serve(tmp)
         port = server.server_address[1]
         adb('reverse', f'tcp:{port}', f'tcp:{port}')
         addon_id = extension_id(GECKO_ID)
         # Once: each later run downloads the .xpi again, over a file of its
         # name, which takes a new one.
-        shell(f'rm -f {DOWNLOADS}/test*.xpi')
+        shell(f'rm -f {DOWNLOADS}/test*.xpi {DOWNLOADS}/broken*.xpi')
         failures = 0
         try:
             for run in range(1, args.repeat + 1):
@@ -180,10 +214,16 @@ def main():
                 except AssertionError as error:
                     failures += 1
                     print(f'{run}/{args.repeat} FAIL: {error}')
+            try:
+                run_broken(port)
+                print('broken .xpi pass')
+            except AssertionError as error:
+                failures += 1
+                print(f'broken .xpi FAIL: {error}')
         finally:
             adb('reverse', '--remove', f'tcp:{port}')
             server.shutdown()
-    print(f'{args.repeat - failures} of {args.repeat} passed')
+    print(f'{args.repeat + 1 - failures} of {args.repeat + 1} passed')
     sys.exit(1 if failures else 0)
 
 
