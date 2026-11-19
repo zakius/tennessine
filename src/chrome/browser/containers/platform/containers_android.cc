@@ -71,9 +71,8 @@ std::vector<TabModel*> ModelsOf(Profile* profile) {
       models.push_back(model);
     }
   }
-  TabModel* archived = TabModelList::GetArchivedTabModel();
-  if (archived && archived->GetProfile() == profile &&
-      !std::ranges::contains(models, archived)) {
+  TabModel* archived = TabModelList::GetArchivedTabModel(profile);
+  if (archived && !std::ranges::contains(models, archived)) {
     models.push_back(archived);
   }
   return models;
