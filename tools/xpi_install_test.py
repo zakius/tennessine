@@ -5,7 +5,9 @@ the emulator or an attached device, with the browser installed there.
 A local server, reached through `adb reverse`, serves a page whose link to a
 test .xpi fills the screen. The test taps it, accepts the install prompt, and
 finds the add-on running with the ID its Gecko ID gives (dubna's
-firefox_gecko_id.cc), then uninstalls it. The first run downloads the .xpi
+firefox_gecko_id.cc), then uninstalls it. Its icons are an SVG, as uBlock
+Origin's and Pouch's are, which a packed install doesn't decode
+(zakius/dubna#37). The first run downloads the .xpi
 to a free name; each later one over the file of the run before, where
 Android asks whether to overwrite it. Each checks that its download took a
 new name. Then a .xpi whose manifest has no name, which can't install: the
@@ -56,6 +58,8 @@ def xpi(broken=False):
         'version': '1.0',
         'browser_specific_settings': {'gecko': {'id': GECKO_ID}},
         'background': {'scripts': ['background.js']},
+        'icons': {'48': 'icon.svg', '96': 'icon.svg'},
+        'browser_action': {'default_icon': {'48': 'icon.svg'}},
     }
     if broken:
         del manifest['name']
@@ -63,6 +67,8 @@ def xpi(broken=False):
     with zipfile.ZipFile(data, 'w') as archive:
         archive.writestr('manifest.json', json.dumps(manifest))
         archive.writestr('background.js', 'window.started = true;\n')
+        archive.writestr('icon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+                         '<rect width="16" height="16" fill="green"/></svg>')
     return data.getvalue()
 
 
