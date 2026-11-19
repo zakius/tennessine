@@ -189,6 +189,9 @@ def run_once(port, addon_id, again):
                                   expression='window.started === true')['result']['value'],
              30, 'its background script')
     session.close()
+    # The post-install dialog, on the tab: while one waits, even on a tab in
+    # the background, Android shows no message, such as an install error.
+    wait_for(lambda: tap_text(r'Got it'), 30, 'the post-install dialog')
     new = downloaded() - before
     assert len(new) == 1, f'new downloads: {sorted(new)}'
     uninstall(addon_id)
