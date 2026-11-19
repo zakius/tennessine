@@ -11,7 +11,8 @@ Origin's and Pouch's are, which a packed install doesn't decode
 to a free name; each later one over the file of the run before, where
 Android asks whether to overwrite it. Each checks that its download took a
 new name. Then a .xpi whose manifest has no name, which can't install: the
-test finds the message that says why (zakius/dubna#206). With APK, it first
+test finds the message that says why (zakius/dubna#206), and so for a .xpi
+without a Gecko ID. With APK, it first
 installs that
 build over the installed one (an x86_64 build for the emulator: ./tennessine.py
 build x64).
@@ -42,6 +43,8 @@ GECKO_ID = 'xpi-install-test@tennessine.test'
 NAME = 'XPI install test'
 # The manifest error of an add-on without a name (manifest_constants.h).
 BROKEN_ERROR = "Required value 'name' is missing or invalid."
+# What firefox_xpi_installer.cc says of a .xpi without a Gecko ID.
+NO_GECKO_ID_ERROR = 'This add-on has no Gecko ID'
 DOWNLOADS = '/sdcard/Download'
 
 
@@ -51,18 +54,20 @@ def extension_id(gecko_id):
     return digest.translate(str.maketrans('0123456789abcdef', 'abcdefghijklmnop'))
 
 
-def xpi(broken=False):
+def xpi(broken=False, gecko_id=GECKO_ID):
     manifest = {
         'manifest_version': 2,
         'name': NAME,
         'version': '1.0',
-        'browser_specific_settings': {'gecko': {'id': GECKO_ID}},
+        'browser_specific_settings': {'gecko': {'id': gecko_id}},
         'background': {'scripts': ['background.js']},
         'icons': {'48': 'icon.svg', '96': 'icon.svg'},
         'browser_action': {'default_icon': {'48': 'icon.svg'}},
     }
     if broken:
         del manifest['name']
+    if not gecko_id:
+        del manifest['browser_specific_settings']
     data = io.BytesIO()
     with zipfile.ZipFile(data, 'w') as archive:
         archive.writestr('manifest.json', json.dumps(manifest))
@@ -164,11 +169,11 @@ def tap_link(url):
     shell(f'input tap {width // 2} {height // 2}')
 
 
-def run_broken(port):
+def run_broken(port, page, error):
     """A .xpi that can't install says why in a message on the tab. It may wait
     behind the download's own message."""
-    tap_link(f'http://localhost:{port}/broken.html')
-    wait_for(lambda: shows_text(BROKEN_ERROR), 60, 'the install error')
+    tap_link(f'http://localhost:{port}/{page}')
+    wait_for(lambda: shows_text(error), 60, 'the install error')
 
 
 def run_once(port, addon_id, again):
@@ -200,7 +205,9 @@ def main():
         Path(tmp, 'test.xpi').write_bytes(xpi())
         # Not test*.xpi, which downloaded() counts.
         Path(tmp, 'broken.xpi').write_bytes(xpi(broken=True))
-        for page, link in (('index.html', 'test.xpi'), ('broken.html', 'broken.xpi')):
+        Path(tmp, 'no-id.xpi').write_bytes(xpi(gecko_id=None))
+        for page, link in (('index.html', 'test.xpi'), ('broken.html', 'broken.xpi'),
+                           ('no-id.html', 'no-id.xpi')):
             Path(tmp, page).write_text(
                 '<!doctype html><meta name="viewport" content="width=device-width">'
                 f'<a href="{link}" style="position:fixed;inset:0">Install {link}</a>')
@@ -210,7 +217,7 @@ def main():
         addon_id = extension_id(GECKO_ID)
         # Once: each later run downloads the .xpi again, over a file of its
         # name, which takes a new one.
-        shell(f'rm -f {DOWNLOADS}/test*.xpi {DOWNLOADS}/broken*.xpi')
+        shell(f'rm -f {DOWNLOADS}/test*.xpi {DOWNLOADS}/broken*.xpi {DOWNLOADS}/no-id*.xpi')
         failures = 0
         try:
             for run in range(1, args.repeat + 1):
@@ -220,16 +227,18 @@ def main():
                 except AssertionError as error:
                     failures += 1
                     print(f'{run}/{args.repeat} FAIL: {error}')
-            try:
-                run_broken(port)
-                print('broken .xpi pass')
-            except AssertionError as error:
-                failures += 1
-                print(f'broken .xpi FAIL: {error}')
+            for name, page, text in (('broken', 'broken.html', BROKEN_ERROR),
+                                     ('no Gecko ID', 'no-id.html', NO_GECKO_ID_ERROR)):
+                try:
+                    run_broken(port, page, text)
+                    print(f'{name} .xpi pass')
+                except AssertionError as error:
+                    failures += 1
+                    print(f'{name} .xpi FAIL: {error}')
         finally:
             adb('reverse', '--remove', f'tcp:{port}')
             server.shutdown()
-    print(f'{args.repeat + 1 - failures} of {args.repeat + 1} passed')
+    print(f'{args.repeat + 2 - failures} of {args.repeat + 2} passed')
     sys.exit(1 if failures else 0)
 
 
