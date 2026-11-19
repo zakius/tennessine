@@ -1,6 +1,4 @@
 # From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
-diff --git a/chrome/common/extensions/api/_manifest_features.json b/chrome/common/extensions/api/_manifest_features.json
-index 48adcf00..d2f91e25 100644
 --- a/chrome/common/extensions/api/_manifest_features.json
 +++ b/chrome/common/extensions/api/_manifest_features.json
 @@ -18,7 +18,7 @@
@@ -10,5 +8,5 @@ index 48adcf00..d2f91e25 100644
 -    "platforms": ["win", "mac"]
 +    "platforms": ["win", "mac", "desktop_android"]
    },
-   "file_browser_handlers": {
+   "minimum_chrome_version": {
      "channel": "stable",

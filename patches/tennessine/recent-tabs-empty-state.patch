@@ -1,6 +1,6 @@
 # Recent tabs: the empty-state picture only while no other device's tabs show.
---- a/chrome/android/java/src/org/chromium/chrome/browser/ntp/RecentTabsRowAdapter.java
-+++ b/chrome/android/java/src/org/chromium/chrome/browser/ntp/RecentTabsRowAdapter.java
+--- a/chrome/android/java/src/org/chromium/chrome/browser/recent_tabs/RecentTabsRowAdapter.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/recent_tabs/RecentTabsRowAdapter.java
 @@ -1109,7 +1109,9 @@ public class RecentTabsRowAdapter extends BaseExpandableListAdapter {
          } else {
              boolean recentlyClosedGroupIsOnlyHeader =

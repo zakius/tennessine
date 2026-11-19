@@ -13,7 +13,7 @@
  import org.chromium.chrome.browser.notifications.NotificationTriggerBackgroundTask;
  import org.chromium.chrome.browser.notifications.scheduler.NotificationSchedulerTask;
  import org.chromium.chrome.browser.offlinepages.OfflineBackgroundTask;
-@@ -92,6 +93,9 @@
+@@ -91,6 +92,9 @@
                  return new AuxiliarySearchBackgroundTask();
              case TaskIds.CHROME_SIGNALS_REPORTING_JOB_ID:
                  return new SignalsReportingBackgroundTask();
@@ -51,7 +51,7 @@
  }  // namespace background_task
 --- a/chrome/android/java/AndroidManifest.xml
 +++ b/chrome/android/java/AndroidManifest.xml
-@@ -610,6 +610,23 @@
+@@ -608,6 +608,23 @@
              </intent-filter>
          </receiver>
  
@@ -73,5 +73,5 @@
 +        </service>
 +
          <!-- Actor related -->
-         <receiver android:name="org.chromium.chrome.browser.actor.ActorBroadcastReceiver"
+         <receiver android:name="org.chromium.chrome.browser.actor.notifications.ActorBroadcastReceiver"
              android:exported="false">

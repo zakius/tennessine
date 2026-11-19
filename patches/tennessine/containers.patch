@@ -14,7 +14,7 @@
 # The Android strings are ours, with Polish; dubna's are in src/chrome/app/oganesson_strings.grdp.
 --- a/chrome/android/BUILD.gn
 +++ b/chrome/android/BUILD.gn
-@@ -3209,6 +3209,8 @@ if (_is_default_toolchain) {
+@@ -2994,6 +2994,8 @@
  
      # tennessine: links out of installed web apps (chrome/browser/app_links).
      sources += [ "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/AppLinksBridge.java" ]
@@ -25,7 +25,7 @@
    source_set("chrome_test_util") {
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tab/TabImpl.java
-@@ -68,7 +68,8 @@ import org.chromium.chrome.browser.app.tabwindow.TabWindowManagerSingleton;
+@@ -68,7 +68,8 @@
  import org.chromium.chrome.browser.compositor.CompositorViewHolder;
  import org.chromium.chrome.browser.compositor.CompositorViewHolderSupplier;
  import org.chromium.chrome.browser.content.ContentUtils;
@@ -35,7 +35,7 @@
  import org.chromium.chrome.browser.desktop_site.DesktopSiteUtils;
  import org.chromium.chrome.browser.flags.ChromeFeatureList;
  import org.chromium.chrome.browser.native_page.NativePageAssassin;
-@@ -1230,8 +1231,8 @@ class TabImpl implements Tab, TabInternal {
+@@ -1250,8 +1251,8 @@
          if (mPendingLoadParams != null) {
              if (mWebContents == null) {
                  WebContents webContents =
@@ -46,7 +46,7 @@
                  initWebContents(webContents);
              }
              loadUrl(mPendingLoadParams);
-@@ -1854,12 +1855,12 @@ class TabImpl implements Tab, TabInternal {
+@@ -1877,12 +1878,12 @@
                  return;
              }
              webContents =
@@ -62,7 +62,7 @@
          }
  
          assert webContents != null;
-@@ -2863,8 +2864,8 @@ class TabImpl implements Tab, TabInternal {
+@@ -2900,8 +2901,8 @@
                  // State restore failed, just create a new empty web contents as that is the best
                  // that can be done at this point.
                  webContents =
@@ -75,7 +75,7 @@
                  failedRestoreUrl = resolveFallbackUrlForFailedRestore(mWebContentsState);
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/ChromeTabCreator.java
-@@ -24,6 +24,7 @@ import org.chromium.chrome.browser.WarmupManager;
+@@ -24,6 +24,7 @@
  import org.chromium.chrome.browser.app.tab_activity_glue.ReparentingDelegateFactory;
  import org.chromium.chrome.browser.app.tab_activity_glue.ReparentingTask;
  import org.chromium.chrome.browser.compositor.CompositorViewHolder;
@@ -83,7 +83,7 @@
  import org.chromium.chrome.browser.flags.ChromeFeatureList;
  import org.chromium.chrome.browser.incognito.IncognitoUtils;
  import org.chromium.chrome.browser.prefetch.settings.PreloadPagesSettingsBridge;
-@@ -407,7 +408,9 @@ public class ChromeTabCreator implements TabCreator, NeedsTabModel, NeedsTabMode
+@@ -407,7 +408,9 @@
                  // from disk correctly since we're passing targetsNetwork = false. Investigate and
                  // consider what should be done about this.
              } else if (WarmupManager.getInstance()
@@ -94,7 +94,7 @@
                  // Load URL using spare tab if available. This occurs only if a spare tab has been
                  // created beforehand. The creation of a spare tab is a costly operation that should
                  // not be performed without testing. Spare tab is only used for navigations in the
-@@ -443,6 +446,10 @@ public class ChromeTabCreator implements TabCreator, NeedsTabModel, NeedsTabMode
+@@ -443,6 +446,10 @@
                                  .setLaunchType(type)
                                  .setDelegateFactory(delegateFactory)
                                  .setInitiallyHidden(!openInForeground)
@@ -115,7 +115,7 @@
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/ui/android/tab_model/tab_model.h"
  #include "chrome/browser/ui/android/tab_model/tab_model_list.h"
-@@ -59,13 +60,18 @@
+@@ -59,13 +60,18 @@ content::WebContents* SessionRestore::RestoreForeignSessionTab(
    Profile* profile = Profile::FromBrowserContext(context);
    TabModel* tab_model = TabModelList::GetTabModelForWebContents(web_contents);
    DCHECK(tab_model);
@@ -129,7 +129,7 @@
            session_tab.navigations, profile);
  
    bool is_background_tab =
-       disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB;
+       disposition == WindowOpenDisposition::kNewBackgroundTab;
 -  content::WebContents::CreateParams create_params(context);
 +  content::WebContents::CreateParams create_params(context, site_instance);
    if (is_background_tab && skip_renderer_creation) {
@@ -164,7 +164,7 @@
    if (no_renderer) {
 --- a/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
 +++ b/chrome/browser/ui/android/strings/translations/android_chrome_strings_pl.xtb
-@@ -2150,4 +2150,11 @@ Aby zmienić to ustawienie, <ph name="BEGIN_LINK" />wyczyść dane tennessine na
+@@ -2169,4 +2169,11 @@
  <translation id="99907655649633293"><ph name="TAB_TITLE" />, karta incognito</translation>
  <translation id="414776566175657792">Karta z urządzenia <ph name="DEVICE" />: <ph name="TITLE" /></translation>
  <translation id="2321024629479061895">Wysłano na urządzenie <ph name="DEVICE" /></translation>
@@ -187,7 +187,7 @@
  #include "chrome/browser/glic/glic_tab_restore_helper.h"
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/sessions/session_restore.h"
-@@ -198,6 +199,10 @@
+@@ -204,6 +205,10 @@
      sessions::tab_restore::Type original_session_type) {
    Profile* profile = tab_model_->GetProfile();
  
@@ -198,7 +198,7 @@
    // Prepare navigation history.
    std::vector<std::unique_ptr<content::NavigationEntry>> nav_entries =
        sessions::ContentSerializedNavigationBuilder::ToNavigationEntries(
-@@ -205,7 +210,7 @@
+@@ -211,7 +216,7 @@
  
    // Restore web contents with navigation history. This is used for background
    // restore so start without a renderer.
@@ -209,7 +209,7 @@
    params.initially_hidden = true;
 --- a/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
 +++ b/tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni
-@@ -10,6 +10,10 @@ chrome_java_ext_full_path_sources = [
+@@ -10,6 +10,10 @@
    "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/DefaultBrowser.java",
    "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppLinksSettings.java",
    "//chrome/browser/app_links/android/java/src/org/chromium/chrome/browser/app_links/WebAppsSettings.java",
@@ -258,7 +258,7 @@
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/tab_list/tab_list_interface.h"
  #include "chrome/browser/ui/android/tab_model/tab_model.h"
-@@ -380,6 +381,11 @@ tabs::TabInterface* CreateNewTab(NavigateParams* params) {
+@@ -380,6 +381,11 @@
    } else {
      content::WebContents::CreateParams create_params(
          params->initiating_profile);
@@ -272,7 +272,7 @@
  
 --- a/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/TabModelJniBridge.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/tabmodel/TabModelJniBridge.java
-@@ -19,6 +19,7 @@ import org.chromium.base.Token;
+@@ -20,6 +20,7 @@
  import org.chromium.build.annotations.NullMarked;
  import org.chromium.build.annotations.Nullable;
  import org.chromium.chrome.browser.WarmupManager;
@@ -280,7 +280,7 @@
  import org.chromium.chrome.browser.flags.ActivityType;
  import org.chromium.chrome.browser.flags.CustomTabProfileType;
  import org.chromium.chrome.browser.multiwindow.MultiInstanceManager.NewWindowAppSource;
-@@ -407,8 +408,10 @@ public abstract class TabModelJniBridge implements TabModelInternal {
+@@ -411,8 +412,10 @@
          loadUrlParams.setPostData(postData);
          loadUrlParams.setIsRendererInitiated(isRendererInitiated);
          loadUrlParams.setHasUserGesture(hasUserGesture);

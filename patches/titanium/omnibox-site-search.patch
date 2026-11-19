@@ -1,9 +1,7 @@
 # From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9).
-diff --git a/components/omnibox/common/android/java/src/org/chromium/components/omnibox/OmniboxFeatures.java b/components/omnibox/common/android/java/src/org/chromium/components/omnibox/OmniboxFeatures.java
-index b9b9d782..49701f39 100644
 --- a/components/omnibox/common/android/java/src/org/chromium/components/omnibox/OmniboxFeatures.java
 +++ b/components/omnibox/common/android/java/src/org/chromium/components/omnibox/OmniboxFeatures.java
-@@ -147,7 +147,7 @@ public class OmniboxFeatures {
+@@ -132,7 +132,7 @@
              newFlag(OmniboxFeatureList.POST_DELAYED_TASK_FOCUS_TAB, FeatureState.ENABLED_IN_PROD);
  
      public static final CachedFlag sOmniboxSiteSearch =
@@ -12,12 +10,10 @@ index b9b9d782..49701f39 100644
  
      public static final CachedFlag sStarterPackExpansion =
              newFlag(OmniboxFeatureList.STARTER_PACK_EXPANSION, FeatureState.ENABLED_IN_PROD);
-diff --git a/components/omnibox/common/omnibox_features.cc b/components/omnibox/common/omnibox_features.cc
-index 62a8eb06..b9cf0535 100644
 --- a/components/omnibox/common/omnibox_features.cc
 +++ b/components/omnibox/common/omnibox_features.cc
-@@ -360,7 +360,7 @@ BASE_FEATURE(kOmniboxPrefetchSelectedSuggestionsOmtAndroid, DISABLED);
- BASE_FEATURE(kOmniboxSearchPrefetchOnEnterKeyDown, DISABLED);
+@@ -438,7 +438,7 @@
+ BASE_FEATURE(kAndroidTabSearchCloseTabButton, DISABLED);
  
  // Enables keyword-based site search functionality on Android devices.
 -BASE_FEATURE(kOmniboxSiteSearch, DISABLED);

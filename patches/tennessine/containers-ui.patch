@@ -11,7 +11,7 @@
 #   button opens a new tab in a container.
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabGridViewBinder.java
-@@ -33,6 +33,7 @@ import org.chromium.base.Callback;
+@@ -33,6 +33,7 @@
  import org.chromium.base.ResettersForTesting;
  import org.chromium.build.annotations.NullMarked;
  import org.chromium.build.annotations.Nullable;
@@ -19,7 +19,7 @@
  import org.chromium.chrome.browser.tab.TabUtils;
  import org.chromium.chrome.browser.tab.state.ShoppingPersistedTabData.PriceDrop;
  import org.chromium.chrome.browser.tab_ui.TabCardThemeUtil;
-@@ -134,6 +135,8 @@ public class TabGridViewBinder {
+@@ -134,6 +135,8 @@
              String title = model.get(TabProperties.TITLE);
              TextView tabTitleView = view.fastFindViewById(R.id.tab_title);
              if (TabProperties.TITLE == propertyKey) tabTitleView.setText(title);
@@ -30,29 +30,29 @@
              }
 --- a/chrome/android/java/res/xml/main_preferences.xml
 +++ b/chrome/android/java/res/xml/main_preferences.xml
-@@ -55,6 +55,11 @@ found in the LICENSE file.
-         android:key="privacy"
+@@ -56,6 +56,11 @@
          android:order="8"
          android:title="@string/prefs_privacy_security"/>
-+    <org.chromium.components.browser_ui.settings.ChromeBasePreference
+     <org.chromium.components.browser_ui.settings.ChromeBasePreference
 +        android:fragment="org.chromium.chrome.browser.containers.ContainersSettings"
 +        android:key="containers"
 +        android:order="8"
 +        android:title="@string/containers_title"/>
-     <org.chromium.components.browser_ui.settings.ChromeBasePreference
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
          android:fragment="org.chromium.chrome.browser.safety_hub.SafetyHubFragment"
          android:key="safety_hub"
+         android:order="9"
 --- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
-@@ -47,6 +47,7 @@
- import org.chromium.build.annotations.Nullable;
+@@ -50,6 +50,7 @@
  import org.chromium.chrome.R;
+ import org.chromium.chrome.browser.KeyboardShortcuts;
  import org.chromium.chrome.browser.bookmarks.BookmarkUtils;
 +import org.chromium.chrome.browser.containers.Containers;
  import org.chromium.chrome.browser.contextmenu.ChromeContextMenuItem.Item;
  import org.chromium.chrome.browser.contextmenu.ContextMenuCoordinator.ContextMenuItemType;
  import org.chromium.chrome.browser.devtools.DevToolsWindowAndroid;
-@@ -648,6 +649,16 @@
+@@ -675,6 +676,16 @@
                              && MultiWindowUtils.isLinkNavigationToIncognitoWindowSupported()) {
                          linkGroup.add(createListItem(Item.OPEN_IN_INCOGNITO_WINDOW));
                      }
@@ -69,7 +69,7 @@
                  } else if (mMode == ContextMenuMode.THIN_WEB_VIEW) {
                      if (mItemDelegate.supportsOpenInNewTab()) {
                          linkGroup.add(createListItem(Item.OPEN_IN_NEW_TAB));
-@@ -688,7 +699,8 @@
+@@ -715,7 +726,8 @@
                          && EphemeralTabCoordinator.isSupported()) {
                      boolean isDataUrl =
                              mParams.getUrl().getScheme().equals(UrlConstants.DATA_SCHEME);
@@ -79,7 +79,7 @@
                          // Do not show the item if BrApp/CCT opens data: url as it could potentially
                          // cause a security issue.
                          linkGroup.add(createListItem(Item.OPEN_IN_EPHEMERAL_TAB));
-@@ -995,6 +1007,10 @@
+@@ -1024,6 +1036,10 @@
  
      @Override
      public boolean onItemSelected(int itemId) {
@@ -97,10 +97,10 @@
  import org.chromium.chrome.browser.bookmarks.TabBookmarker;
  import org.chromium.chrome.browser.collaboration.CollaborationServiceFactory;
 +import org.chromium.chrome.browser.containers.Containers;
- import org.chromium.chrome.browser.flags.ChromeFeatureList;
  import org.chromium.chrome.browser.profiles.Profile;
  import org.chromium.chrome.browser.share.ShareDelegate;
-@@ -184,6 +185,8 @@
+ import org.chromium.chrome.browser.share.ShareUtils;
+@@ -183,6 +184,8 @@
              TabBookmarker tabBookmarker = assumeNonNull(tabBookmarkerSupplier.get());
              @Nullable Tab tab = getTabById(() -> tabModel, tabId);
              if (tab == null) return;
@@ -109,7 +109,7 @@
  
              if (menuId == R.id.share_tab) {
                  assumeNonNull(shareDelegateSupplier.get())
-@@ -320,6 +323,10 @@
+@@ -315,6 +318,10 @@
  
          itemList.add(buildMuteUnmuteSiteItem(tab, isIncognito));
  
@@ -122,7 +122,7 @@
                          .withTitleRes(R.string.select_tab)
 --- a/chrome/android/java/src/org/chromium/chrome/browser/toolbar/ToolbarManager.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/toolbar/ToolbarManager.java
-@@ -89,6 +89,7 @@
+@@ -88,6 +88,7 @@
  import org.chromium.chrome.browser.compositor.CompositorViewHolder;
  import org.chromium.chrome.browser.compositor.layouts.LayoutManagerImpl;
  import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutHelperManager;
@@ -130,7 +130,7 @@
  import org.chromium.chrome.browser.customtabs.features.toolbar.CustomTabToolbar;
  import org.chromium.chrome.browser.data_sharing.DataSharingTabManager;
  import org.chromium.chrome.browser.dom_distiller.DomDistillerTabUtils;
-@@ -1455,6 +1456,7 @@
+@@ -1475,6 +1476,7 @@
                          }
  
                          refreshSelectedTab(tab);
@@ -138,7 +138,7 @@
                          onTabOrModelChanged();
                          // Trigger zero-suggest prefetch for already-loaded tabs; loading tabs defer
                          // to onLoadStopped().
-@@ -1550,6 +1552,7 @@
+@@ -1570,6 +1572,7 @@
                          mLocationBarModel.notifyContentChanged();
                          checkIfNtpLoaded();
                          mToolbar.onTabContentViewChanged();
@@ -146,7 +146,7 @@
                          mLocationBar.maybeShowOrClearCursorInLocationBar();
                          // Paint preview status might have been changed. Update the omnibox chip.
                          mLocationBarModel.notifySecurityStateChanged();
-@@ -4125,8 +4128,20 @@
+@@ -4212,8 +4215,20 @@
              return null;
          }
          assert openGridTabSwitcherHandler != null;
@@ -167,18 +167,18 @@
 +                },
                  profile,
                  mTabModelSelectorSupplier,
-                 TabWindowManagerSingleton.getInstance());
+                 (tabModel, currentTabGroupId) -> {
 --- a/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/TabSwitcherActionMenuCoordinator.java
 +++ b/chrome/browser/ui/android/toolbar/java/src/org/chromium/chrome/browser/toolbar/top/TabSwitcherActionMenuCoordinator.java
-@@ -48,6 +48,7 @@
+@@ -44,6 +44,7 @@ import org.chromium.ui.widget.RectProvider;
+ 
+ import java.lang.annotation.Retention;
  import java.lang.annotation.RetentionPolicy;
- import java.util.Collection;
- import java.util.Collections;
 +import java.util.function.Function;
  
  /**
   * The main coordinator for the Tab Switcher Action Menu, responsible for creating the popup menu
-@@ -133,6 +134,9 @@
+@@ -142,6 +143,9 @@ public class TabSwitcherActionMenuCoordinator {
          }
      }
  
@@ -187,8 +187,8 @@
 +
      private final MonotonicObservableSupplier<TabModelSelector> mTabModelSelectorSupplier;
      private final Profile mProfile;
-     private final TabWindowManager mTabWindowManager;
-@@ -219,6 +223,8 @@
+     private final TabGroupExistenceChecker mTabGroupExistenceChecker;
+@@ -228,6 +232,8 @@ public class TabSwitcherActionMenuCoordinator {
          itemList.add(buildListItemByMenuItemType(MenuItemType.DIVIDER));
          if (supportedMixedWindows || !isCurrentModelIncognito) {
              itemList.add(buildListItemByMenuItemType(MenuItemType.NEW_TAB));
@@ -253,7 +253,7 @@
                  new PropertyModel.Builder(HubToolbarProperties.ALL_KEYS)
 --- a/chrome/android/java/src/org/chromium/chrome/browser/compositor/scene_layer/TabStripSceneLayer.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/compositor/scene_layer/TabStripSceneLayer.java
-@@ -28,6 +28,7 @@ import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutHelperMa
+@@ -28,6 +28,7 @@
  import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutTab;
  import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutTrailingButtonsCoordinator;
  import org.chromium.chrome.browser.compositor.overlays.strip.StripLayoutUtils;
@@ -261,7 +261,7 @@
  import org.chromium.chrome.browser.layouts.scene_layer.SceneLayer;
  import org.chromium.chrome.browser.layouts.scene_layer.SceneOverlayLayer;
  import org.chromium.chrome.browser.tab.TabId;
-@@ -378,6 +379,10 @@ public class TabStripSceneLayer extends SceneOverlayLayer {
+@@ -392,6 +393,10 @@
                      (StyleUtils.shouldApplyDesktopDensity() || isPinned)
                              ? StripLayoutUtils.MIN_TAB_WIDTH_DESKTOP_DP
                              : 0.f;
@@ -272,7 +272,7 @@
  
              TabStripSceneLayerJni.get()
                      .putStripTabLayer(
-@@ -436,10 +441,10 @@ public class TabStripSceneLayer extends SceneOverlayLayer {
+@@ -450,10 +455,10 @@
                              st.getLineWidth(),
                              Math.round(FOLIO_FOOT_LENGTH_DP * mDpToPx),
                              isPinned,

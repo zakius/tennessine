@@ -1,10 +1,9 @@
 # Settings > Tabs > "Open new windows side by side": whether "Open in new window" splits the
-# screen, which Chromium leaves to the open_adjacently param of an experiment. Off, the new
-# window opens full screen as a task of its own. A window already in split screen still opens
-# the new one beside it.
+# screen, which Chromium always does. Off, the new window opens full screen as a task of its own.
+# A window already in split screen still opens the new one beside it.
 --- a/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabsSettings.java
 +++ b/chrome/android/features/tab_ui/java/src/org/chromium/chrome/browser/tasks/tab_management/TabsSettings.java
-@@ -13,6 +13,7 @@ import android.view.View;
+@@ -13,6 +13,7 @@
  import androidx.annotation.VisibleForTesting;
  import androidx.preference.Preference;
  
@@ -12,7 +11,7 @@
  import org.chromium.base.metrics.RecordHistogram;
  import org.chromium.base.supplier.MonotonicObservableSupplier;
  import org.chromium.base.supplier.ObservableSuppliers;
-@@ -27,6 +28,7 @@ import org.chromium.chrome.browser.auxiliary_search.AuxiliarySearchUtils;
+@@ -27,6 +28,7 @@
  import org.chromium.chrome.browser.flags.ChromeFeatureList;
  import org.chromium.chrome.browser.magic_stack.HomeModulesMetricsUtils;
  import org.chromium.chrome.browser.magic_stack.ModuleDelegate.ModuleType;
@@ -20,7 +19,7 @@
  import org.chromium.chrome.browser.preferences.ChromePreferenceKeys;
  import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
  import org.chromium.chrome.browser.preferences.Pref;
-@@ -86,6 +88,28 @@ public class TabsSettings extends ChromeBaseSettingsFragment {
+@@ -86,6 +88,28 @@
          configureShareTitlesAndUrlsWithOsSwitch();
          configureChromeSuggestionsInOtherAppsSwitch();
          configureCctAlwaysOpenInBrowserSwitch();
@@ -51,26 +50,23 @@
      @Override
 --- a/chrome/android/java/src/org/chromium/chrome/browser/multiwindow/MultiWindowUtils.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/multiwindow/MultiWindowUtils.java
-@@ -122,6 +122,10 @@ public class MultiWindowUtils implements ActivityStateListener {
+@@ -121,6 +121,10 @@ public class MultiWindowUtils implements ActivityStateListener {
+     static final String HISTOGRAM_LAUNCH_IN_INSTANCE_SAFE_START_RESULT =
              "Android.Intent.LaunchInInstance.SafeStartActivity.Result";
-     static final String OPEN_ADJACENTLY_PARAM = "open_adjacently";
  
-+    // tennessine: Settings > Tabs > "Open new windows side by side", in place of the experiment's
-+    // open_adjacently. Off, a new window opens full screen, as a task of its own in Recents.
++    // tennessine: Settings > Tabs > "Open new windows side by side", where Chromium always opens
++    // adjacently. Off, a new window opens full screen, as a task of its own in Recents.
 +    public static final String OPEN_SIDE_BY_SIDE_PREF = "tennessine.open_new_windows_side_by_side";
 +
      static @Nullable Integer sMaxInstancesForTesting;
  
      private static MultiWindowUtils sInstance = new MultiWindowUtils();
-@@ -1373,10 +1377,7 @@ public class MultiWindowUtils implements ActivityStateListener {
+@@ -1387,7 +1391,7 @@ public class MultiWindowUtils implements ActivityStateListener {
+                 && IncognitoUtils.isIncognitoAsWindowFullScreenEnabled()) {
+             return false;
          }
-         // Always open adjacently if the current activity is in multi-windowing mode.
-         if (activity.isInMultiWindowMode()) return true;
--        return ChromeFeatureList.getFieldTrialParamByFeatureAsBoolean(
--                ChromeFeatureList.ROBUST_WINDOW_MANAGEMENT_EXPERIMENTAL,
--                OPEN_ADJACENTLY_PARAM,
--                true);
+-        return true;
 +        return ContextUtils.getAppSharedPreferences().getBoolean(OPEN_SIDE_BY_SIDE_PREF, true);
      }
  
-     /**
+     // These values are persisted to logs. Entries should not be renumbered and

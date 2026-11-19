@@ -1,18 +1,18 @@
 # From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9). On Chromium 156 the tablet check is only in DevToolsWindowAndroid, as patch.sh's isDevToolsAvailable line has it.
 --- a/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/contextmenu/ChromeContextMenuPopulator.java
-@@ -483,7 +483,7 @@
-         //   * some phones always identify as having a touchpad (crbug.com/429262357), and
-         //   * known web compatibility issue on tablet devices (crbug.com/45188879).
-         return (mParams.getSourceType() == MenuSourceType.MOUSE
--                || (TabUtils.isUsingDesktopUserAgent(mItemDelegate.getWebContents())
-+                || ((true || TabUtils.isUsingDesktopUserAgent(mItemDelegate.getWebContents()))
-                         && mParams.getSourceType() == MenuSourceType.LONG_PRESS));
+@@ -490,7 +490,7 @@
+                 || (mParams.getSourceType() == MenuSourceType.KEYBOARD
+                         && ContentFeatureMap.isEnabled(BlinkFeatures.ANDROID_KEYBOARD_CONTEXT_MENU))
+                 || (mParams.getSourceType() == MenuSourceType.LONG_PRESS
+-                        && TabUtils.isUsingDesktopUserAgent(mItemDelegate.getWebContents())));
++                        && (true || TabUtils.isUsingDesktopUserAgent(mItemDelegate.getWebContents()))));
      }
  
+     @VisibleForTesting
 --- a/chrome/browser/devtools/android/java/src/org/chromium/chrome/browser/devtools/DevToolsWindowAndroid.java
 +++ b/chrome/browser/devtools/android/java/src/org/chromium/chrome/browser/devtools/DevToolsWindowAndroid.java
-@@ -25,7 +25,7 @@
+@@ -27,7 +27,7 @@
  
      public static boolean isDevToolsAvailable(Context context) {
          return ContentFeatureMap.isEnabled(ContentFeatureList.ANDROID_DEV_TOOLS_FRONTEND)
@@ -23,7 +23,7 @@
      public static boolean isDevToolsAllowedFor(
 --- a/chrome/browser/task_manager/common/task_manager_features.cc
 +++ b/chrome/browser/task_manager/common/task_manager_features.cc
-@@ -11,7 +11,7 @@
+@@ -15,7 +15,7 @@
  #if BUILDFLAG(IS_ANDROID)
  // Enables the Task Manager on Clank.
  BASE_FEATURE(kTaskManagerClank,

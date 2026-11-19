@@ -1,7 +1,7 @@
 # From Titanium's patch.sh (jqssun/android-titanium-browser@8516166): its flag loop.
 --- a/chrome/browser/flag-metadata.json
 +++ b/chrome/browser/flag-metadata.json
-@@ -236,7 +236,7 @@
+@@ -272,7 +272,7 @@
      "owners": [
        "etiennep@google.com", "fdoray@google.com"
      ],
@@ -10,7 +10,7 @@
    },
    {
      "name": "allow-all-sites-to-initiate-mirroring",
-@@ -363,7 +363,7 @@
+@@ -383,7 +383,7 @@
    {
      "name": "android-bottom-bar",
      "owners": [ "polardz@google.com", "ckitagawa@chromium.com", "clank-tab-dev@google.com" ],
@@ -19,7 +19,7 @@
    },
    {
      "name": "android-bricks-native-page",
-@@ -1860,7 +1860,7 @@
+@@ -1928,7 +1928,7 @@
    {
      "name": "cct-open-in-browser-button-if-allowed-by-embedder",
      "owners": ["kamalchoudhury@google.com", "edmundw@google.com"],
@@ -28,7 +28,7 @@
    },
    {
      "name": "cct-open-in-browser-button-if-enabled-by-embedder",
-@@ -2706,7 +2706,7 @@
+@@ -2799,7 +2799,7 @@
    {
      "name": "darken-websites-checkbox-in-themes-setting",
      "owners": [ "nemco@google.com", "wenyufu@google.com", "twellington@chromium.org" ],
@@ -37,7 +37,7 @@
    },
    {
      "name": "data-controls-search-with",
-@@ -3374,7 +3374,7 @@
+@@ -3467,7 +3467,7 @@
    {
      "name": "enable-accessibility-sequential-focus",
      "owners": [ "jocelyntran@google.com", "//ui/accessibility/OWNERS" ],
@@ -45,8 +45,8 @@
 +    "expiry_milestone": -1
    },
    {
-     "name": "enable-accessibility-set-selectable-on-all-nodes-with-text",
-@@ -4901,7 +4901,7 @@
+     "name": "enable-accessibility-shake-to-locate",
+@@ -4961,7 +4961,7 @@
    {
      "name": "enforce-incognito-isolation",
      "owners": [ "shuyng@google.com", "clank-large-form-factors@google.com" ],
@@ -55,7 +55,7 @@
    },
    {
      "name": "enforce-mono-audio-capture",
-@@ -6334,7 +6334,7 @@
+@@ -6378,7 +6378,7 @@
    {
      "name": "inline-pdf-v2",
      "owners": [ "rathomas@google.com", "clank-large-form-factors@google.com" ],
@@ -64,16 +64,7 @@
    },
    {
      "name": "inline-pdf-v2-incognito",
-@@ -6634,7 +6634,7 @@
-   {
-     "name": "jump-start-omnibox",
-     "owners": [ "ender@google.com", "chrome-mobile-search@google.com" ],
--    "expiry_milestone": 145
-+    "expiry_milestone": -1
-   },
-   {
-     "name": "launcher-local-image-search",
-@@ -6861,7 +6861,7 @@
+@@ -6910,7 +6910,7 @@
        "twellington@chromium.org",
        "skavuluru@google.com"
      ],
@@ -82,7 +73,7 @@
    },
    {
      "name": "long-screenshots-lenient-memory-check",
-@@ -7487,7 +7487,7 @@
+@@ -7548,7 +7548,7 @@
    {
      "name": "offline-auto-fetch",
      "owners": [ "tbansal@google.com" ],
@@ -91,7 +82,7 @@
    },
    {
      "name": "omaha-min-sdk-version-android",
-@@ -9974,7 +9974,7 @@
+@@ -10016,7 +10016,7 @@
    {
      "name": "use-fullscreen-insets-api",
      "owners": [ "clhager@google.com"],

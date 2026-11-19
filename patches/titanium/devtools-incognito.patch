@@ -1,10 +1,8 @@
 # From Titanium's patch.sh (jqssun/android-titanium-browser@8516166).
-diff --git a/chrome/android/java/src/org/chromium/chrome/browser/customtabs/BaseCustomTabActivity.java b/chrome/android/java/src/org/chromium/chrome/browser/customtabs/BaseCustomTabActivity.java
-index 7ec43d454a..82a3c32601 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/customtabs/BaseCustomTabActivity.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/customtabs/BaseCustomTabActivity.java
-@@ -518,7 +518,7 @@ public abstract class BaseCustomTabActivity extends ChromeActivity {
-             protected @Nullable OtrProfileId createOffTheRecordProfileId() {
+@@ -523,7 +523,7 @@
+ 
                  assumeNonNull(mIntentDataProvider);
                  switch (mIntentDataProvider.getCustomTabMode()) {
 -                    case CustomTabProfileType.INCOGNITO:
@@ -12,11 +10,9 @@ index 7ec43d454a..82a3c32601 100644
                          // If an incognito popup is being created by Chrome, this should use
                          // the same primary OTR profile associated with the requester's profile.
                          if (mIntentDataProvider.getUiType() == CustomTabsUiType.POPUP) {
-diff --git a/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsActivity.java b/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsActivity.java
-index dc0fd3076f..b78175a746 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsActivity.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsActivity.java
-@@ -42,7 +42,7 @@ public class DevToolsActivity extends BaseCustomTabActivity {
+@@ -42,7 +42,7 @@
                  Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT
                          | Intent.FLAG_ACTIVITY_NEW_TASK
                          | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
@@ -25,7 +21,7 @@ index dc0fd3076f..b78175a746 100644
  
          context.startActivity(intent);
      }
-@@ -67,7 +67,7 @@ public class DevToolsActivity extends BaseCustomTabActivity {
+@@ -67,7 +67,7 @@
      public void finishNativeInitialization() {
          super.finishNativeInitialization();
  
@@ -34,11 +30,9 @@ index dc0fd3076f..b78175a746 100644
          Tab existingTab = assumeNonNull(tabModel.getCurrentTabSupplier().get());
  
          // Attach the given DevTools frontend web contents to the browser window.
-diff --git a/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsIntentDataProvider.java b/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsIntentDataProvider.java
-index 6b03859660..2049ec0fd8 100644
 --- a/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsIntentDataProvider.java
 +++ b/chrome/android/java/src/org/chromium/chrome/browser/devtools/DevToolsIntentDataProvider.java
-@@ -12,10 +12,12 @@ import org.chromium.build.annotations.Nullable;
+@@ -12,10 +12,12 @@
  import org.chromium.chrome.browser.browserservices.intents.BrowserServicesIntentDataProvider;
  import org.chromium.chrome.browser.browserservices.intents.ColorProvider;
  import org.chromium.chrome.browser.flags.ActivityType;
