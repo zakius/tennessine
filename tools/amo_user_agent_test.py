@@ -53,7 +53,7 @@ DESKTOP_UA = re.compile(r'Mozilla/5\.0 \(X11; [^)]+\) AppleWebKit/.+ Chrome/.+')
 
 class Server(http.server.ThreadingHTTPServer):
     links = {}  # a page's URL: the URL that its link goes to
-    user_agents = {}  # a page's URL: the User-Agent header of its last load
+    user_agents = {}  # a page's URL: the User-Agent headers of its loads, in order
 
     def handle_error(self, request, client_address):
         pass  # a connection that the browser opened and closed unused
@@ -66,7 +66,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         url = f'https://{self.headers["Host"]}{self.path}'
-        self.server.user_agents[url] = self.headers['User-Agent']
+        self.server.user_agents.setdefault(url, []).append(self.headers['User-Agent'])
         body = '<!doctype html><meta name="viewport" content="width=device-width">'
         if url in self.server.links:
             # The link fills the page, so the middle of the screen is on it.
@@ -157,8 +157,10 @@ def check(server, url, expected, what):
              ['result']['value'] == 'complete', 30, f'{url} to load')
     script = session.call('Runtime.evaluate', expression='navigator.userAgent')['result']['value']
     session.close()
-    header = server.user_agents.get(url)
-    for name, user_agent in (('header', header), ('navigator.userAgent', script)):
+    # Every load: a page that loads with the wrong user agent and again with
+    # the right one fails too.
+    headers = server.user_agents.get(url) or [None]
+    for name, user_agent in [('header', h) for h in headers] + [('navigator.userAgent', script)]:
         matches = (user_agent == expected if isinstance(expected, str)
                    else bool(user_agent and expected.fullmatch(user_agent)))
         if not matches:
