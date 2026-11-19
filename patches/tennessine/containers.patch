@@ -10,8 +10,6 @@
 #   outside containers. A link opened in another window takes its tab's container.
 # - web_contents_state.cc: a tab restores in its container after a restart.
 # - android_live_tab_context.cc, session_restore_android.cc: a closed tab reopens in it.
-# - browsing_instance.cc: a SiteInstance in a container always gets a site, so it keeps the
-#   container's partition; the native NTP left one unassigned and a CHECK crashed the browser.
 # - chrome/android/BUILD.gn, chrome_java_ext_sources.gni: our Java and its JNI.
 # The Android strings are ours, with Polish; dubna's are in src/chrome/app/oganesson_strings.grdp.
 --- a/chrome/android/BUILD.gn
@@ -294,19 +292,3 @@
      }
  
      /**
---- a/content/browser/browsing_instance.cc
-+++ b/content/browser/browsing_instance.cc
-@@ -79,8 +79,12 @@
-   // Some URLs should leave the SiteInstance's site unassigned, though if
-   // `instance` is for a guest, we should always set the site to ensure that it
-   // carries guest information contained within SiteInfo.
-+  // tennessine: so does one with a fixed storage partition (a container), or
-+  // it would report the default partition: Android's native NTP
-+  // (chrome-native:) left it unassigned, and the tab's next navigation hit a
-+  // CHECK in ComputeSiteInfoForURL() (src/chrome/browser/containers).
-   if (SiteInstanceImpl::ShouldAssignSiteForUrlInfo(url_info) ||
--      isolation_context_.is_guest()) {
-+      isolation_context_.is_guest() || is_fixed_storage_partition_) {
-     if (base::FeatureList::IsEnabled(features::kPrecomputeSiteInfo)) {
-       instance->SetSiteInfoAndOriginalUrl(site_info, url_info.url);
-     } else {

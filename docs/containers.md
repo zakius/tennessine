@@ -57,7 +57,6 @@ Lines added, includes and comments counted; TabImpl changes 8 more.
 | `chrome/browser/tab/web_contents_state.cc` | 5 | A tab restored after a restart gets its SiteInstance, asked for before its pages are built so they keep their container. |
 | `chrome/browser/ui/android/tab_model/android_live_tab_context.cc` | 5 | A closed tab reopened in the background. |
 | `chrome/browser/sessions/session_restore_android.cc` | 6 | A closed tab reopened in place of the current one. |
-| `content/browser/browsing_instance.cc` | 5 | A SiteInstance in a container always gets a site, as a guest's does, so it keeps the container's partition. Android's native New tab page (`chrome-native:`) left one without a site, which reported the default partition, and the tab's next navigation crashed the browser on a CHECK. |
 | `chrome/android/BUILD.gn` | 2 | `ContainersBridge.java`'s JNI. |
 | `tennessine/chromium_src/chrome/android/chrome_java_ext_sources.gni` | 4 | Our Java in `chrome_java` (Vanadium's list). |
 | `android_chrome_ext_strings.grdp`, `android_chrome_strings_pl.xtb` | 16 | The menu item, the Settings title and the chooser's two choices, in English and Polish. Settings' other text is English only, as in Web apps. |
