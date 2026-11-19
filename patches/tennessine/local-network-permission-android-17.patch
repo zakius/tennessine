@@ -1,0 +1,13 @@
+# Local network access asks for Android's ACCESS_LOCAL_NETWORK only on Android 17 (SDK 37) and
+# later, as its Javadoc says. Vanadium's "Restore permission prompts for local network access"
+# asks for it on every version, since GrapheneOS has the permission; stock Android before 17
+# doesn't, so it is never granted there and no site could reach the local network.
+--- a/components/permissions/android/java/src/org/chromium/components/permissions/PermissionUtil.java
++++ b/components/permissions/android/java/src/org/chromium/components/permissions/PermissionUtil.java
+@@ -122,5 +122,5 @@
+      * https://developer.android.com/privacy-and-security/local-network-permission
+      */
+     private static boolean isLocalNetworkAccessPermissionRequired() {
+-        return true;
++        return Build.VERSION.SDK_INT >= 37;
+     }
