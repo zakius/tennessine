@@ -1,7 +1,9 @@
 # Page zoom follows Android's font size: the effective zoom is Settings > Accessibility >
 # Default zoom (or the site's zoom) times the font scale, so a smaller Android font makes
 # whole pages smaller, as the smaller Android display size already does. Chromium has the
-# adjustment but ships it off.
+# adjustment but ships it off. The zoom a page gets is rounded so that its width is a
+# whole number of CSS pixels, which a site's breakpoints (`width <= 543px`,
+# `width >= 544px`) can't fall between.
 --- a/content/public/android/java/src/org/chromium/content/browser/HostZoomMapImpl.java
 +++ b/content/public/android/java/src/org/chromium/content/browser/HostZoomMapImpl.java
 @@ -132,7 +132,9 @@
@@ -15,3 +17,44 @@
      }
  
      /**
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -169,6 +169,7 @@
+ 
+ #if BUILDFLAG(IS_ANDROID)
+ #include "content/browser/renderer_host/input/fling_scheduler_android.h"
++#include "third_party/blink/public/common/page/page_zoom.h"
+ #include "ui/android/view_android.h"
+ #endif
+ 
+@@ -1177,6 +1178,30 @@
+   const bool is_subframe_widget =
+       view_->IsRenderWidgetHostViewChildFrame() && !owner_delegate_;
+ 
++#if BUILDFLAG(IS_ANDROID)
++  // tennessine: with page zoom following Android's font size, the page's width
++  // in CSS pixels is rarely whole (543.567 at 1080 px, density 374 and font
++  // scale 0.85), and a width between 543 and 544 matches neither
++  // `width <= 543px` nor `width >= 544px`. Round the zoom so the width the
++  // widget gets now is a whole number of CSS pixels: the width moves by at most
++  // half a pixel. Each resize (rotation, split screen) comes through here
++  // again. A zoom of 100% stays as it is.
++  int width_device_px = visual_properties.new_size_device_px.width();
++  if (is_frame_widget && is_topmost_widget && width_device_px > 0 &&
++      visual_properties.zoom_level != 0) {
++    double device_scale_factor = current_screen_info.device_scale_factor;
++    double zoom_factor =
++        blink::ZoomLevelToZoomFactor(visual_properties.zoom_level);
++    double width_css_px = width_device_px / (device_scale_factor * zoom_factor);
++    int whole_width_css_px = static_cast<int>(width_css_px + 0.5);
++    if (whole_width_css_px > 0) {
++      zoom_factor =
++          width_device_px / (device_scale_factor * whole_width_css_px);
++      visual_properties.zoom_level = blink::ZoomFactorToZoomLevel(zoom_factor);
++    }
++  }
++#endif
++
+   // These properties come from the main frame RenderWidget and flow down the
+   // tree of RenderWidgets. Some properties are global across all nested
+   // WebContents/frame trees. Some properties are global only within their
