@@ -12,15 +12,18 @@ to a free name; each later one over the file of the run before, where
 Android asks whether to overwrite it. Each checks that its download took a
 new name. Then a .xpi whose manifest has no name, which can't install: the
 test finds the message that says why (zakius/dubna#206), and so for a .xpi
-without a Gecko ID. With APK, it first
-installs that
-build over the installed one (an x86_64 build for the emulator: ./tennessine.py
-build x64).
+without a Gecko ID. Each .xpi but that one is signed as AMO signs one
+(zakius/dubna#219), by a test root that the browser trusts with
+--firefox-add-ons-signature-root in its command line, which a userdebug
+build, as the emulator's, reads; the test removes it at the end. With APK, it
+first installs that build over the installed one (an x86_64 build for the
+emulator: ./tennessine.py build x64).
 
 Usage: tools/xpi_install_test.py [--repeat N] [APK]
   N: the runs, 2 by default, so that one meets a file of the .xpi's name
 """
 import argparse
+import base64
 import functools
 import hashlib
 import html
@@ -43,9 +46,14 @@ GECKO_ID = 'xpi-install-test@tennessine.test'
 NAME = 'XPI install test'
 # The manifest error of an add-on without a name (manifest_constants.h).
 BROKEN_ERROR = "Required value 'name' is missing or invalid."
-# What firefox_xpi_installer.cc says of a .xpi without a Gecko ID.
-NO_GECKO_ID_ERROR = 'This add-on has no Gecko ID'
+# What firefox_xpi_installer.cc says, as Firefox, of a .xpi without a Gecko
+# ID or a signature: it has no ID.
+NO_GECKO_ID_ERROR = 'This add-on could not be installed because it appears to be corrupt.'
 DOWNLOADS = '/sdcard/Download'
+# The browser reads its command line there on a userdebug build
+# (AndroidInfo.isDebugAndroid()), and the test root for the switch next to it.
+COMMAND_LINE = '/data/local/tmp/chrome-command-line'
+DEVICE_ROOT = '/data/local/tmp/xpi-install-test-root.pem'
 
 
 def extension_id(gecko_id):
@@ -54,7 +62,48 @@ def extension_id(gecko_id):
     return digest.translate(str.maketrans('0123456789abcdef', 'abcdefghijklmnop'))
 
 
-def xpi(broken=False, gecko_id=GECKO_ID):
+def openssl(folder, *args):
+    subprocess.run(['openssl', *args], cwd=folder, check=True, capture_output=True)
+
+
+def signing_root(folder):
+    """A test root for AMO signatures in FOLDER: root.pem and root.key."""
+    openssl(folder, 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+            '-subj', '/CN=signing-root.tennessine.test', '-keyout', 'root.key',
+            '-out', 'root.pem')
+    return Path(folder, 'root.pem')
+
+
+def amo_signed(files, signer_id, root):
+    """FILES ({path: text}) with AMO's signature added in META-INF/, as
+    Firefox checks it: manifest.mf gives each file's SHA-256, mozilla.sf
+    manifest.mf's, and mozilla.rsa is a PKCS #7 of mozilla.sf by a code
+    signing certificate whose common name is SIGNER_ID, from ROOT."""
+    def digest(text):
+        return base64.b64encode(hashlib.sha256(text.encode()).digest()).decode()
+
+    manifest = 'Manifest-Version: 1.0\n\n' + ''.join(
+        f'Name: {name}\nSHA256-Digest: {digest(text)}\n\n' for name, text in files.items())
+    sf = f'Signature-Version: 1.0\nSHA256-Digest-Manifest: {digest(manifest)}\n\n'
+    with tempfile.TemporaryDirectory() as folder:
+        Path(folder, 'mozilla.sf').write_text(sf)
+        Path(folder, 'add-on.ext').write_text(
+            'keyUsage = critical, digitalSignature\nextendedKeyUsage = codeSigning\n')
+        openssl(folder, 'req', '-newkey', 'rsa:2048', '-nodes', '-subj', f'/CN={signer_id}',
+                '-keyout', 'add-on.key', '-out', 'add-on.csr')
+        openssl(folder, 'x509', '-req', '-in', 'add-on.csr', '-CA', str(root),
+                '-CAkey', str(root.with_name('root.key')), '-set_serial', '1', '-days', '1',
+                '-extfile', 'add-on.ext', '-out', 'add-on.pem')
+        openssl(folder, 'cms', '-sign', '-binary', '-in', 'mozilla.sf', '-signer', 'add-on.pem',
+                '-inkey', 'add-on.key', '-md', 'sha256', '-nosmimecap', '-outform', 'DER',
+                '-out', 'mozilla.rsa')
+        rsa = Path(folder, 'mozilla.rsa').read_bytes()
+    return {**files, 'META-INF/manifest.mf': manifest, 'META-INF/mozilla.sf': sf,
+            'META-INF/mozilla.rsa': rsa}
+
+
+def xpi(root, broken=False, gecko_id=GECKO_ID):
+    """A test .xpi, signed by ROOT for its Gecko ID; without one, unsigned."""
     manifest = {
         'manifest_version': 2,
         'name': NAME,
@@ -68,12 +117,18 @@ def xpi(broken=False, gecko_id=GECKO_ID):
         del manifest['name']
     if not gecko_id:
         del manifest['browser_specific_settings']
+    files = {
+        'manifest.json': json.dumps(manifest),
+        'background.js': 'window.started = true;\n',
+        'icon.svg': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
+                    '<rect width="16" height="16" fill="green"/></svg>',
+    }
+    if gecko_id:
+        files = amo_signed(files, gecko_id, root)
     data = io.BytesIO()
     with zipfile.ZipFile(data, 'w') as archive:
-        archive.writestr('manifest.json', json.dumps(manifest))
-        archive.writestr('background.js', 'window.started = true;\n')
-        archive.writestr('icon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
-                         '<rect width="16" height="16" fill="green"/></svg>')
+        for name, content in files.items():
+            archive.writestr(name, content)
     return data.getvalue()
 
 
@@ -204,11 +259,13 @@ def main():
     args = parser.parse_args()
     if args.apk:
         adb('install', '-r', args.apk)
-    with tempfile.TemporaryDirectory() as tmp:
-        Path(tmp, 'test.xpi').write_bytes(xpi())
+    # The root's key in a folder of its own, which the server doesn't serve.
+    with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as keys:
+        root = signing_root(keys)
+        Path(tmp, 'test.xpi').write_bytes(xpi(root))
         # Not test*.xpi, which downloaded() counts.
-        Path(tmp, 'broken.xpi').write_bytes(xpi(broken=True))
-        Path(tmp, 'no-id.xpi').write_bytes(xpi(gecko_id=None))
+        Path(tmp, 'broken.xpi').write_bytes(xpi(root, broken=True))
+        Path(tmp, 'no-id.xpi').write_bytes(xpi(root, gecko_id=None))
         for page, link in (('index.html', 'test.xpi'), ('broken.html', 'broken.xpi'),
                            ('no-id.html', 'no-id.xpi')):
             Path(tmp, page).write_text(
@@ -217,6 +274,13 @@ def main():
         server = serve(tmp)
         port = server.server_address[1]
         adb('reverse', f'tcp:{port}', f'tcp:{port}')
+        adb('push', str(root), DEVICE_ROOT)
+        Path(keys, 'command-line').write_text(
+            f'_ --firefox-add-ons-signature-root={DEVICE_ROOT}\n')
+        adb('push', str(Path(keys, 'command-line')), COMMAND_LINE)
+        shell(f'chmod 644 {COMMAND_LINE} {DEVICE_ROOT}')
+        # Its next start reads the command line.
+        shell(f'am force-stop {PACKAGE}')
         addon_id = extension_id(GECKO_ID)
         # Once: each later run downloads the .xpi again, over a file of its
         # name, which takes a new one.
@@ -239,6 +303,7 @@ def main():
                     failures += 1
                     print(f'{name} .xpi FAIL: {error}')
         finally:
+            shell(f'rm -f {COMMAND_LINE} {DEVICE_ROOT}')
             adb('reverse', '--remove', f'tcp:{port}')
             server.shutdown()
     print(f'{args.repeat + 2 - failures} of {args.repeat + 2} passed')
