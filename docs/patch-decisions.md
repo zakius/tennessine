@@ -76,6 +76,7 @@ Update cost for features outside the list above: the View source and Bookmark al
 - Settings → App icon picks the launcher icon, one of several activity-aliases of the main activity. Every window shows the chosen icon in Recents through its task description, a window from "Open in new window" too, which starts without the alias (`app-icon`).
 - "Open in new window" splits the screen, as Chromium always does, only while Settings → Tabs → Open new windows side by side is on (the default). Off, the new window opens full screen as a task of its own in Recents. In split screen, the new window always opens beside the old one (`new-window-side-by-side`).
 - A site asks Android for local network access (`ACCESS_LOCAL_NETWORK`) only on Android 17 and later (`local-network-permission-android-17`). Vanadium asks on every version, since GrapheneOS has the permission; stock Android before 17 doesn't, so the request could never be granted there.
+- A prerendered page's cross-origin iframes (ads, trackers, embeds) wait until the page is opened (from dubna, `prerender-cross-origin-frames`, #21). Chromium 158 loads them early for a page in the Prerender2CrossOriginIframes origin trial, and 159 for every page that asks with `Supports-Loading-Mode: prerender-cross-origin-frames`. Only chrome://flags turns it on.
 
 ## Planned
 

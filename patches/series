@@ -58,6 +58,8 @@ patches/tennessine/recent-tabs-empty-state.patch
 dubna/patches/no-saved-history.patch
 # Links out of installed web apps, with per-app scope rules, from dubna.
 dubna/patches/app-links.patch
+# A prerendered page's cross-origin iframes wait until it is opened, from dubna.
+dubna/patches/prerender-cross-origin-frames.patch
 
 # Ours. The list-mode tab switcher and the full URL are Cromite's ideas, not its GPL-3.0 code.
 patches/tennessine/jit-allowed-by-default.patch
