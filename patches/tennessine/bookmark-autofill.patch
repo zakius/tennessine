@@ -1,0 +1,38 @@
+# Address bar: a bookmark whose URL the input starts is autofilled, as history autofills upstream.
+--- a/components/omnibox/browser/bookmark_provider.cc
++++ b/components/omnibox/browser/bookmark_provider.cc
+@@ -12,6 +12,7 @@
+ 
+ #include "base/feature_list.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/strings/utf_string_conversions.h"
+ #include "base/trace_event/trace_event.h"
+ #include "components/bookmarks/browser/bookmark_model.h"
+ #include "components/omnibox/browser/autocomplete_match.h"
+@@ -24,6 +25,7 @@
+ #include "components/omnibox/browser/page_classification_functions.h"
+ #include "components/omnibox/browser/scoring_functor.h"
+ #include "components/omnibox/browser/titled_url_match_utils.h"
++#include "components/omnibox/browser/url_prefix.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/query_parser/query_parser.h"
+ #include "third_party/metrics_proto/omnibox_event.pb.h"
+@@ -120,6 +122,18 @@
+         match.keyword = starter_pack_engine->keyword();
+         match.transition = ui::PAGE_TRANSITION_KEYWORD;
+         match.fill_into_edit.insert(0, match.keyword + u" ");
++      } else if (match.allowed_to_be_default_match &&
++                 match.destination_url.SchemeIsHTTPOrHTTPS() &&
++                 URLPrefix::GetInlineAutocompleteOffset(
++                     adjusted_input.text(), fixed_up_input, false,
++                     base::UTF8ToUTF16(match.destination_url.spec())) !=
++                     std::u16string::npos) {
++        // The input starts the bookmark's URL, after its scheme and "www.":
++        // autofill it, as Firefox does. Upstream, only history autofills, and
++        // with history not saved there is none. 900-1199 maps to 1301-1400:
++        // above what was typed (1203 as a URL, 1300 as a search), below a URL
++        // typed before (1413).
++        match.relevance = 1301 + (relevance - 900) / 3;
+       }
+ 
+       if (omnibox::IsAndroidHubOrTabSearch(

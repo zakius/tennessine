@@ -74,6 +74,8 @@ patches/tennessine/crash-log.patch
 patches/tennessine/layout-follows-address-bar.patch
 patches/tennessine/full-url.patch
 patches/tennessine/local-network-permission-android-17.patch
+# Address bar: bookmarks autofill, as history does upstream; with history not saved, nothing else does.
+patches/tennessine/bookmark-autofill.patch
 
 # Web apps: Open in <default browser> in the link menu, launched behind the web app.
 patches/tennessine/webapp-open-in-default-browser.patch
