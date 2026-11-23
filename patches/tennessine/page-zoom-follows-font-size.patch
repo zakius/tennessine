@@ -27,7 +27,7 @@
  #include "ui/android/view_android.h"
  #endif
  
-@@ -1177,6 +1178,30 @@
+@@ -1177,6 +1178,33 @@
    const bool is_subframe_widget =
        view_->IsRenderWidgetHostViewChildFrame() && !owner_delegate_;
  
@@ -38,9 +38,12 @@
 +  // `width <= 543px` nor `width >= 544px`. Round the zoom so the width the
 +  // widget gets now is a whole number of CSS pixels: the width moves by at most
 +  // half a pixel. Each resize (rotation, split screen) comes through here
-+  // again. A zoom of 100% stays as it is.
-+  int width_device_px = visual_properties.new_size_device_px.width();
-+  if (is_frame_widget && is_topmost_widget && width_device_px > 0 &&
++  // again. A zoom of 100% stays as it is. A cross-site iframe's widget rounds
++  // by the main frame's width too, so it gets the main frame's zoom.
++  RenderWidgetHostViewBase* root_view = view_->GetRootView();
++  int width_device_px =
++      root_view ? root_view->GetRequestedRendererSizeDevicePx().width() : 0;
++  if (is_frame_widget && width_device_px > 0 &&
 +      visual_properties.zoom_level != 0) {
 +    double device_scale_factor = current_screen_info.device_scale_factor;
 +    double zoom_factor =

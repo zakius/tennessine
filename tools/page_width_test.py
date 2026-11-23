@@ -18,9 +18,23 @@ test allows 0.001 px, which the media queries' own tolerance (1/64 px)
 covers. The settings: density 374 with font scale 0.85 (the maintainer's
 phone), density 420 with font scale 0.85 and 1.15, then in landscape and in
 split screen (landscape, side by side) without reloading the page, which
-must round again for the new width. At font scale 1.0 the width must stay
-the window's width in DIPs, unrounded. It sets the density, the font scale
-and the rotation back at the end, also after a failure.
+must round again for the new width. A rotation that doesn't make the page
+wider fails. At font scale 1.0 the width must stay the window's width in
+DIPs, unrounded. It sets the density, the font scale and the rotation back at
+the end, also after a failure.
+
+The page has a full-width iframe from another site (127.0.0.1 in a page from
+localhost). A cross-site iframe runs in a process of its own, and its widget
+gets its zoom from the browser apart from the main frame's
+(zakius/tennessine#53). Inside it, read through postMessage, exactly one of
+the two queries must match, and devicePixelRatio, which has the zoom in it,
+must be the page's. Its width can still have a fraction: Chromium sizes an
+out-of-process iframe through DIPs, which can take a device pixel off its
+width (1079 px of 1080 at density 420), at any zoom. Android turns strict
+site isolation off below 3200 MB of memory, and the emulator has less, so the
+test starts the browser with --site-per-process (in
+/data/local/tmp/chrome-command-line, which a userdebug build reads, removed at
+the end) and checks that the iframe is out of process.
 
 Split screen goes through SystemUI's WM Shell command
 (`dumpsys activity service SystemUIService WMShell splitscreen
@@ -44,20 +58,22 @@ import time
 from pathlib import Path
 
 from screenshots import PACKAGE, Devtools, adb, shell
-from xpi_install_test import targets, wait_for
+from xpi_install_test import COMMAND_LINE, targets, wait_for
 
-PAGE = '''<!doctype html>
+# The page and the iframe's page both have the media queries and measure(),
+# what the test reads.
+COMMON = '''<!doctype html>
 <meta name="viewport" content="width=device-width">
 <style>
+  body { margin: 0 }
   p { display: none; font: 24px sans-serif }
   @media screen and (width <= 543px) { #narrow { display: block } }
   @media screen and (width >= 544px) { #wide { display: block } }
 </style>
 <p id="narrow">width &lt;= 543px matches</p>
 <p id="wide">width &gt;= 544px matches</p>
-'''
-# What the test reads from the page.
-MEASURE = '''(() => {
+<script>
+function measure() {
   const width = document.documentElement.getBoundingClientRect().width;
   return {
     width: width,
@@ -68,7 +84,20 @@ MEASURE = '''(() => {
     wide: matchMedia('screen and (width >= 544px)').matches,
     exact: matchMedia('(width: ' + Math.round(width) + 'px)').matches,
   };
-})()'''
+}
+</script>
+'''
+# FRAME_URL: the iframe's page, on another site.
+PAGE = COMMON + '''<iframe src="{FRAME_URL}" style="display: block; width: 100%; height: 100px; border: 0"></iframe>
+'''
+FRAME = COMMON + '''<script>
+addEventListener('message', event => event.source.postMessage(measure(), '*'));
+</script>
+'''
+MEASURE_FRAME = '''new Promise(resolve => {
+  addEventListener('message', event => resolve(event.data), {once: true});
+  frames[0].postMessage('measure', '*');
+})'''
 # Single precision at these widths is about 0.00006 px.
 WHOLE = 0.001
 SETTINGS = 'com.android.settings'
@@ -127,9 +156,19 @@ def open_page(url):
     return session
 
 
-def measure(session):
-    result = session.call('Runtime.evaluate', expression=MEASURE, returnByValue=True)
+def measure(session, expression='measure()'):
+    result = session.call('Runtime.evaluate', expression=expression,
+                          returnByValue=True, awaitPromise=True)
     return result['result']['value']
+
+
+def frame_in_own_process(session, frame_url):
+    """Whether the iframe is out of process: only those are targets of their
+    own, which DevTools lists once a session attaches to them."""
+    session.call('Target.setAutoAttach', autoAttach=True, waitForDebuggerOnStart=False,
+                 flatten=True)
+    found = session.call('Target.getTargets')['targetInfos']
+    return any(t['type'] == 'iframe' and t['url'] == frame_url for t in found)
 
 
 def is_whole(value):
@@ -147,6 +186,18 @@ def check_rounded(what, values):
         return f'{what}: width <= 543px is {values["narrow"]}, width >= 544px too'
     if not values['exact']:
         return f'{what}: (width: {round(values["width"])}px) does not match'
+    return None
+
+
+def check_frame(what, frame, page):
+    """The iframe has the page's zoom, and one of the two queries matches."""
+    print(f'{what}: {json.dumps(frame)}')
+    if frame['narrow'] == frame['wide']:
+        return f'{what}: width <= 543px is {frame["narrow"]}, width >= 544px too'
+    # Both are single precision, rounded on their own.
+    if abs(frame['devicePixelRatio'] - page['devicePixelRatio']) > 0.00001:
+        return (f'{what}: devicePixelRatio is {frame["devicePixelRatio"]},'
+                f' the page\'s {page["devicePixelRatio"]}')
     return None
 
 
@@ -186,7 +237,7 @@ def leave_split_screen():
     shell('input keyevent KEYCODE_HOME')
 
 
-def run(base_url, failures):
+def run(base_url, frame_url, failures):
     def record(failure):
         if failure:
             print(f'FAIL: {failure}')
@@ -201,11 +252,19 @@ def run(base_url, failures):
         time.sleep(2)
         return open_page(f'{base_url}?{name}')
 
+    def check_page(what, session):
+        page = measure(session)
+        record(check_rounded(what, page))
+        record(check_frame(f'{what}, cross-site iframe', measure(session, MEASURE_FRAME), page))
+
     rotate(landscape=False)
     for density, font_scale in ((374, 0.85), (420, 0.85), (420, 1.15)):
         what = f'density {density}, font scale {font_scale}'
         session = restart(density, font_scale, f'{density}-{font_scale}')
-        record(check_rounded(what, measure(session)))
+        if density == 374:
+            assert frame_in_own_process(session, frame_url), \
+                'the cross-site iframe is not in a process of its own'
+        check_page(what, session)
         session.close()
 
     session = restart(420, 1.0, '420-1.0')
@@ -215,14 +274,20 @@ def run(base_url, failures):
     # The same page, resized: it must round again for the new width.
     session = restart(420, 1.15, 'resized')
     try:
+        portrait = measure(session)
         rotate(landscape=True)
         time.sleep(4)
         landscape = measure(session)
-        record(check_rounded('density 420, font scale 1.15, landscape', landscape))
+        if landscape['width'] <= portrait['width'] + 1:
+            print(f'landscape: {json.dumps(landscape)}')
+            record('landscape: the page did not get wider, so the rotation did not take effect')
+            return
+        check_page('density 420, font scale 1.15, landscape', session)
         if not enter_split_screen():
             print("SKIP: split screen: the browser's task wasn't found")
             return
         split = measure(session)
+        split_frame = measure(session, MEASURE_FRAME)
     finally:
         session.close()
     if split['width'] >= landscape['width'] - 1:
@@ -231,6 +296,8 @@ def run(base_url, failures):
               ' command did not put it in split screen')
         return
     record(check_rounded('density 420, font scale 1.15, split screen', split))
+    record(check_frame('density 420, font scale 1.15, split screen, cross-site iframe',
+                       split_frame, split))
 
 
 def main():
@@ -242,19 +309,30 @@ def main():
     saved = saved_settings()
     failures = []
     with tempfile.TemporaryDirectory() as tmp:
-        Path(tmp, 'index.html').write_text(PAGE)
         server = serve(tmp)
         port = server.server_address[1]
+        # localhost and 127.0.0.1 are different sites, both through adb reverse.
+        frame_url = f'http://127.0.0.1:{port}/frame.html'
+        Path(tmp, 'index.html').write_text(PAGE.replace('{FRAME_URL}', frame_url))
+        Path(tmp, 'frame.html').write_text(FRAME)
+        Path(tmp, 'command-line').write_text('_ --site-per-process\n')
+        adb('push', str(Path(tmp, 'command-line')), COMMAND_LINE)
+        shell(f'chmod 644 {COMMAND_LINE}')
         adb('reverse', f'tcp:{port}', f'tcp:{port}')
         try:
-            run(f'http://localhost:{port}/', failures)
+            run(f'http://localhost:{port}/', frame_url, failures)
         except AssertionError as error:
             print(f'FAIL: {error}')
             failures.append(str(error))
         finally:
+            # Before the launcher comes to the front: its portrait-only window
+            # keeps the landscape lock, and gives it back to the browser when
+            # it starts again (DisplayRotationReversionController), so that the
+            # next run starts in landscape.
+            restore(saved)
             leave_split_screen()
             shell(f'am force-stop {PACKAGE}')
-            restore(saved)
+            shell(f'rm -f {COMMAND_LINE}')
             adb('reverse', '--remove', f'tcp:{port}')
             server.shutdown()
     print(f'{len(failures)} failed' if failures else 'all passed')
