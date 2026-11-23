@@ -6,5 +6,6 @@
      the .grd's folder. -->
 <grit-part>
   <part file="oganesson_containers_strings.grdp" />
+  <part file="oganesson_firefox_add_ons_strings.grdp" />
   <part file="oganesson_firefox_sync_strings.grdp" />
 </grit-part>

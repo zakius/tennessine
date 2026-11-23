@@ -12,8 +12,11 @@ to a free name; each later one over the file of the run before, where
 Android asks whether to overwrite it. Each checks that its download took a
 new name. Then a .xpi whose manifest has no name, which can't install: the
 test finds the message that says why (zakius/dubna#206), and so for a .xpi
-without a Gecko ID. Each .xpi but that one is signed as AMO signs one
-(zakius/dubna#219), by a test root that the browser trusts with
+without a Gecko ID. Then an unsigned .xpi, which installs once the test
+accepts the prompt, whose warning says that Mozilla hasn't checked it
+(zakius/dubna#233); the test uninstalls it. Each .xpi but the unsigned one
+and the one without a Gecko ID is signed as AMO signs one (zakius/dubna#219),
+by a test root that the browser trusts with
 --firefox-add-ons-signature-root in its command line, which a userdebug
 build, as the emulator's, reads; the test removes it at the end. With APK, it
 first installs that build over the installed one (an x86_64 build for the
@@ -49,6 +52,10 @@ BROKEN_ERROR = "Required value 'name' is missing or invalid."
 # What firefox_xpi_installer.cc says, as Firefox, of a .xpi without a Gecko
 # ID or a signature: it has no ID.
 NO_GECKO_ID_ERROR = 'This add-on could not be installed because it appears to be corrupt.'
+# The unsigned .xpi's Gecko ID, and its install prompt's warning (dubna's
+# oganesson_firefox_add_ons_strings.grdp).
+UNSIGNED_GECKO_ID = 'xpi-unsigned-test@tennessine.test'
+UNSIGNED_WARNING = "Mozilla hasn't checked this add-on."
 DOWNLOADS = '/sdcard/Download'
 # The browser reads its command line there on a userdebug build
 # (AndroidInfo.isDebugAndroid()), and the test root for the switch next to it.
@@ -102,8 +109,9 @@ def amo_signed(files, signer_id, root):
             'META-INF/mozilla.rsa': rsa}
 
 
-def xpi(root, broken=False, gecko_id=GECKO_ID):
-    """A test .xpi, signed by ROOT for its Gecko ID; without one, unsigned."""
+def xpi(root, broken=False, gecko_id=GECKO_ID, signed=True):
+    """A test .xpi, signed by ROOT for its Gecko ID unless not SIGNED;
+    without a Gecko ID, unsigned."""
     manifest = {
         'manifest_version': 2,
         'name': NAME,
@@ -123,7 +131,7 @@ def xpi(root, broken=False, gecko_id=GECKO_ID):
         'icon.svg': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
                     '<rect width="16" height="16" fill="green"/></svg>',
     }
-    if gecko_id:
+    if gecko_id and signed:
         files = amo_signed(files, gecko_id, root)
     data = io.BytesIO()
     with zipfile.ZipFile(data, 'w') as archive:
@@ -252,6 +260,23 @@ def run_once(port, addon_id, again):
     uninstall(addon_id)
 
 
+def run_unsigned(port, addon_id):
+    """An unsigned .xpi installs once the prompt, with its warning, is
+    accepted."""
+    uninstall(addon_id)
+    tap_link(f'http://localhost:{port}/unsigned.html')
+    wait_for(lambda: shows_text(UNSIGNED_WARNING), 30, 'the warning in the install prompt')
+    wait_for(lambda: tap_text(r'Add extension'), 30, 'the install prompt')
+    target = wait_for(lambda: background(addon_id), 30, 'the add-on to start')
+    session = Devtools(target['webSocketDebuggerUrl'])
+    wait_for(lambda: session.call('Runtime.evaluate',
+                                  expression='window.started === true')['result']['value'],
+             30, 'its background script')
+    session.close()
+    wait_for(lambda: tap_text(r'Got it'), 30, 'the post-install dialog')
+    uninstall(addon_id)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('apk', nargs='?')
@@ -266,8 +291,10 @@ def main():
         # Not test*.xpi, which downloaded() counts.
         Path(tmp, 'broken.xpi').write_bytes(xpi(root, broken=True))
         Path(tmp, 'no-id.xpi').write_bytes(xpi(root, gecko_id=None))
+        Path(tmp, 'unsigned.xpi').write_bytes(
+            xpi(root, gecko_id=UNSIGNED_GECKO_ID, signed=False))
         for page, link in (('index.html', 'test.xpi'), ('broken.html', 'broken.xpi'),
-                           ('no-id.html', 'no-id.xpi')):
+                           ('no-id.html', 'no-id.xpi'), ('unsigned.html', 'unsigned.xpi')):
             Path(tmp, page).write_text(
                 '<!doctype html><meta name="viewport" content="width=device-width">'
                 f'<a href="{link}" style="position:fixed;inset:0">Install {link}</a>')
@@ -284,7 +311,8 @@ def main():
         addon_id = extension_id(GECKO_ID)
         # Once: each later run downloads the .xpi again, over a file of its
         # name, which takes a new one.
-        shell(f'rm -f {DOWNLOADS}/test*.xpi {DOWNLOADS}/broken*.xpi {DOWNLOADS}/no-id*.xpi')
+        shell(f'rm -f {DOWNLOADS}/test*.xpi {DOWNLOADS}/broken*.xpi {DOWNLOADS}/no-id*.xpi '
+              f'{DOWNLOADS}/unsigned*.xpi')
         failures = 0
         try:
             for run in range(1, args.repeat + 1):
@@ -302,11 +330,17 @@ def main():
                 except AssertionError as error:
                     failures += 1
                     print(f'{name} .xpi FAIL: {error}')
+            try:
+                run_unsigned(port, extension_id(UNSIGNED_GECKO_ID))
+                print('unsigned .xpi pass')
+            except AssertionError as error:
+                failures += 1
+                print(f'unsigned .xpi FAIL: {error}')
         finally:
             shell(f'rm -f {COMMAND_LINE} {DEVICE_ROOT}')
             adb('reverse', '--remove', f'tcp:{port}')
             server.shutdown()
-    print(f'{args.repeat + 2 - failures} of {args.repeat + 2} passed')
+    print(f'{args.repeat + 3 - failures} of {args.repeat + 3} passed')
     sys.exit(1 if failures else 0)
 
 
