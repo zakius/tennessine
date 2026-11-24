@@ -1,4 +1,4 @@
-# From Titanium's patch.sh (jqssun/android-titanium-browser@dd8d8a9). Chromium 158 rewrote the lookup as resolveDocument(), so the fast path moved there; it returns only a document it finds and otherwise walks the tree as before, so NOT_FOUND still comes from the walk.
+# From Titanium's patch.sh (jqssun/android-titanium-browser@9b3a181, v158.0.8127.42). Chromium 158 rewrote the lookup as resolveDocument(), so the fast path is there; it returns only a document it finds and otherwise walks the tree as before, so NOT_FOUND still comes from the walk.
 --- a/base/android/java/src/org/chromium/base/VirtualDocumentPath.java
 +++ b/base/android/java/src/org/chromium/base/VirtualDocumentPath.java
 @@ -211,6 +211,7 @@ class VirtualDocumentPath {
