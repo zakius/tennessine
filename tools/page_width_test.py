@@ -26,11 +26,14 @@ the end, also after a failure.
 The page has a full-width iframe from another site (127.0.0.1 in a page from
 localhost). A cross-site iframe runs in a process of its own, and its widget
 gets its zoom from the browser apart from the main frame's
-(zakius/tennessine#53). Inside it, read through postMessage, exactly one of
-the two queries must match, and devicePixelRatio, which has the zoom in it,
-must be the page's. Its width can still have a fraction: Chromium sizes an
-out-of-process iframe through DIPs, which can take a device pixel off its
-width (1079 px of 1080 at density 420), at any zoom. Android turns strict
+(zakius/tennessine#53). Inside it, read through postMessage, its width must
+be whole as the page's, with the same queries, and devicePixelRatio, which
+has the zoom in it, must be the page's. Stock Chromium sizes an out-of-process
+iframe through DIPs, which can take a device pixel off its width (1079 px of
+1080 at density 420, 483.55 CSS px in a 484 px page), at any zoom
+(zakius/tennessine#54). For both, a pair of queries just around the width,
+`width <= <the width - 1>px` and `width >= <the width>px`, must have exactly
+one match: a width a fraction short of whole matches neither. Android turns strict
 site isolation off below 3200 MB of memory, and the emulator has less, so the
 test starts the browser with --site-per-process (in
 /data/local/tmp/chrome-command-line, which a userdebug build reads, removed at
@@ -83,6 +86,8 @@ function measure() {
     narrow: matchMedia('screen and (width <= 543px)').matches,
     wide: matchMedia('screen and (width >= 544px)').matches,
     exact: matchMedia('(width: ' + Math.round(width) + 'px)').matches,
+    below: matchMedia('(width <= ' + (Math.round(width) - 1) + 'px)').matches,
+    above: matchMedia('(width >= ' + Math.round(width) + 'px)').matches,
   };
 }
 </script>
@@ -186,14 +191,17 @@ def check_rounded(what, values):
         return f'{what}: width <= 543px is {values["narrow"]}, width >= 544px too'
     if not values['exact']:
         return f'{what}: (width: {round(values["width"])}px) does not match'
+    if values['below'] == values['above']:
+        return (f'{what}: width <= {round(values["width"]) - 1}px is {values["below"]},'
+                f' width >= {round(values["width"])}px too')
     return None
 
 
 def check_frame(what, frame, page):
-    """The iframe has the page's zoom, and one of the two queries matches."""
-    print(f'{what}: {json.dumps(frame)}')
-    if frame['narrow'] == frame['wide']:
-        return f'{what}: width <= 543px is {frame["narrow"]}, width >= 544px too'
+    """The iframe's width is whole, and it has the page's zoom."""
+    failure = check_rounded(what, frame)
+    if failure:
+        return failure
     # Both are single precision, rounded on their own.
     if abs(frame['devicePixelRatio'] - page['devicePixelRatio']) > 0.00001:
         return (f'{what}: devicePixelRatio is {frame["devicePixelRatio"]},'
