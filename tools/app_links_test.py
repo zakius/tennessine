@@ -32,8 +32,10 @@ The cases, each in a new window opened by a tap in the app's page:
 On desktop, a new app window has the activation of a click in another window
 for its first 5 s, as the activation of script run in it, which made both
 cases leave the app before dubna#223. On Android the new window had none in
-158.0.8127.92 (a popup neither): the test prints what it finds, and checks
-the outcome either way.
+158.0.8127.92 (a popup neither), and without activation the browser's checks
+kept both in the app before dubna#223 too: there the cases check the outcome
+on Android, not that fix. The test prints the activation it finds; once a new
+window has it, the same cases check the fix.
 
 The default browser must be another app (the emulator's is Chrome). Its
 launch is the system's `START` line in logcat for a VIEW intent from the
