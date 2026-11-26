@@ -34,8 +34,8 @@ for its first 5 s, as the activation of script run in it, which made both
 cases leave the app before dubna#223. On Android the new window had none in
 158.0.8127.92 (a popup neither), and without activation the browser's checks
 kept both in the app before dubna#223 too: there the cases check the outcome
-on Android, not that fix. The test prints the activation it finds; once a new
-window has it, the same cases check the fix.
+on Android, not that fix. The test prints whether the window has activation
+as the push or the click runs; when it does, the same cases check the fix.
 
 The default browser must be another app (the emulator's is Chrome). Its
 launch is the system's `START` line in logcat for a VIEW intent from the
@@ -177,7 +177,7 @@ def opened(uid):
 
 def open_window(app_id):
     """Starts the app and taps its page, which opens a new window; returns a
-    DevTools session with the new window."""
+    DevTools session with the new window, and its target id."""
     shell(f'am force-stop {PACKAGE}')
     # As its shortcut does, through the launcher that only the browser itself
     # may start, which takes no MAC (WebappLauncherActivity).
@@ -200,9 +200,14 @@ def open_window(app_id):
     window = Devtools(target['webSocketDebuggerUrl'])
     wait_for(lambda: evaluate(window, 'document.readyState') == 'complete', 30,
              'the new window to load')
-    print('new window: activation',
-          evaluate(window, 'navigator.userActivation.isActive'))
-    return window
+    return window, target['id']
+
+
+def run_script(window, script):
+    """Runs SCRIPT in the window, printing whether the window had activation
+    as it ran."""
+    active = evaluate(window, f'[navigator.userActivation.isActive, {script}][0]')
+    print('activation at the script:', active)
 
 
 def evaluate(session, expression):
@@ -220,10 +225,10 @@ def touch_scroll(window):
 
 
 def run_push(app_id, uid, failures):
-    window = open_window(app_id)
+    window, _ = open_window(app_id)
     try:
         touch_scroll(window)
-        evaluate(window, 'history.pushState(null, "", "/out.html?script")')
+        run_script(window, 'history.pushState(null, "", "/out.html?script")')
         time.sleep(3)
         href = evaluate(window, 'location.href')
         if href != f'{ORIGIN}/out.html?script':
@@ -245,16 +250,17 @@ def run_push(app_id, uid, failures):
 
 
 def run_click(app_id, uid, failures):
-    window = open_window(app_id)
+    window, window_id = open_window(app_id)
     try:
-        evaluate(window, 'document.getElementById("plain").click()')
+        run_script(window, 'document.getElementById("plain").click()')
         # From the target list: the page's own context goes away as it navigates.
+        url = f'{ORIGIN}/out.html?plain'
         try:
-            wait_for(lambda: any(t['type'] == 'page' and t['url'] == f'{ORIGIN}/out.html?plain'
-                                 for t in targets()),
+            wait_for(lambda: any(t['id'] == window_id and t['url'] == url for t in targets()),
                      10, 'the link in the window')
-        except AssertionError as error:
-            failures.append(f'script link click: {error}')
+        except AssertionError:
+            where = [t['url'] for t in targets() if t['id'] == window_id]
+            failures.append(f'script link click: the window is at {where}, not {url}')
         if opened(uid):
             failures.append(f'script link click: the default browser opened {opened(uid)}')
     finally:
