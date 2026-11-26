@@ -246,8 +246,10 @@ def run_click(app_id, uid, failures):
     window = open_window(app_id)
     try:
         evaluate(window, 'document.getElementById("plain").click()')
+        # From the target list: the page's own context goes away as it navigates.
         try:
-            wait_for(lambda: evaluate(window, 'location.href') == f'{ORIGIN}/out.html?plain',
+            wait_for(lambda: any(t['type'] == 'page' and t['url'] == f'{ORIGIN}/out.html?plain'
+                                 for t in targets()),
                      10, 'the link in the window')
         except AssertionError as error:
             failures.append(f'script link click: {error}')
