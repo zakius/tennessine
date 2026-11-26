@@ -266,7 +266,9 @@ def main():
     if args.apk:
         adb('install', '-r', args.apk)
     adb('root')
-    wait_for(lambda: b'\tdevice' in adb('devices'), 30, 'adb as root')
+    # adbd restarts as root: the device can still be listed just before it goes.
+    subprocess.run([ADB, 'wait-for-device'], check=True, timeout=60)
+    assert shell('id -u').strip() == '0', 'adb root did not take: the test needs a userdebug build'
     uid = browser_uid()
     failures = []
     with tempfile.TemporaryDirectory() as tmp:
